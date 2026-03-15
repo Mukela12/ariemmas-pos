@@ -73,7 +73,7 @@ export function POS() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'F12' && items.length > 0) { e.preventDefault(); setShowPayment(true) }
+      if (e.key === 'F12' && items.length > 0 && currentShift) { e.preventDefault(); setShowPayment(true) }
       if (e.key === 'F2') { e.preventDefault(); searchRef.current?.focus() }
       if (e.key === 'F8' && selectedIndex >= 0) { e.preventDefault(); removeItem(selectedIndex) }
       if (e.key === 'F1') { e.preventDefault(); clearSale() }
@@ -209,11 +209,11 @@ export function POS() {
           {/* Actions */}
           <div className="mt-4 space-y-2">
             <button
-              onClick={() => items.length > 0 && setShowPayment(true)}
-              disabled={items.length === 0}
+              onClick={() => items.length > 0 && currentShift && setShowPayment(true)}
+              disabled={items.length === 0 || !currentShift}
               className="w-full h-12 rounded-md bg-[#0D9488] text-white text-[15px] font-semibold hover:bg-[#0F766E] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Charge {formatZMW(total)}
+              {!currentShift && items.length > 0 ? 'Open a Shift First' : `Charge ${formatZMW(total)}`}
             </button>
             {items.length > 0 && (
               <button onClick={() => clearSale()}

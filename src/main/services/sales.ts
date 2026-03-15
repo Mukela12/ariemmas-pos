@@ -14,11 +14,14 @@ async function getNextReceiptNumber(): Promise<string> {
   if (storedDate !== today) {
     await db.run("UPDATE settings SET value = ? WHERE key = 'receipt_counter'", ['0'])
     await db.run("UPDATE settings SET value = ? WHERE key = 'receipt_date'", [today])
+    queueSync('update', 'setting', 'receipt_counter', { key: 'receipt_counter', value: '0' }).catch(() => {})
+    queueSync('update', 'setting', 'receipt_date', { key: 'receipt_date', value: today }).catch(() => {})
   }
 
   const counter = await db.queryOne<{ value: string }>("SELECT value FROM settings WHERE key = 'receipt_counter'")
   const nextVal = String(parseInt(counter?.value || '0') + 1)
   await db.run("UPDATE settings SET value = ? WHERE key = 'receipt_counter'", [nextVal])
+  queueSync('update', 'setting', 'receipt_counter', { key: 'receipt_counter', value: nextVal }).catch(() => {})
 
   const num = nextVal.padStart(4, '0')
   return `${today}-${num}`
@@ -27,7 +30,19 @@ async function getNextReceiptNumber(): Promise<string> {
 export async function completeSale(input: CompleteSaleInput): Promise<Sale> {
   const db = getDb()
 
+  if (!input.shift_id) {
+    throw new Error('Cannot complete sale without an open shift')
+  }
+
   return db.transaction(async () => {
+    // Validate stock availability
+    for (const item of input.items) {
+      const product = await db.queryOne<{ stock_quantity: number }>('SELECT stock_quantity FROM products WHERE id = ?', [item.product_id])
+      if (product && Number(product.stock_quantity) < item.quantity) {
+        throw new Error(`Insufficient stock for ${item.name}: ${product.stock_quantity} available, ${item.quantity} requested`)
+      }
+    }
+
     const saleId = uuid()
     const receiptNumber = await getNextReceiptNumber()
 
