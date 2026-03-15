@@ -1,3 +1,7 @@
+// Prevent EPIPE crashes when stdout/stderr pipe is broken (e.g. terminal disconnected)
+process.stdout?.on?.('error', () => {})
+process.stderr?.on?.('error', () => {})
+
 import { app, shell, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'

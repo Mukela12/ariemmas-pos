@@ -1,8 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Component, type ReactNode } from 'react'
 import { useRive } from '@rive-app/react-canvas'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Check } from 'lucide-react'
+import { X, Check, ShoppingCart } from 'lucide-react'
 import { formatZMW } from '../lib/currency'
+
+// Error boundary so Rive failures don't crash the whole screen
+class RiveBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false }
+  static getDerivedStateFromError() { return { hasError: true } }
+  render() { return this.state.hasError ? this.props.fallback : this.props.children }
+}
 
 const BRAND_COLORS = ['#0D9488', '#0F766E', '#14B8A6', '#2DD4BF', '#5EEAD4']
 
@@ -33,13 +40,28 @@ interface ThankYouProps {
   changeGiven?: number | null
 }
 
+function CartAnimation() {
+  const rivSrc = typeof window !== 'undefined' && window.location.protocol === 'file:'
+    ? './shopping-cart.riv'
+    : '/shopping-cart.riv'
+  const { RiveComponent } = useRive({ src: rivSrc, autoplay: true })
+  return <RiveComponent />
+}
+
+function CartFallback() {
+  return (
+    <motion.div
+      animate={{ y: [0, -8, 0] }}
+      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+      className="flex items-center justify-center w-full h-full"
+    >
+      <ShoppingCart size={72} className="text-white/40" />
+    </motion.div>
+  )
+}
+
 export function ThankYouScreen({ onClose, paymentMethod, total, amountTendered, changeGiven }: ThankYouProps) {
   const [visible, setVisible] = useState(true)
-
-  const { RiveComponent } = useRive({
-    src: '/shopping-cart.riv',
-    autoplay: true,
-  })
 
   // Auto-dismiss after 5 seconds
   useEffect(() => {
@@ -126,7 +148,9 @@ export function ThankYouScreen({ onClose, paymentMethod, total, amountTendered, 
           >
             {/* Rive Animation */}
             <div className="w-[160px] h-[160px] mb-4">
-              <RiveComponent />
+              <RiveBoundary fallback={<CartFallback />}>
+                <CartAnimation />
+              </RiveBoundary>
             </div>
 
             {/* Checkmark pulse */}
