@@ -4,6 +4,7 @@ import { getDb, now, dateOf } from './database/connection'
 import { login, logout, getCurrentUser, seedDefaultAdmin } from './services/auth'
 import { completeSale, getDailySales } from './services/sales'
 import { exportDailySalesToExcel } from './services/exportExcel'
+import { queueSync, getSyncStatus, processSyncQueue } from './services/syncService'
 import { IPC_CHANNELS } from '../shared/constants'
 
 export async function registerIpcHandlers(): Promise<void> {
@@ -56,14 +57,14 @@ export async function registerIpcHandlers(): Promise<void> {
       INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [id, product.barcode, product.name, product.category_id, product.price, product.cost_price || 0, product.vat_rate || 0.16, product.stock_quantity || 0, product.min_stock_level || 5, product.unit || 'each'])
-    return db.queryOne('SELECT * FROM products WHERE id = ?', [id])
+    const created = await db.queryOne('SELECT * FROM products WHERE id = ?', [id])
+    queueSync('insert', 'product', id, created!).catch(() => {})
+    return created
   })
 
   ipcMain.handle(IPC_CHANNELS.PRODUCT_UPDATE, async (_e, product: any) => {
     const db = getDb()
     const nowExpr = now(db.engine)
-    // For SQLite, datetime('now') is embedded in SQL. For others, we use the function.
-    // Since we can't parameterize SQL functions, we use raw SQL with the expression.
     await db.run(`
       UPDATE products SET barcode = ?, name = ?, category_id = ?, price = ?, cost_price = ?,
         vat_rate = ?, stock_quantity = ?, min_stock_level = ?, unit = ?, updated_at = ${nowExpr}
@@ -71,7 +72,9 @@ export async function registerIpcHandlers(): Promise<void> {
     `, [product.barcode, product.name, product.category_id, product.price, product.cost_price || 0,
       product.vat_rate || 0.16, product.stock_quantity || 0, product.min_stock_level || 5,
       product.unit || 'each', product.id])
-    return db.queryOne('SELECT * FROM products WHERE id = ?', [product.id])
+    const updated = await db.queryOne('SELECT * FROM products WHERE id = ?', [product.id])
+    queueSync('update', 'product', product.id, updated!).catch(() => {})
+    return updated
   })
 
   // Sales
@@ -101,7 +104,9 @@ export async function registerIpcHandlers(): Promise<void> {
       'INSERT INTO shifts (id, user_id, opening_cash, status) VALUES (?, ?, ?, ?)',
       [id, userId, openingCash, 'open']
     )
-    return db.queryOne('SELECT * FROM shifts WHERE id = ?', [id])
+    const shift = await db.queryOne('SELECT * FROM shifts WHERE id = ?', [id])
+    queueSync('insert', 'shift', id, shift!).catch(() => {})
+    return shift
   })
 
   ipcMain.handle(IPC_CHANNELS.SHIFT_CLOSE, async (_e, shiftId: string, closingCash: number, notes: string) => {
@@ -118,7 +123,9 @@ export async function registerIpcHandlers(): Promise<void> {
         status = 'closed', closed_at = ${nowExpr} WHERE id = ?
     `, [closingCash, expectedCash, variance, notes, shiftId])
 
-    return db.queryOne('SELECT * FROM shifts WHERE id = ?', [shiftId])
+    const closed = await db.queryOne('SELECT * FROM shifts WHERE id = ?', [shiftId])
+    queueSync('update', 'shift', shiftId, closed!).catch(() => {})
+    return closed
   })
 
   ipcMain.handle(IPC_CHANNELS.SHIFT_GET_CURRENT, async (_e, userId: string) => {
@@ -144,7 +151,17 @@ export async function registerIpcHandlers(): Promise<void> {
     const db = getDb()
     const nowExpr = now(db.engine)
     await db.run(`UPDATE settings SET value = ?, updated_at = ${nowExpr} WHERE key = ?`, [value, key])
+    queueSync('update', 'setting', key, { key, value }).catch(() => {})
     return true
+  })
+
+  // Sync
+  ipcMain.handle('sync:status', async () => {
+    return getSyncStatus()
+  })
+
+  ipcMain.handle('sync:now', async () => {
+    return processSyncQueue()
   })
 
   // Hardware (stubs for dev)

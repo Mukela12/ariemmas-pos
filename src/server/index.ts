@@ -254,6 +254,146 @@ app.put('/api/settings/:key', async (req, res) => {
   res.json(true)
 })
 
+// --- Sync endpoints (desktop → cloud) ---
+
+// Sync a complete sale (idempotent — skips if sale ID already exists)
+app.post('/api/sync/sales', async (req, res) => {
+  const { sale, items } = req.body
+  if (!sale?.id) return res.status(400).json({ error: 'Missing sale data' })
+
+  const existing = await db.queryOne('SELECT id FROM sales WHERE id = $1', [sale.id])
+  if (existing) return res.json({ status: 'already_synced' })
+
+  await db.transaction(async () => {
+    await db.run(
+      `INSERT INTO sales (id, receipt_number, user_id, shift_id, subtotal, vat_total, total,
+        payment_method, amount_tendered, change_given, mobile_ref, status, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+      [sale.id, sale.receipt_number, sale.user_id, sale.shift_id, sale.subtotal,
+       sale.vat_total, sale.total, sale.payment_method, sale.amount_tendered,
+       sale.change_given, sale.mobile_ref, sale.status, sale.created_at]
+    )
+
+    for (const item of items || []) {
+      const itemExists = await db.queryOne('SELECT id FROM sale_items WHERE id = $1', [item.id])
+      if (!itemExists) {
+        await db.run(
+          `INSERT INTO sale_items (id, sale_id, product_id, product_name, barcode,
+            quantity, unit_price, vat_rate, vat_amount, line_total)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+          [item.id, item.sale_id, item.product_id, item.product_name, item.barcode,
+           item.quantity, item.unit_price, item.vat_rate, item.vat_amount, item.line_total]
+        )
+        // Update stock on remote
+        await db.run('UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2',
+          [item.quantity, item.product_id])
+      }
+    }
+  })
+
+  res.json({ status: 'synced' })
+})
+
+// Sync a product (upsert)
+app.post('/api/sync/products', async (req, res) => {
+  const p = req.body
+  if (!p?.id) return res.status(400).json({ error: 'Missing product data' })
+
+  const existing = await db.queryOne('SELECT id FROM products WHERE id = $1', [p.id])
+  if (existing) {
+    await db.run(
+      'UPDATE products SET barcode=$1, name=$2, category_id=$3, price=$4, cost_price=$5, vat_rate=$6, stock_quantity=$7, min_stock_level=$8, unit=$9, updated_at=NOW() WHERE id=$10',
+      [p.barcode, p.name, p.category_id, p.price, p.cost_price, p.vat_rate, p.stock_quantity, p.min_stock_level, p.unit, p.id]
+    )
+  } else {
+    await db.run(
+      'INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
+      [p.id, p.barcode, p.name, p.category_id, p.price, p.cost_price || 0, p.vat_rate || 0.16, p.stock_quantity || 0, p.min_stock_level || 5, p.unit || 'each']
+    )
+  }
+  res.json({ status: 'synced' })
+})
+
+app.put('/api/sync/products/:id', async (req, res) => {
+  const p = req.body
+  await db.run(
+    'UPDATE products SET barcode=$1, name=$2, category_id=$3, price=$4, cost_price=$5, vat_rate=$6, stock_quantity=$7, min_stock_level=$8, unit=$9, updated_at=NOW() WHERE id=$10',
+    [p.barcode, p.name, p.category_id, p.price, p.cost_price, p.vat_rate, p.stock_quantity, p.min_stock_level, p.unit, req.params.id]
+  )
+  res.json({ status: 'synced' })
+})
+
+// Sync a shift (upsert)
+app.post('/api/sync/shifts', async (req, res) => {
+  const s = req.body
+  if (!s?.id) return res.status(400).json({ error: 'Missing shift data' })
+
+  const existing = await db.queryOne('SELECT id FROM shifts WHERE id = $1', [s.id])
+  if (existing) {
+    await db.run(
+      `UPDATE shifts SET opening_cash=$1, closing_cash=$2, expected_cash=$3, variance=$4,
+       total_sales=$5, total_transactions=$6, total_vat=$7, status=$8, notes=$9, closed_at=$10 WHERE id=$11`,
+      [s.opening_cash, s.closing_cash, s.expected_cash, s.variance, s.total_sales,
+       s.total_transactions, s.total_vat, s.status, s.notes, s.closed_at, s.id]
+    )
+  } else {
+    await db.run(
+      `INSERT INTO shifts (id, user_id, opening_cash, closing_cash, expected_cash, variance,
+       total_sales, total_transactions, total_vat, status, notes, opened_at, closed_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+      [s.id, s.user_id, s.opening_cash, s.closing_cash, s.expected_cash, s.variance,
+       s.total_sales, s.total_transactions, s.total_vat, s.status, s.notes, s.opened_at, s.closed_at]
+    )
+  }
+  res.json({ status: 'synced' })
+})
+
+app.put('/api/sync/shifts/:id', async (req, res) => {
+  const s = req.body
+  await db.run(
+    `UPDATE shifts SET opening_cash=$1, closing_cash=$2, expected_cash=$3, variance=$4,
+     total_sales=$5, total_transactions=$6, total_vat=$7, status=$8, notes=$9, closed_at=$10 WHERE id=$11`,
+    [s.opening_cash, s.closing_cash, s.expected_cash, s.variance, s.total_sales,
+     s.total_transactions, s.total_vat, s.status, s.notes, s.closed_at, req.params.id]
+  )
+  res.json({ status: 'synced' })
+})
+
+// Sync settings
+app.put('/api/sync/settings/:key', async (req, res) => {
+  const { key, value } = req.body
+  await db.run('UPDATE settings SET value = $1, updated_at = NOW() WHERE key = $2', [value, key || req.params.key])
+  res.json({ status: 'synced' })
+})
+
+// Sync users (upsert)
+app.post('/api/sync/users', async (req, res) => {
+  const u = req.body
+  if (!u?.id) return res.status(400).json({ error: 'Missing user data' })
+  const existing = await db.queryOne('SELECT id FROM users WHERE id = $1', [u.id])
+  if (!existing) {
+    await db.run(
+      'INSERT INTO users (id, username, display_name, pin_hash, role, active) VALUES ($1,$2,$3,$4,$5,$6)',
+      [u.id, u.username, u.display_name, u.pin_hash, u.role, u.active]
+    )
+  }
+  res.json({ status: 'synced' })
+})
+
+// Sync categories (upsert)
+app.post('/api/sync/categories', async (req, res) => {
+  const c = req.body
+  if (!c?.id) return res.status(400).json({ error: 'Missing category data' })
+  const existing = await db.queryOne('SELECT id FROM categories WHERE id = $1', [c.id])
+  if (!existing) {
+    await db.run(
+      'INSERT INTO categories (id, name, description, sort_order, active) VALUES ($1,$2,$3,$4,$5)',
+      [c.id, c.name, c.description, c.sort_order, c.active]
+    )
+  }
+  res.json({ status: 'synced' })
+})
+
 // --- Health ---
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', engine: 'postgres' })

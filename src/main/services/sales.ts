@@ -2,6 +2,7 @@ import { v4 as uuid } from 'uuid'
 import dayjs from 'dayjs'
 import { getDb, dateOf } from '../database/connection'
 import type { CompleteSaleInput, Sale } from '../../shared/types'
+import { queueSync } from './syncService'
 
 async function getNextReceiptNumber(): Promise<string> {
   const db = getDb()
@@ -71,6 +72,11 @@ export async function completeSale(input: CompleteSaleInput): Promise<Sale> {
     )
 
     const sale = await db.queryOne<Sale>('SELECT * FROM sales WHERE id = ?', [saleId])
+
+    // Queue for sync to remote server
+    const saleItems = await db.query('SELECT * FROM sale_items WHERE sale_id = ?', [saleId])
+    queueSync('insert', 'sale', saleId, { sale, items: saleItems }).catch(() => {})
+
     return sale!
   })
 }

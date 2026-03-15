@@ -56,6 +56,12 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.HW_PRINT_RECEIPT, receipt),
   openCashDrawer: () =>
     ipcRenderer.invoke(IPC_CHANNELS.HW_OPEN_DRAWER),
+
+  // Sync
+  getSyncStatus: () =>
+    ipcRenderer.invoke('sync:status'),
+  syncNow: () =>
+    ipcRenderer.invoke('sync:now'),
 }
 
 if (process.contextIsolated) {

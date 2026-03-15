@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { useShiftStore } from '../stores/shiftStore'
-import { LogOut, X } from 'lucide-react'
+import { LogOut, X, Cloud, CloudOff, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { formatZMW } from '../lib/currency'
 
@@ -19,10 +19,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   const [time, setTime] = useState(new Date())
   const [showShiftModal, setShowShiftModal] = useState(false)
+  const [syncStatus, setSyncStatus] = useState<{ pending: number; isOnline: boolean } | null>(null)
 
   useEffect(() => {
     if (user) loadShift(user.id)
   }, [user, loadShift])
+
+  // Poll sync status every 10s (only in Electron)
+  useEffect(() => {
+    if (!window.api?.getSyncStatus) return
+    const poll = () => window.api.getSyncStatus().then(setSyncStatus).catch(() => {})
+    poll()
+    const timer = setInterval(poll, 10_000)
+    return () => clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000)
@@ -72,6 +82,30 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <div className={`w-[6px] h-[6px] rounded-full ${currentShift ? 'bg-[#0D9488]' : 'bg-[#D97706]'}`} />
             {currentShift ? 'Shift Open' : 'No Shift'}
           </button>
+
+          {/* Sync indicator */}
+          {syncStatus && (
+            <button
+              onClick={() => window.api?.syncNow?.()}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] transition-colors ${
+                syncStatus.isOnline
+                  ? syncStatus.pending > 0
+                    ? 'text-[#D97706] bg-[#FFFBEB]'
+                    : 'text-[#0D9488] bg-[#F0FDFA]'
+                  : 'text-[#A1A1AA] bg-[#F4F4F5]'
+              }`}
+              title={syncStatus.isOnline
+                ? syncStatus.pending > 0 ? `${syncStatus.pending} pending sync` : 'Synced'
+                : 'Offline — will sync when online'}
+            >
+              {syncStatus.isOnline ? (
+                syncStatus.pending > 0 ? <RefreshCw size={12} className="animate-spin" /> : <Cloud size={12} />
+              ) : (
+                <CloudOff size={12} />
+              )}
+              {syncStatus.pending > 0 && <span>{syncStatus.pending}</span>}
+            </button>
+          )}
 
           {/* Clock */}
           <span className="text-[12px] text-[#A1A1AA] tabular-nums font-medium">

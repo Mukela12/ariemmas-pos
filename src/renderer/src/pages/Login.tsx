@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { AnimatedGridPattern } from '../components/ui/AnimatedGridPattern'
 
 export function Login() {
   const [username, setUsername] = useState('')
@@ -25,48 +26,35 @@ export function Login() {
 
   return (
     <div className="h-screen w-screen flex bg-white overflow-hidden">
-      {/* Left — brand panel */}
-      <div className="hidden lg:flex w-[44%] bg-[#18181B] flex-col justify-between p-12 relative overflow-hidden">
-        {/* Subtle teal glow */}
-        <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full opacity-100"
-          style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.12) 0%, transparent 70%)' }} />
+      {/* Left — brand panel with animated grid */}
+      <div className="hidden lg:flex w-[44%] bg-[#18181B] flex-col items-center justify-center relative overflow-hidden">
+        {/* Teal glow accents */}
+        <div className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-100"
+          style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.15) 0%, transparent 70%)' }} />
+        <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full opacity-100"
+          style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.08) 0%, transparent 70%)' }} />
 
-        {/* Dot grid */}
-        <div className="absolute inset-0 opacity-[0.03]"
-          style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+        {/* Animated grid pattern */}
+        <AnimatedGridPattern
+          numSquares={30}
+          maxOpacity={0.15}
+          duration={3}
+          width={50}
+          height={50}
+          className="text-teal-500/40"
+        />
 
-        {/* Logo */}
-        <div className="relative z-10 flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-lg bg-white/[0.08] flex items-center justify-center border border-white/[0.06] overflow-hidden">
-            <img src="/logo.png" alt="" className="w-6 h-6 object-contain" />
+        {/* Brand text */}
+        <div className="relative z-10 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-white/[0.08] flex items-center justify-center border border-white/[0.06] mx-auto mb-6 overflow-hidden">
+            <img src="/logo.png" alt="" className="w-10 h-10 object-contain" />
           </div>
-          <div>
-            <div className="text-base font-semibold text-[#FAFAFA] tracking-tight">Ariemmas</div>
-            <div className="text-[11px] text-[#71717A]">Point of Sale</div>
-          </div>
-        </div>
-
-        {/* Hero text */}
-        <div className="relative z-10">
-          <h1 className="text-[32px] font-semibold text-[#FAFAFA] leading-[1.15] tracking-tight">
-            Manage your<br />shop with<br />
-            <span className="text-[#2DD4BF]">precision.</span>
+          <h1 className="text-[42px] font-bold text-[#FAFAFA] tracking-tight leading-none">
+            Ariemmas
           </h1>
-          <p className="text-[13px] text-[#71717A] mt-3 leading-relaxed max-w-[280px]">
-            Fast checkout, accurate inventory, real-time tracking — built for Zambian retail.
-          </p>
-          <div className="flex gap-8 mt-8">
-            {[{ v: '25+', l: 'Products' }, { v: '<2s', l: 'Receipts' }, { v: '100%', l: 'Offline' }].map(s => (
-              <div key={s.l}>
-                <div className="text-xl font-semibold text-[#FAFAFA] tabular-nums">{s.v}</div>
-                <div className="text-[11px] text-[#52525B] mt-0.5">{s.l}</div>
-              </div>
-            ))}
+          <div className="text-sm font-medium text-[#2DD4BF] mt-2 tracking-[0.2em] uppercase">
+            Point of Sale
           </div>
-        </div>
-
-        <div className="relative z-10 text-[11px] text-[#3F3F46]">
-          Independence Ave, Mongu &middot; 097 4542233
         </div>
       </div>
 

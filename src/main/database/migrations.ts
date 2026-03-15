@@ -201,6 +201,65 @@ export interface Migration {
   getSql: (engine: DbAdapter['engine']) => string
 }
 
+function getSyncQueueSQL(engine: DbAdapter['engine']): string {
+  const TEXT = engine === 'mssql' ? 'NVARCHAR(255)' : 'TEXT'
+  const LONGTEXT = engine === 'mssql' ? 'NVARCHAR(MAX)' : 'TEXT'
+  const NOW = engine === 'sqlite' ? "DEFAULT (datetime('now'))" :
+              engine === 'mssql' ? 'DEFAULT GETDATE()' :
+              'DEFAULT NOW()'
+  const INT = 'INTEGER'
+
+  if (engine === 'mssql') {
+    return `
+      IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '_sync_queue')
+      CREATE TABLE _sync_queue (
+        id ${INT} IDENTITY(1,1) PRIMARY KEY,
+        operation ${TEXT} NOT NULL,
+        entity_type ${TEXT} NOT NULL,
+        entity_id ${TEXT} NOT NULL,
+        payload ${LONGTEXT} NOT NULL,
+        status ${TEXT} NOT NULL DEFAULT 'pending',
+        attempts ${INT} NOT NULL DEFAULT 0,
+        error ${LONGTEXT},
+        created_at ${TEXT} ${NOW},
+        synced_at ${TEXT}
+      );
+    `
+  }
+
+  if (engine === 'postgres') {
+    return `
+      CREATE TABLE IF NOT EXISTS _sync_queue (
+        id SERIAL PRIMARY KEY,
+        operation TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        attempts INTEGER NOT NULL DEFAULT 0,
+        error TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        synced_at TIMESTAMP
+      );
+    `
+  }
+
+  return `
+    CREATE TABLE IF NOT EXISTS _sync_queue (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      operation TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      payload TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      attempts INTEGER NOT NULL DEFAULT 0,
+      error TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      synced_at TEXT
+    );
+  `
+}
+
 export const MIGRATIONS: Migration[] = [
   {
     name: '001_initial_schema',
@@ -209,6 +268,10 @@ export const MIGRATIONS: Migration[] = [
   {
     name: '002_seed_data',
     getSql: (engine) => getSeedDataSQL(engine)
+  },
+  {
+    name: '003_sync_queue',
+    getSql: (engine) => getSyncQueueSQL(engine)
   }
 ]
 
