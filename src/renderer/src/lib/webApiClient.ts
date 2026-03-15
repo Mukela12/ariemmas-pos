@@ -43,9 +43,19 @@ export const webApi = {
   // Sales
   completeSale: async (sale: any) =>
     json<any>('/api/sales', { method: 'POST', body: JSON.stringify(sale) }),
-  exportDailySales: async () => {
-    alert('Excel export is only available in the desktop app.')
-    return null
+  exportDailySales: async (date: string) => {
+    const res = await fetch(`${API_URL}/api/sales/export?date=${encodeURIComponent(date)}`)
+    if (!res.ok) throw new Error('Export failed')
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `Ariemmas_Sales_${date}.xlsx`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    return `Ariemmas_Sales_${date}.xlsx`
   },
   getDailySales: async (date: string) =>
     json<any>(`/api/sales/daily?date=${encodeURIComponent(date)}`),

@@ -70,7 +70,7 @@ const mockApi = {
 
   // Sales
   completeSale: async () => ({ id: 'sale-' + Date.now(), receipt_number: String(Math.floor(Math.random() * 10000)).padStart(6, '0') }),
-  exportDailySales: async () => { alert('Excel export is only available in the desktop app.'); return null },
+  exportDailySales: async () => { alert('No sales data available in demo mode.'); return null },
   getDailySales: async () => ({
     total_sales: 12,
     total_revenue: 4250.50,

@@ -4,6 +4,7 @@ import cors from 'cors'
 import bcrypt from 'bcryptjs'
 import { v4 as uuid } from 'uuid'
 import dayjs from 'dayjs'
+import ExcelJS from 'exceljs'
 import { PostgresAdapter } from '../main/database/postgresAdapter'
 import { runMigrations } from '../main/database/migrations'
 import type { DbAdapter } from '../main/database/adapter'
@@ -213,6 +214,113 @@ app.get('/api/sales/daily', async (req, res) => {
     mobile_sales: Number(summary?.mobile_sales) || 0,
     average_sale: totalSales > 0 ? totalRevenue / totalSales : 0
   })
+})
+
+// --- Sales Export (Excel) ---
+app.get('/api/sales/export', async (req, res) => {
+  const date = req.query.date as string
+  if (!date) return res.status(400).json({ error: 'date query parameter required' })
+
+  const sales = await db.query<any>(`
+    SELECT s.receipt_number, s.created_at, u.display_name as cashier,
+      s.payment_method, s.subtotal, s.vat_total, s.total,
+      s.amount_tendered, s.change_given, s.mobile_ref, s.status
+    FROM sales s
+    LEFT JOIN users u ON s.user_id = u.id
+    WHERE s.created_at::date = $1 AND s.status = 'completed'
+    ORDER BY s.created_at ASC
+  `, [date])
+
+  const items = await db.query<any>(`
+    SELECT s.receipt_number, si.product_name, si.barcode, si.quantity,
+      si.unit_price, si.vat_rate, si.vat_amount, si.line_total
+    FROM sale_items si
+    JOIN sales s ON si.sale_id = s.id
+    WHERE s.created_at::date = $1 AND s.status = 'completed'
+    ORDER BY s.created_at ASC, si.product_name ASC
+  `, [date])
+
+  const dateFormatted = dayjs(date).format('DD-MMM-YYYY')
+  const wb = new ExcelJS.Workbook()
+  wb.creator = 'Ariemmas POS'
+  wb.created = new Date()
+
+  // Sales Summary sheet
+  const ws = wb.addWorksheet('Sales Summary')
+  ws.mergeCells('A1:H1')
+  const titleCell = ws.getCell('A1')
+  titleCell.value = `Ariemmas — Daily Sales Report (${dateFormatted})`
+  titleCell.font = { size: 14, bold: true }
+  ws.addRow([])
+
+  const totalRevenue = sales.reduce((s: number, r: any) => s + Number(r.total), 0)
+  const totalVat = sales.reduce((s: number, r: any) => s + Number(r.vat_total), 0)
+  const cashSales = sales.filter((r: any) => r.payment_method === 'cash').reduce((s: number, r: any) => s + Number(r.total), 0)
+  const mobileSales = sales.filter((r: any) => r.payment_method === 'mobile_money').reduce((s: number, r: any) => s + Number(r.total), 0)
+
+  ws.addRow(['Total Transactions', sales.length])
+  ws.addRow(['Total Revenue', totalRevenue])
+  ws.addRow(['Total VAT', totalVat])
+  ws.addRow(['Cash Sales', cashSales])
+  ws.addRow(['Mobile Money Sales', mobileSales])
+  ws.addRow([])
+
+  const headerRow = ws.addRow(['Receipt #', 'Time', 'Cashier', 'Payment', 'Subtotal', 'VAT', 'Total', 'Status'])
+  headerRow.font = { bold: true }
+  headerRow.eachCell((cell) => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D9488' } }
+    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+    cell.border = { bottom: { style: 'thin' } }
+  })
+
+  for (const sale of sales) {
+    ws.addRow([
+      sale.receipt_number,
+      dayjs(sale.created_at).format('HH:mm:ss'),
+      sale.cashier || 'Unknown',
+      sale.payment_method === 'mobile_money' ? 'Mobile Money' : 'Cash',
+      Number(sale.subtotal), Number(sale.vat_total), Number(sale.total), sale.status
+    ])
+  }
+
+  for (const col of [5, 6, 7]) ws.getColumn(col).numFmt = '#,##0.00'
+  ws.getColumn(1).width = 18; ws.getColumn(2).width = 10; ws.getColumn(3).width = 18
+  ws.getColumn(4).width = 14; ws.getColumn(5).width = 12; ws.getColumn(6).width = 12
+  ws.getColumn(7).width = 12; ws.getColumn(8).width = 10
+
+  // Line Items sheet
+  const wsItems = wb.addWorksheet('Line Items')
+  wsItems.mergeCells('A1:G1')
+  const itemsTitle = wsItems.getCell('A1')
+  itemsTitle.value = `Ariemmas — Items Sold (${dateFormatted})`
+  itemsTitle.font = { size: 14, bold: true }
+  wsItems.addRow([])
+
+  const itemHeaderRow = wsItems.addRow(['Receipt #', 'Product', 'Barcode', 'Qty', 'Unit Price', 'VAT', 'Line Total'])
+  itemHeaderRow.font = { bold: true }
+  itemHeaderRow.eachCell((cell) => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D9488' } }
+    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+    cell.border = { bottom: { style: 'thin' } }
+  })
+
+  for (const item of items) {
+    wsItems.addRow([
+      item.receipt_number, item.product_name, item.barcode || '',
+      Number(item.quantity), Number(item.unit_price), Number(item.vat_amount), Number(item.line_total)
+    ])
+  }
+
+  wsItems.getColumn(1).width = 18; wsItems.getColumn(2).width = 24; wsItems.getColumn(3).width = 14
+  wsItems.getColumn(4).width = 8; wsItems.getColumn(5).width = 12; wsItems.getColumn(6).width = 12
+  wsItems.getColumn(7).width = 12
+  for (const col of [5, 6, 7]) wsItems.getColumn(col).numFmt = '#,##0.00'
+
+  const fileName = `Ariemmas_Sales_${date}.xlsx`
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
+  await wb.xlsx.write(res)
+  res.end()
 })
 
 // --- Shifts ---
