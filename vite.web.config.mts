@@ -10,6 +10,7 @@ export default defineConfig({
       '@': resolve(__dirname, 'src/renderer/src')
     }
   },
+  publicDir: resolve(__dirname, 'src/renderer/public'),
   plugins: [react(), tailwindcss()],
   build: {
     outDir: resolve(__dirname, 'dist-web'),

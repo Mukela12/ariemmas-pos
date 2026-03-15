@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useShiftStore } from '../stores/shiftStore'
 import { useScanner } from '../hooks/useScanner'
 import { formatZMW } from '../lib/currency'
+import { ThankYouScreen } from '../components/ThankYouScreen'
 import type { Product } from '../../../shared/types'
 
 export function POS() {
@@ -12,6 +13,7 @@ export function POS() {
   const [searchResults, setSearchResults] = useState<Product[]>([])
   const [showSearch, setShowSearch] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
+  const [showThankYou, setShowThankYou] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
 
   const { items, addItem, removeItem, updateQuantity, selectedIndex, selectItem, clearSale, getSubtotal, getVatTotal, getTotal, getItemCount } = useSaleStore()
@@ -242,6 +244,9 @@ export function POS() {
         ))}
       </div>
 
+      {/* Thank you screen */}
+      {showThankYou && <ThankYouScreen onClose={() => setShowThankYou(false)} />}
+
       {/* Payment modal */}
       {showPayment && (
         <PaymentModal
@@ -263,6 +268,7 @@ export function POS() {
             await window.api.openCashDrawer()
             clearSale()
             setShowPayment(false)
+            setShowThankYou(true)
           }}
         />
       )}

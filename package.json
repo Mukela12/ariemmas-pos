@@ -19,12 +19,13 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "build:server": "tsc -p tsconfig.server.json",
     "start:server": "node dist-server/server/index.js",
-    "build:web": "vite build src/renderer",
+    "build:web": "vite build src/renderer --config vite.web.config.mts",
     "dev:server": "npx tsx src/server/index.ts"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
+    "@rive-app/react-canvas": "^4.27.1",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^11.7.0",
     "cors": "^2.8.6",
