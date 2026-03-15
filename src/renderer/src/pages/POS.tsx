@@ -88,9 +88,9 @@ export function POS() {
   const itemCount = getItemCount()
 
   return (
-    <div className="relative flex h-full pb-10">
+    <div className="relative flex h-full">
       {/* Left — search + cart table */}
-      <div className="flex-1 flex flex-col p-4 gap-3 min-w-0">
+      <div className="flex-1 flex flex-col p-4 pb-14 gap-3 min-w-0">
         {/* Search */}
         <div className="relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA]" />
@@ -226,7 +226,7 @@ export function POS() {
       </div>
 
       {/* F-key bar */}
-      <div className="absolute bottom-0 left-0 right-0 h-10 bg-white border-t border-[#E4E4E7] flex items-center px-3 gap-1">
+      <div className="absolute bottom-0 left-0 right-[320px] h-10 bg-white border-t border-[#E4E4E7] flex items-center px-3 gap-1">
         {[
           { key: 'F1', label: 'New' },
           { key: 'F2', label: 'Search' },

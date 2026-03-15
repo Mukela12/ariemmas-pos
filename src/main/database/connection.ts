@@ -15,7 +15,7 @@ export async function setupDatabase(): Promise<DbAdapter> {
 
   if (engine === 'mssql') {
     const { MssqlAdapter } = await import('./mssqlAdapter')
-    db = new MssqlAdapter({
+    const adapter = new MssqlAdapter({
       server: process.env.MSSQL_SERVER || 'localhost',
       database: process.env.MSSQL_DATABASE || 'ariemmas_pos',
       user: process.env.MSSQL_USER || 'sa',
@@ -26,6 +26,9 @@ export async function setupDatabase(): Promise<DbAdapter> {
         trustServerCertificate: process.env.MSSQL_TRUST_CERT !== 'false'
       }
     })
+    // Auto-create the database if it doesn't exist
+    await adapter.ensureDatabase()
+    db = adapter
   } else if (engine === 'postgres') {
     const { PostgresAdapter } = await import('./postgresAdapter')
     db = new PostgresAdapter({

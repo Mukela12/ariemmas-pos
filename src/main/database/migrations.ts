@@ -1,6 +1,10 @@
 import type { DbAdapter } from './adapter'
 
-// Schema creation SQL per engine
+interface TableDef {
+  name: string
+  cols: string
+}
+
 function getCreateSchemaSQL(engine: DbAdapter['engine']): string {
   const NOW = engine === 'sqlite' ? "DEFAULT (datetime('now'))" :
               engine === 'mssql' ? 'DEFAULT GETDATE()' :
@@ -13,10 +17,8 @@ function getCreateSchemaSQL(engine: DbAdapter['engine']): string {
   const REAL_RATE = engine === 'mssql' ? 'DECIMAL(5,4)' : engine === 'postgres' ? 'NUMERIC(5,4)' : 'REAL'
   const INT = 'INTEGER'
 
-  const IF_NOT_EXISTS = engine === 'mssql' ? '' : 'IF NOT EXISTS'
-
-  return `
-    CREATE TABLE ${IF_NOT_EXISTS} users (
+  const tables: TableDef[] = [
+    { name: 'users', cols: `
       id ${TEXT_PK} PRIMARY KEY,
       username ${TEXT} NOT NULL UNIQUE,
       display_name ${TEXT} NOT NULL,
@@ -27,18 +29,16 @@ function getCreateSchemaSQL(engine: DbAdapter['engine']): string {
       locked_until ${TEXT},
       created_at ${TEXT} ${NOW},
       updated_at ${TEXT} ${NOW}
-    );
-
-    CREATE TABLE ${IF_NOT_EXISTS} categories (
+    `},
+    { name: 'categories', cols: `
       id ${TEXT_PK} PRIMARY KEY,
       name ${TEXT} NOT NULL UNIQUE,
       description ${TEXT},
       sort_order ${INT} NOT NULL DEFAULT 0,
       active ${INT} NOT NULL DEFAULT 1,
       created_at ${TEXT} ${NOW}
-    );
-
-    CREATE TABLE ${IF_NOT_EXISTS} products (
+    `},
+    { name: 'products', cols: `
       id ${TEXT_PK} PRIMARY KEY,
       barcode ${TEXT} UNIQUE,
       name ${TEXT} NOT NULL,
@@ -53,9 +53,8 @@ function getCreateSchemaSQL(engine: DbAdapter['engine']): string {
       created_at ${TEXT} ${NOW},
       updated_at ${TEXT} ${NOW},
       FOREIGN KEY (category_id) REFERENCES categories(id)
-    );
-
-    CREATE TABLE ${IF_NOT_EXISTS} sales (
+    `},
+    { name: 'sales', cols: `
       id ${TEXT_PK} PRIMARY KEY,
       receipt_number ${TEXT} NOT NULL UNIQUE,
       user_id ${TEXT_PK} NOT NULL,
@@ -74,9 +73,8 @@ function getCreateSchemaSQL(engine: DbAdapter['engine']): string {
       zra_fiscal_code ${TEXT},
       created_at ${TEXT} ${NOW},
       FOREIGN KEY (user_id) REFERENCES users(id)
-    );
-
-    CREATE TABLE ${IF_NOT_EXISTS} sale_items (
+    `},
+    { name: 'sale_items', cols: `
       id ${TEXT_PK} PRIMARY KEY,
       sale_id ${TEXT_PK} NOT NULL,
       product_id ${TEXT_PK} NOT NULL,
@@ -90,9 +88,8 @@ function getCreateSchemaSQL(engine: DbAdapter['engine']): string {
       line_total ${REAL} NOT NULL,
       FOREIGN KEY (sale_id) REFERENCES sales(id),
       FOREIGN KEY (product_id) REFERENCES products(id)
-    );
-
-    CREATE TABLE ${IF_NOT_EXISTS} shifts (
+    `},
+    { name: 'shifts', cols: `
       id ${TEXT_PK} PRIMARY KEY,
       user_id ${TEXT_PK} NOT NULL,
       opening_cash ${REAL} NOT NULL,
@@ -107,9 +104,8 @@ function getCreateSchemaSQL(engine: DbAdapter['engine']): string {
       opened_at ${TEXT} ${NOW},
       closed_at ${TEXT},
       FOREIGN KEY (user_id) REFERENCES users(id)
-    );
-
-    CREATE TABLE ${IF_NOT_EXISTS} audit_log (
+    `},
+    { name: 'audit_log', cols: `
       id ${TEXT_PK} PRIMARY KEY,
       user_id ${TEXT_PK} NOT NULL,
       action ${TEXT} NOT NULL,
@@ -118,31 +114,63 @@ function getCreateSchemaSQL(engine: DbAdapter['engine']): string {
       details ${LONGTEXT},
       created_at ${TEXT} ${NOW},
       FOREIGN KEY (user_id) REFERENCES users(id)
-    );
-
-    CREATE TABLE ${IF_NOT_EXISTS} draft_sales (
+    `},
+    { name: 'draft_sales', cols: `
       id ${TEXT_PK} PRIMARY KEY,
       user_id ${TEXT_PK} NOT NULL,
       items ${LONGTEXT} NOT NULL,
       created_at ${TEXT} ${NOW},
       updated_at ${TEXT} ${NOW}
-    );
-
-    CREATE TABLE ${IF_NOT_EXISTS} settings (
+    `},
+    { name: 'settings', cols: `
       key ${TEXT} PRIMARY KEY,
       value ${TEXT} NOT NULL,
       updated_at ${TEXT} ${NOW}
-    );
-  `
+    `}
+  ]
+
+  if (engine === 'mssql') {
+    return tables.map(t =>
+      `IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '${t.name}')\nCREATE TABLE ${t.name} (${t.cols});`
+    ).join('\n')
+  }
+
+  return tables.map(t =>
+    `CREATE TABLE IF NOT EXISTS ${t.name} (${t.cols});`
+  ).join('\n')
 }
 
 function getSeedDataSQL(engine: DbAdapter['engine']): string {
-  const INSERT_IGNORE = engine === 'sqlite' ? 'INSERT OR IGNORE INTO' :
-                        engine === 'postgres' ? 'INSERT INTO' :
-                        'INSERT INTO'
+  if (engine === 'mssql') {
+    // MSSQL: use MERGE or IF NOT EXISTS for idempotent inserts
+    const rows = [
+      { table: 'settings', keycol: '[key]', keyval: "'shop_name'", cols: '([key], value)', vals: "('shop_name', 'Ariemmas')" },
+      { table: 'settings', keycol: '[key]', keyval: "'shop_address'", cols: '([key], value)', vals: "('shop_address', 'Independence Ave Mongu')" },
+      { table: 'settings', keycol: '[key]', keyval: "'shop_phone'", cols: '([key], value)', vals: "('shop_phone', '097 4542233')" },
+      { table: 'settings', keycol: '[key]', keyval: "'shop_tpin'", cols: '([key], value)', vals: "('shop_tpin', '')" },
+      { table: 'settings', keycol: '[key]', keyval: "'vat_rate'", cols: '([key], value)', vals: "('vat_rate', '0.16')" },
+      { table: 'settings', keycol: '[key]', keyval: "'currency_symbol'", cols: '([key], value)', vals: "('currency_symbol', 'K')" },
+      { table: 'settings', keycol: '[key]', keyval: "'currency_code'", cols: '([key], value)', vals: "('currency_code', 'ZMW')" },
+      { table: 'settings', keycol: '[key]', keyval: "'receipt_header'", cols: '([key], value)', vals: "('receipt_header', 'Welcome to Ariemmas!')" },
+      { table: 'settings', keycol: '[key]', keyval: "'receipt_footer'", cols: '([key], value)', vals: "('receipt_footer', 'Thank you for shopping at Ariemmas!')" },
+      { table: 'settings', keycol: '[key]', keyval: "'auto_logout_minutes'", cols: '([key], value)', vals: "('auto_logout_minutes', '15')" },
+      { table: 'settings', keycol: '[key]', keyval: "'receipt_counter'", cols: '([key], value)', vals: "('receipt_counter', '0')" },
+      { table: 'settings', keycol: '[key]', keyval: "'receipt_date'", cols: '([key], value)', vals: "('receipt_date', '')" },
+      { table: 'categories', keycol: 'id', keyval: "'cat-groceries'", cols: '(id, name, sort_order)', vals: "('cat-groceries', 'Groceries', 1)" },
+      { table: 'categories', keycol: 'id', keyval: "'cat-meat'", cols: '(id, name, sort_order)', vals: "('cat-meat', 'Meat & Fish', 2)" },
+      { table: 'categories', keycol: 'id', keyval: "'cat-beverages'", cols: '(id, name, sort_order)', vals: "('cat-beverages', 'Beverages', 3)" },
+      { table: 'categories', keycol: 'id', keyval: "'cat-household'", cols: '(id, name, sort_order)', vals: "('cat-household', 'Household', 4)" },
+      { table: 'categories', keycol: 'id', keyval: "'cat-clothing'", cols: '(id, name, sort_order)', vals: "('cat-clothing', 'Clothing', 5)" },
+      { table: 'categories', keycol: 'id', keyval: "'cat-electronics'", cols: '(id, name, sort_order)', vals: "('cat-electronics', 'Electronics', 6)" },
+      { table: 'categories', keycol: 'id', keyval: "'cat-other'", cols: '(id, name, sort_order)', vals: "('cat-other', 'Other', 99)" },
+    ]
+    return rows.map(r =>
+      `IF NOT EXISTS (SELECT 1 FROM ${r.table} WHERE ${r.keycol} = ${r.keyval}) INSERT INTO ${r.table} ${r.cols} VALUES ${r.vals};`
+    ).join('\n')
+  }
 
-  const ON_CONFLICT = engine === 'postgres' ? ' ON CONFLICT DO NOTHING' :
-                      engine === 'mssql' ? '' : ''
+  const INSERT_IGNORE = engine === 'sqlite' ? 'INSERT OR IGNORE INTO' : 'INSERT INTO'
+  const ON_CONFLICT = engine === 'postgres' ? ' ON CONFLICT DO NOTHING' : ''
 
   return `
     ${INSERT_IGNORE} settings (key, value) VALUES ('shop_name', 'Ariemmas')${ON_CONFLICT};
@@ -184,7 +212,6 @@ export const MIGRATIONS: Migration[] = [
   }
 ]
 
-// Migration tracking table creation
 export function getMigrationTableSQL(engine: DbAdapter['engine']): string {
   if (engine === 'mssql') {
     return `
