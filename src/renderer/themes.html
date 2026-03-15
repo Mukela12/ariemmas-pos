@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ariemmas POS — Theme Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Inter:wght@400;500;600&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   THEME PREVIEW — Ariemmas POS
+   3 Professional Themes for Enterprise POS System
+   ============================================================ */
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-size: 14px; -webkit-font-smoothing: antialiased; }
+body { background: #0a0a0a; color: #fff; font-family: Inter, system-ui, sans-serif; overflow-x: hidden; }
+
+/* Theme Selector Header */
+.theme-selector {
+  position: sticky; top: 0; z-index: 100;
+  background: #0a0a0a; border-bottom: 1px solid #1a1a1a;
+  padding: 16px 32px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.theme-selector h1 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: #e5e5e5; }
+.theme-selector p { font-size: 12px; color: #666; margin-top: 2px; }
+.theme-tabs { display: flex; gap: 4px; background: #141414; padding: 3px; border-radius: 8px; border: 1px solid #1a1a1a; }
+.theme-tab {
+  padding: 8px 20px; border-radius: 6px; border: none; cursor: pointer;
+  font-size: 13px; font-weight: 500; font-family: Inter, system-ui, sans-serif;
+  color: #888; background: transparent; transition: all 0.15s;
+}
+.theme-tab:hover { color: #ccc; }
+.theme-tab.active { background: #222; color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+
+/* View Selector */
+.view-tabs { display: flex; gap: 4px; background: #141414; padding: 3px; border-radius: 8px; border: 1px solid #1a1a1a; }
+.view-tab {
+  padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 500; font-family: Inter, system-ui, sans-serif;
+  color: #888; background: transparent; transition: all 0.15s;
+}
+.view-tab:hover { color: #ccc; }
+.view-tab.active { background: #222; color: #fff; }
+
+/* Theme Container */
+.theme-container { display: none; }
+.theme-container.active { display: block; }
+
+/* Theme Info Bar */
+.theme-info {
+  padding: 20px 32px; display: flex; align-items: center; gap: 32px;
+  border-bottom: 1px solid #1a1a1a; background: #0d0d0d;
+}
+.theme-name { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+.theme-subtitle { font-size: 12px; color: #666; margin-top: 2px; }
+.theme-tokens { display: flex; gap: 16px; margin-left: auto; }
+.token-group { display: flex; flex-direction: column; gap: 4px; }
+.token-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.06em; }
+.token-swatches { display: flex; gap: 3px; }
+.swatch { width: 20px; height: 20px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.08); }
+.token-font { font-size: 11px; color: #888; }
+
+/* Preview Frame */
+.preview-frame {
+  margin: 24px 32px; border-radius: 10px; overflow: hidden;
+  border: 1px solid #1a1a1a; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+/* ============================================================
+   THEME 1: MERCURY — Clean & Precise
+   Inspired by: Square POS × Linear
+   Zinc neutrals + Teal accent
+   ============================================================ */
+.mercury { font-family: Inter, system-ui, sans-serif; }
+
+/* Login */
+.mercury .login-screen {
+  display: flex; height: 600px; background: #fafafa;
+}
+.mercury .login-left {
+  width: 44%; background: #18181b; display: flex; flex-direction: column;
+  justify-content: space-between; padding: 48px; position: relative; overflow: hidden;
+}
+.mercury .login-left::after {
+  content: ''; position: absolute; top: -80px; right: -80px;
+  width: 300px; height: 300px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(13,148,136,0.12) 0%, transparent 70%);
+}
+.mercury .login-brand { display: flex; align-items: center; gap: 10px; position: relative; z-index: 1; }
+.mercury .login-brand-icon {
+  width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600; color: #d4d4d8; border: 1px solid rgba(255,255,255,0.06);
+}
+.mercury .login-brand-text { font-size: 16px; font-weight: 600; color: #fafafa; letter-spacing: -0.01em; }
+.mercury .login-brand-sub { font-size: 11px; color: #71717a; margin-top: 1px; }
+.mercury .login-hero { position: relative; z-index: 1; }
+.mercury .login-hero h1 {
+  font-size: 32px; font-weight: 600; color: #fafafa; line-height: 1.15; letter-spacing: -0.02em;
+}
+.mercury .login-hero h1 em {
+  font-style: normal; color: #2dd4bf;
+}
+.mercury .login-hero p { font-size: 13px; color: #71717a; margin-top: 12px; line-height: 1.5; max-width: 280px; }
+.mercury .login-stats { display: flex; gap: 32px; margin-top: 32px; }
+.mercury .login-stat-val { font-size: 22px; font-weight: 600; color: #fafafa; font-variant-numeric: tabular-nums; }
+.mercury .login-stat-label { font-size: 11px; color: #52525b; margin-top: 2px; }
+.mercury .login-footer { font-size: 11px; color: #3f3f46; position: relative; z-index: 1; }
+.mercury .login-right {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 48px; background: #fff;
+}
+.mercury .login-form { width: 100%; max-width: 340px; }
+.mercury .login-form h2 { font-size: 22px; font-weight: 600; color: #18181b; letter-spacing: -0.02em; }
+.mercury .login-form .sub { font-size: 13px; color: #71717a; margin-top: 4px; }
+.mercury .login-form .fields { margin-top: 32px; display: flex; flex-direction: column; gap: 20px; }
+.mercury .field-label {
+  display: block; font-size: 11px; font-weight: 600; color: #71717a;
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;
+}
+.mercury .field-input {
+  width: 100%; height: 40px; padding: 0 12px; border: 1px solid #e4e4e7;
+  border-radius: 6px; font-size: 14px; color: #18181b; background: #fff;
+  outline: none; font-family: Inter, system-ui, sans-serif;
+}
+.mercury .field-input::placeholder { color: #a1a1aa; }
+.mercury .field-input:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,0.08); }
+.mercury .login-btn {
+  width: 100%; height: 40px; border: none; border-radius: 6px;
+  background: #18181b; color: #fff; font-size: 14px; font-weight: 500;
+  cursor: pointer; font-family: Inter, system-ui, sans-serif; margin-top: 4px;
+}
+.mercury .login-creds {
+  margin-top: 28px; padding: 14px; border-radius: 6px;
+  background: #f4f4f5; border: 1px solid #e4e4e7;
+}
+.mercury .login-creds-title { font-size: 10px; font-weight: 600; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.mercury .login-cred-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; }
+.mercury .login-cred-label { font-size: 12px; color: #71717a; }
+.mercury .login-cred-val { font-size: 12px; font-family: 'IBM Plex Mono', monospace; color: #3f3f46; background: #fff; padding: 2px 8px; border-radius: 4px; border: 1px solid #e4e4e7; }
+
+/* POS Screen */
+.mercury .pos-screen { height: 640px; display: flex; flex-direction: column; background: #f4f4f5; }
+.mercury .pos-topbar {
+  height: 48px; background: #fff; border-bottom: 1px solid #e4e4e7;
+  display: flex; align-items: center; padding: 0 16px; gap: 8px; flex-shrink: 0;
+}
+.mercury .pos-nav-item {
+  padding: 6px 14px; font-size: 13px; font-weight: 500; color: #71717a;
+  border-radius: 6px; cursor: pointer;
+}
+.mercury .pos-nav-item.active { background: #f4f4f5; color: #18181b; }
+.mercury .pos-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.mercury .pos-shift-badge {
+  display: flex; align-items: center; gap: 6px; padding: 4px 10px;
+  border-radius: 4px; font-size: 11px; color: #52525b; background: #f4f4f5;
+}
+.mercury .pos-shift-dot { width: 6px; height: 6px; border-radius: 50%; background: #0d9488; }
+.mercury .pos-user { font-size: 12px; color: #52525b; font-weight: 500; }
+.mercury .pos-clock { font-size: 12px; color: #a1a1aa; font-variant-numeric: tabular-nums; }
+.mercury .pos-body { flex: 1; display: flex; overflow: hidden; }
+
+/* Left: Products */
+.mercury .pos-left { flex: 1; display: flex; flex-direction: column; padding: 16px; gap: 12px; }
+.mercury .pos-search {
+  display: flex; align-items: center; gap: 8px;
+  background: #fff; border: 1px solid #e4e4e7; border-radius: 6px;
+  padding: 0 12px; height: 40px;
+}
+.mercury .pos-search-icon { color: #a1a1aa; font-size: 14px; }
+.mercury .pos-search input {
+  flex: 1; border: none; outline: none; font-size: 14px; color: #18181b;
+  font-family: Inter, system-ui, sans-serif; background: transparent;
+}
+.mercury .pos-search input::placeholder { color: #a1a1aa; }
+.mercury .pos-search-hint { font-size: 10px; color: #a1a1aa; background: #f4f4f5; padding: 2px 6px; border-radius: 3px; }
+
+/* Cart Table */
+.mercury .cart-table { flex: 1; background: #fff; border: 1px solid #e4e4e7; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
+.mercury .cart-header {
+  display: grid; grid-template-columns: 40px 1fr 100px 100px 100px 40px;
+  padding: 0 12px; height: 36px; align-items: center;
+  background: #fafafa; border-bottom: 1px solid #e4e4e7;
+  font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.mercury .cart-header .right { text-align: right; }
+.mercury .cart-rows { flex: 1; overflow-y: auto; }
+.mercury .cart-row {
+  display: grid; grid-template-columns: 40px 1fr 100px 100px 100px 40px;
+  padding: 0 12px; height: 44px; align-items: center;
+  border-bottom: 1px solid #f4f4f5; font-size: 13px;
+}
+.mercury .cart-row:hover { background: #fafafa; }
+.mercury .cart-row .num { color: #a1a1aa; font-size: 12px; }
+.mercury .cart-row .name { color: #18181b; font-weight: 500; }
+.mercury .cart-row .name small { display: block; font-size: 11px; color: #a1a1aa; font-weight: 400; }
+.mercury .cart-row .qty {
+  display: flex; align-items: center; gap: 8px;
+}
+.mercury .qty-btn {
+  width: 24px; height: 24px; border: 1px solid #e4e4e7; border-radius: 4px;
+  background: #fff; color: #52525b; font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.mercury .qty-val { font-weight: 500; font-variant-numeric: tabular-nums; min-width: 16px; text-align: center; }
+.mercury .cart-row .price { text-align: right; color: #52525b; font-variant-numeric: tabular-nums; }
+.mercury .cart-row .total { text-align: right; color: #18181b; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mercury .cart-row .remove { text-align: center; color: #a1a1aa; cursor: pointer; font-size: 16px; }
+.mercury .cart-row .remove:hover { color: #dc2626; }
+.mercury .cart-empty {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: #a1a1aa; gap: 8px;
+}
+.mercury .cart-empty-icon { font-size: 32px; opacity: 0.4; }
+.mercury .cart-empty-text { font-size: 13px; }
+
+/* Right: Order Summary */
+.mercury .pos-right {
+  width: 320px; background: #fff; border-left: 1px solid #e4e4e7;
+  display: flex; flex-direction: column; flex-shrink: 0;
+}
+.mercury .pos-right-header {
+  padding: 16px; border-bottom: 1px solid #f4f4f5;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.mercury .pos-right-title { font-size: 14px; font-weight: 600; color: #18181b; }
+.mercury .pos-right-count { font-size: 12px; color: #a1a1aa; }
+.mercury .pos-right-body { flex: 1; padding: 16px; display: flex; flex-direction: column; justify-content: flex-end; }
+.mercury .summary-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+.mercury .summary-row .label { color: #71717a; }
+.mercury .summary-row .value { color: #18181b; font-weight: 500; font-variant-numeric: tabular-nums; }
+.mercury .summary-divider { height: 1px; background: #e4e4e7; margin: 8px 0; }
+.mercury .summary-total { display: flex; justify-content: space-between; padding: 8px 0; }
+.mercury .summary-total .label { font-size: 14px; font-weight: 600; color: #18181b; }
+.mercury .summary-total .value { font-size: 24px; font-weight: 600; color: #18181b; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.mercury .charge-btn {
+  margin-top: 16px; width: 100%; height: 48px; border: none; border-radius: 6px;
+  background: #0d9488; color: #fff; font-size: 15px; font-weight: 600;
+  cursor: pointer; font-family: Inter, system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+.mercury .charge-btn:hover { background: #0f766e; }
+.mercury .clear-btn {
+  margin-top: 8px; width: 100%; height: 36px; border: 1px solid #e4e4e7;
+  border-radius: 6px; background: #fff; color: #71717a; font-size: 13px;
+  cursor: pointer; font-family: Inter, system-ui, sans-serif;
+}
+
+/* F-Key Bar */
+.mercury .pos-fbar {
+  height: 40px; background: #fff; border-top: 1px solid #e4e4e7;
+  display: flex; align-items: center; padding: 0 12px; gap: 2px; flex-shrink: 0;
+}
+.mercury .fkey {
+  display: flex; align-items: center; gap: 4px; padding: 4px 10px;
+  font-size: 11px; color: #71717a; border-radius: 4px;
+}
+.mercury .fkey:hover { background: #f4f4f5; color: #18181b; }
+.mercury .fkey kbd {
+  font-size: 10px; font-weight: 600; color: #a1a1aa; background: #f4f4f5;
+  padding: 1px 5px; border-radius: 3px; font-family: Inter, system-ui, sans-serif;
+  border: 1px solid #e4e4e7;
+}
+
+/* ============================================================
+   THEME 2: CARBON — Dark Enterprise
+   Inspired by: IBM Carbon × Bloomberg
+   Dark charcoal + Amber/Gold accent
+   ============================================================ */
+.carbon { font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+
+.carbon .login-screen { display: flex; height: 600px; background: #161616; }
+.carbon .login-left {
+  width: 44%; background: #0a0a0a; display: flex; flex-direction: column;
+  justify-content: space-between; padding: 48px; position: relative; overflow: hidden;
+}
+.carbon .login-left::after {
+  content: ''; position: absolute; bottom: -100px; left: -60px;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(217,119,6,0.06) 0%, transparent 60%);
+}
+.carbon .login-brand { display: flex; align-items: center; gap: 10px; position: relative; z-index: 1; }
+.carbon .login-brand-icon {
+  width: 36px; height: 36px; border-radius: 4px; background: #d97706;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600; color: #fff;
+}
+.carbon .login-brand-text { font-size: 16px; font-weight: 600; color: #f4f4f4; letter-spacing: -0.01em; }
+.carbon .login-brand-sub { font-size: 11px; color: #6f6f6f; margin-top: 1px; }
+.carbon .login-hero { position: relative; z-index: 1; }
+.carbon .login-hero h1 { font-size: 32px; font-weight: 600; color: #f4f4f4; line-height: 1.15; letter-spacing: -0.02em; }
+.carbon .login-hero h1 em { font-style: normal; color: #fbbf24; }
+.carbon .login-hero p { font-size: 13px; color: #6f6f6f; margin-top: 12px; line-height: 1.5; max-width: 280px; }
+.carbon .login-stats { display: flex; gap: 32px; margin-top: 32px; }
+.carbon .login-stat-val { font-size: 22px; font-weight: 600; color: #f4f4f4; font-variant-numeric: tabular-nums; }
+.carbon .login-stat-label { font-size: 11px; color: #525252; margin-top: 2px; }
+.carbon .login-footer { font-size: 11px; color: #393939; position: relative; z-index: 1; }
+.carbon .login-right {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 48px; background: #161616;
+}
+.carbon .login-form { width: 100%; max-width: 340px; }
+.carbon .login-form h2 { font-size: 22px; font-weight: 600; color: #f4f4f4; letter-spacing: -0.02em; }
+.carbon .login-form .sub { font-size: 13px; color: #6f6f6f; margin-top: 4px; }
+.carbon .login-form .fields { margin-top: 32px; display: flex; flex-direction: column; gap: 20px; }
+.carbon .field-label {
+  display: block; font-size: 11px; font-weight: 600; color: #6f6f6f;
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;
+}
+.carbon .field-input {
+  width: 100%; height: 40px; padding: 0 12px; border: none;
+  border-bottom: 2px solid #393939; border-radius: 0;
+  font-size: 14px; color: #f4f4f4; background: #262626;
+  outline: none; font-family: 'IBM Plex Sans', system-ui, sans-serif;
+}
+.carbon .field-input::placeholder { color: #525252; }
+.carbon .field-input:focus { border-bottom-color: #d97706; }
+.carbon .login-btn {
+  width: 100%; height: 40px; border: none; border-radius: 0;
+  background: #d97706; color: #fff; font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: 'IBM Plex Sans', system-ui, sans-serif; margin-top: 4px;
+  letter-spacing: 0.01em;
+}
+.carbon .login-creds {
+  margin-top: 28px; padding: 14px; border-radius: 0;
+  background: #262626; border: 1px solid #393939;
+}
+.carbon .login-creds-title { font-size: 10px; font-weight: 600; color: #525252; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.carbon .login-cred-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; }
+.carbon .login-cred-label { font-size: 12px; color: #6f6f6f; }
+.carbon .login-cred-val { font-size: 12px; font-family: 'IBM Plex Mono', monospace; color: #c6c6c6; background: #1a1a1a; padding: 2px 8px; border-radius: 2px; border: 1px solid #393939; }
+
+/* Carbon POS */
+.carbon .pos-screen { height: 640px; display: flex; flex-direction: column; background: #161616; }
+.carbon .pos-topbar {
+  height: 48px; background: #0a0a0a; border-bottom: 1px solid #262626;
+  display: flex; align-items: center; padding: 0 16px; gap: 8px; flex-shrink: 0;
+}
+.carbon .pos-nav-item {
+  padding: 6px 14px; font-size: 13px; font-weight: 500; color: #6f6f6f;
+  border-radius: 0; cursor: pointer; border-bottom: 2px solid transparent;
+  height: 100%; display: flex; align-items: center;
+}
+.carbon .pos-nav-item.active { color: #f4f4f4; border-bottom-color: #d97706; }
+.carbon .pos-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.carbon .pos-shift-badge {
+  display: flex; align-items: center; gap: 6px; padding: 4px 10px;
+  font-size: 11px; color: #c6c6c6; background: #262626;
+}
+.carbon .pos-shift-dot { width: 6px; height: 6px; border-radius: 50%; background: #42be65; }
+.carbon .pos-user { font-size: 12px; color: #c6c6c6; font-weight: 500; }
+.carbon .pos-clock { font-size: 12px; color: #6f6f6f; font-variant-numeric: tabular-nums; font-family: 'IBM Plex Mono', monospace; }
+.carbon .pos-body { flex: 1; display: flex; overflow: hidden; }
+.carbon .pos-left { flex: 1; display: flex; flex-direction: column; padding: 16px; gap: 12px; }
+.carbon .pos-search {
+  display: flex; align-items: center; gap: 8px;
+  background: #262626; border: none; border-bottom: 2px solid #393939;
+  padding: 0 12px; height: 40px;
+}
+.carbon .pos-search-icon { color: #525252; font-size: 14px; }
+.carbon .pos-search input {
+  flex: 1; border: none; outline: none; font-size: 14px; color: #f4f4f4;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif; background: transparent;
+}
+.carbon .pos-search input::placeholder { color: #525252; }
+.carbon .pos-search-hint { font-size: 10px; color: #525252; background: #1a1a1a; padding: 2px 6px; border-radius: 2px; border: 1px solid #393939; }
+
+.carbon .cart-table { flex: 1; background: #1a1a1a; border: 1px solid #262626; overflow: hidden; display: flex; flex-direction: column; }
+.carbon .cart-header {
+  display: grid; grid-template-columns: 40px 1fr 100px 100px 100px 40px;
+  padding: 0 12px; height: 36px; align-items: center;
+  background: #262626; border-bottom: 1px solid #393939;
+  font-size: 11px; font-weight: 600; color: #6f6f6f; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.carbon .cart-header .right { text-align: right; }
+.carbon .cart-rows { flex: 1; overflow-y: auto; }
+.carbon .cart-row {
+  display: grid; grid-template-columns: 40px 1fr 100px 100px 100px 40px;
+  padding: 0 12px; height: 44px; align-items: center;
+  border-bottom: 1px solid #262626; font-size: 13px;
+}
+.carbon .cart-row:hover { background: #262626; }
+.carbon .cart-row .num { color: #525252; font-size: 12px; font-family: 'IBM Plex Mono', monospace; }
+.carbon .cart-row .name { color: #f4f4f4; font-weight: 500; }
+.carbon .cart-row .name small { display: block; font-size: 11px; color: #525252; font-weight: 400; }
+.carbon .cart-row .qty { display: flex; align-items: center; gap: 8px; }
+.carbon .qty-btn {
+  width: 24px; height: 24px; border: 1px solid #393939; border-radius: 2px;
+  background: #262626; color: #c6c6c6; font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.carbon .qty-val { font-weight: 500; font-variant-numeric: tabular-nums; min-width: 16px; text-align: center; color: #f4f4f4; }
+.carbon .cart-row .price { text-align: right; color: #6f6f6f; font-variant-numeric: tabular-nums; }
+.carbon .cart-row .total { text-align: right; color: #f4f4f4; font-weight: 600; font-variant-numeric: tabular-nums; }
+.carbon .cart-row .remove { text-align: center; color: #525252; cursor: pointer; font-size: 16px; }
+.carbon .cart-row .remove:hover { color: #da1e28; }
+
+.carbon .pos-right {
+  width: 320px; background: #1a1a1a; border-left: 1px solid #262626;
+  display: flex; flex-direction: column; flex-shrink: 0;
+}
+.carbon .pos-right-header {
+  padding: 16px; border-bottom: 1px solid #262626;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.carbon .pos-right-title { font-size: 14px; font-weight: 600; color: #f4f4f4; }
+.carbon .pos-right-count { font-size: 12px; color: #525252; }
+.carbon .pos-right-body { flex: 1; padding: 16px; display: flex; flex-direction: column; justify-content: flex-end; }
+.carbon .summary-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+.carbon .summary-row .label { color: #6f6f6f; }
+.carbon .summary-row .value { color: #f4f4f4; font-weight: 500; font-variant-numeric: tabular-nums; }
+.carbon .summary-divider { height: 1px; background: #262626; margin: 8px 0; }
+.carbon .summary-total { display: flex; justify-content: space-between; padding: 8px 0; }
+.carbon .summary-total .label { font-size: 14px; font-weight: 600; color: #f4f4f4; }
+.carbon .summary-total .value { font-size: 24px; font-weight: 600; color: #fbbf24; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.carbon .charge-btn {
+  margin-top: 16px; width: 100%; height: 48px; border: none; border-radius: 0;
+  background: #d97706; color: #fff; font-size: 15px; font-weight: 600;
+  cursor: pointer; font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  letter-spacing: 0.01em;
+}
+.carbon .charge-btn:hover { background: #b45309; }
+.carbon .clear-btn {
+  margin-top: 8px; width: 100%; height: 36px; border: 1px solid #393939;
+  border-radius: 0; background: transparent; color: #6f6f6f; font-size: 13px;
+  cursor: pointer; font-family: 'IBM Plex Sans', system-ui, sans-serif;
+}
+
+.carbon .pos-fbar {
+  height: 40px; background: #0a0a0a; border-top: 1px solid #262626;
+  display: flex; align-items: center; padding: 0 12px; gap: 2px; flex-shrink: 0;
+}
+.carbon .fkey {
+  display: flex; align-items: center; gap: 4px; padding: 4px 10px;
+  font-size: 11px; color: #6f6f6f;
+}
+.carbon .fkey:hover { color: #c6c6c6; }
+.carbon .fkey kbd {
+  font-size: 10px; font-weight: 600; color: #525252; background: #262626;
+  padding: 1px 5px; border-radius: 2px; font-family: 'IBM Plex Mono', monospace;
+  border: 1px solid #393939;
+}
+
+/* ============================================================
+   THEME 3: EVERGREEN — Warm & Grounded
+   Inspired by: Notion × QuickBooks
+   Warm off-white + Forest Green accent
+   ============================================================ */
+.evergreen { font-family: Inter, system-ui, sans-serif; }
+
+.evergreen .login-screen { display: flex; height: 600px; background: #faf9f7; }
+.evergreen .login-left {
+  width: 44%; background: #1a2e1a; display: flex; flex-direction: column;
+  justify-content: space-between; padding: 48px; position: relative; overflow: hidden;
+}
+.evergreen .login-left::after {
+  content: ''; position: absolute; top: -60px; right: -100px;
+  width: 350px; height: 350px;
+  background: radial-gradient(circle, rgba(34,197,94,0.08) 0%, transparent 60%);
+}
+.evergreen .login-brand { display: flex; align-items: center; gap: 10px; position: relative; z-index: 1; }
+.evergreen .login-brand-icon {
+  width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600; color: #d9f0d9; border: 1px solid rgba(255,255,255,0.08);
+}
+.evergreen .login-brand-text { font-size: 16px; font-weight: 600; color: #f0f9f0; letter-spacing: -0.01em; }
+.evergreen .login-brand-sub { font-size: 11px; color: #5a7a5a; margin-top: 1px; }
+.evergreen .login-hero { position: relative; z-index: 1; }
+.evergreen .login-hero h1 { font-size: 32px; font-weight: 600; color: #f0f9f0; line-height: 1.15; letter-spacing: -0.02em; }
+.evergreen .login-hero h1 em { font-style: normal; color: #4ade80; }
+.evergreen .login-hero p { font-size: 13px; color: #5a7a5a; margin-top: 12px; line-height: 1.5; max-width: 280px; }
+.evergreen .login-stats { display: flex; gap: 32px; margin-top: 32px; }
+.evergreen .login-stat-val { font-size: 22px; font-weight: 600; color: #f0f9f0; font-variant-numeric: tabular-nums; }
+.evergreen .login-stat-label { font-size: 11px; color: #3a5a3a; margin-top: 2px; }
+.evergreen .login-footer { font-size: 11px; color: #3a5a3a; position: relative; z-index: 1; }
+.evergreen .login-right {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 48px; background: #faf9f7;
+}
+.evergreen .login-form { width: 100%; max-width: 340px; }
+.evergreen .login-form h2 { font-size: 22px; font-weight: 600; color: #1a1a1a; letter-spacing: -0.02em; }
+.evergreen .login-form .sub { font-size: 13px; color: #888; margin-top: 4px; }
+.evergreen .login-form .fields { margin-top: 32px; display: flex; flex-direction: column; gap: 20px; }
+.evergreen .field-label {
+  display: block; font-size: 11px; font-weight: 600; color: #888;
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;
+}
+.evergreen .field-input {
+  width: 100%; height: 42px; padding: 0 14px; border: 1px solid #e0ddd8;
+  border-radius: 8px; font-size: 14px; color: #1a1a1a; background: #fff;
+  outline: none; font-family: Inter, system-ui, sans-serif;
+}
+.evergreen .field-input::placeholder { color: #bbb; }
+.evergreen .field-input:focus { border-color: #15803d; box-shadow: 0 0 0 3px rgba(21,128,61,0.08); }
+.evergreen .login-btn {
+  width: 100%; height: 42px; border: none; border-radius: 8px;
+  background: #15803d; color: #fff; font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: Inter, system-ui, sans-serif; margin-top: 4px;
+}
+.evergreen .login-creds {
+  margin-top: 28px; padding: 14px; border-radius: 8px;
+  background: #f5f3f0; border: 1px solid #e8e4df;
+}
+.evergreen .login-creds-title { font-size: 10px; font-weight: 600; color: #bbb; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.evergreen .login-cred-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; }
+.evergreen .login-cred-label { font-size: 12px; color: #888; }
+.evergreen .login-cred-val { font-size: 12px; font-family: 'IBM Plex Mono', monospace; color: #555; background: #fff; padding: 2px 8px; border-radius: 6px; border: 1px solid #e0ddd8; }
+
+/* Evergreen POS */
+.evergreen .pos-screen { height: 640px; display: flex; flex-direction: column; background: #f5f3f0; }
+.evergreen .pos-topbar {
+  height: 48px; background: #faf9f7; border-bottom: 1px solid #e8e4df;
+  display: flex; align-items: center; padding: 0 16px; gap: 8px; flex-shrink: 0;
+}
+.evergreen .pos-nav-item {
+  padding: 6px 14px; font-size: 13px; font-weight: 500; color: #888;
+  border-radius: 8px; cursor: pointer;
+}
+.evergreen .pos-nav-item.active { background: #fff; color: #1a1a1a; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+.evergreen .pos-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.evergreen .pos-shift-badge {
+  display: flex; align-items: center; gap: 6px; padding: 4px 10px;
+  border-radius: 6px; font-size: 11px; color: #666; background: #f0ede8;
+}
+.evergreen .pos-shift-dot { width: 6px; height: 6px; border-radius: 50%; background: #15803d; }
+.evergreen .pos-user { font-size: 12px; color: #666; font-weight: 500; }
+.evergreen .pos-clock { font-size: 12px; color: #aaa; font-variant-numeric: tabular-nums; }
+.evergreen .pos-body { flex: 1; display: flex; overflow: hidden; }
+.evergreen .pos-left { flex: 1; display: flex; flex-direction: column; padding: 16px; gap: 12px; }
+.evergreen .pos-search {
+  display: flex; align-items: center; gap: 8px;
+  background: #fff; border: 1px solid #e0ddd8; border-radius: 8px;
+  padding: 0 14px; height: 42px;
+}
+.evergreen .pos-search-icon { color: #bbb; font-size: 14px; }
+.evergreen .pos-search input {
+  flex: 1; border: none; outline: none; font-size: 14px; color: #1a1a1a;
+  font-family: Inter, system-ui, sans-serif; background: transparent;
+}
+.evergreen .pos-search input::placeholder { color: #bbb; }
+.evergreen .pos-search-hint { font-size: 10px; color: #aaa; background: #f5f3f0; padding: 2px 6px; border-radius: 4px; }
+
+.evergreen .cart-table { flex: 1; background: #fff; border: 1px solid #e0ddd8; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+.evergreen .cart-header {
+  display: grid; grid-template-columns: 40px 1fr 100px 100px 100px 40px;
+  padding: 0 14px; height: 36px; align-items: center;
+  background: #faf9f7; border-bottom: 1px solid #e8e4df;
+  font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.evergreen .cart-header .right { text-align: right; }
+.evergreen .cart-rows { flex: 1; overflow-y: auto; }
+.evergreen .cart-row {
+  display: grid; grid-template-columns: 40px 1fr 100px 100px 100px 40px;
+  padding: 0 14px; height: 46px; align-items: center;
+  border-bottom: 1px solid #f0ede8; font-size: 13px;
+}
+.evergreen .cart-row:hover { background: #faf9f7; }
+.evergreen .cart-row .num { color: #bbb; font-size: 12px; }
+.evergreen .cart-row .name { color: #1a1a1a; font-weight: 500; }
+.evergreen .cart-row .name small { display: block; font-size: 11px; color: #aaa; font-weight: 400; }
+.evergreen .cart-row .qty { display: flex; align-items: center; gap: 8px; }
+.evergreen .qty-btn {
+  width: 26px; height: 26px; border: 1px solid #e0ddd8; border-radius: 6px;
+  background: #faf9f7; color: #666; font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.evergreen .qty-val { font-weight: 500; font-variant-numeric: tabular-nums; min-width: 16px; text-align: center; color: #1a1a1a; }
+.evergreen .cart-row .price { text-align: right; color: #888; font-variant-numeric: tabular-nums; }
+.evergreen .cart-row .total { text-align: right; color: #1a1a1a; font-weight: 600; font-variant-numeric: tabular-nums; }
+.evergreen .cart-row .remove { text-align: center; color: #bbb; cursor: pointer; font-size: 16px; }
+.evergreen .cart-row .remove:hover { color: #dc2626; }
+
+.evergreen .pos-right {
+  width: 320px; background: #fff; border-left: 1px solid #e0ddd8;
+  display: flex; flex-direction: column; flex-shrink: 0;
+}
+.evergreen .pos-right-header {
+  padding: 16px; border-bottom: 1px solid #f0ede8;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.evergreen .pos-right-title { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+.evergreen .pos-right-count { font-size: 12px; color: #bbb; }
+.evergreen .pos-right-body { flex: 1; padding: 16px; display: flex; flex-direction: column; justify-content: flex-end; }
+.evergreen .summary-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+.evergreen .summary-row .label { color: #888; }
+.evergreen .summary-row .value { color: #1a1a1a; font-weight: 500; font-variant-numeric: tabular-nums; }
+.evergreen .summary-divider { height: 1px; background: #e8e4df; margin: 8px 0; }
+.evergreen .summary-total { display: flex; justify-content: space-between; padding: 8px 0; }
+.evergreen .summary-total .label { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+.evergreen .summary-total .value { font-size: 24px; font-weight: 600; color: #15803d; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.evergreen .charge-btn {
+  margin-top: 16px; width: 100%; height: 48px; border: none; border-radius: 8px;
+  background: #15803d; color: #fff; font-size: 15px; font-weight: 600;
+  cursor: pointer; font-family: Inter, system-ui, sans-serif;
+}
+.evergreen .charge-btn:hover { background: #166534; }
+.evergreen .clear-btn {
+  margin-top: 8px; width: 100%; height: 36px; border: 1px solid #e0ddd8;
+  border-radius: 8px; background: #fff; color: #888; font-size: 13px;
+  cursor: pointer; font-family: Inter, system-ui, sans-serif;
+}
+
+.evergreen .pos-fbar {
+  height: 40px; background: #faf9f7; border-top: 1px solid #e8e4df;
+  display: flex; align-items: center; padding: 0 12px; gap: 2px; flex-shrink: 0;
+}
+.evergreen .fkey {
+  display: flex; align-items: center; gap: 4px; padding: 4px 10px;
+  font-size: 11px; color: #888; border-radius: 6px;
+}
+.evergreen .fkey:hover { background: #f0ede8; color: #1a1a1a; }
+.evergreen .fkey kbd {
+  font-size: 10px; font-weight: 600; color: #aaa; background: #f0ede8;
+  padding: 1px 5px; border-radius: 4px; font-family: Inter, system-ui, sans-serif;
+  border: 1px solid #e0ddd8;
+}
+</style>
+</head>
+<body>
+
+<!-- Theme Selector -->
+<div class="theme-selector">
+  <div>
+    <h1>Ariemmas POS — Theme Selection</h1>
+    <p>Choose a design system for the POS application</p>
+  </div>
+  <div style="display:flex;gap:16px;align-items:center">
+    <div class="view-tabs">
+      <button class="view-tab active" onclick="switchView('login')">Login</button>
+      <button class="view-tab" onclick="switchView('pos')">POS Screen</button>
+    </div>
+    <div class="theme-tabs">
+      <button class="theme-tab active" onclick="switchTheme('mercury')">Mercury</button>
+      <button class="theme-tab" onclick="switchTheme('carbon')">Carbon</button>
+      <button class="theme-tab" onclick="switchTheme('evergreen')">Evergreen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MERCURY ==================== -->
+<div class="theme-container active" id="theme-mercury">
+  <div class="theme-info">
+    <div>
+      <div class="theme-name">Mercury</div>
+      <div class="theme-subtitle">Clean &amp; Precise — Square POS meets Linear</div>
+    </div>
+    <div class="theme-tokens">
+      <div class="token-group">
+        <div class="token-label">Neutrals</div>
+        <div class="token-swatches">
+          <div class="swatch" style="background:#fafafa"></div>
+          <div class="swatch" style="background:#f4f4f5"></div>
+          <div class="swatch" style="background:#e4e4e7"></div>
+          <div class="swatch" style="background:#71717a"></div>
+          <div class="swatch" style="background:#18181b"></div>
+        </div>
+      </div>
+      <div class="token-group">
+        <div class="token-label">Accent</div>
+        <div class="token-swatches">
+          <div class="swatch" style="background:#f0fdfa"></div>
+          <div class="swatch" style="background:#0d9488"></div>
+          <div class="swatch" style="background:#0f766e"></div>
+        </div>
+      </div>
+      <div class="token-group">
+        <div class="token-label">Font</div>
+        <div class="token-font">Inter · 400/500/600</div>
+      </div>
+      <div class="token-group">
+        <div class="token-label">Radius</div>
+        <div class="token-font">4px input · 6px card</div>
+      </div>
+    </div>
+  </div>
+  <div class="preview-frame">
+    <div class="mercury">
+      <!-- Login -->
+      <div class="login-screen" data-view="login">
+        <div class="login-left">
+          <div class="login-brand"><div class="login-brand-icon">A</div><div><div class="login-brand-text">Ariemmas</div><div class="login-brand-sub">Point of Sale</div></div></div>
+          <div class="login-hero">
+            <h1>Manage your<br>shop with<br><em>precision.</em></h1>
+            <p>Fast checkout, accurate inventory, real-time tracking — built for Zambian retail.</p>
+            <div class="login-stats">
+              <div><div class="login-stat-val">25+</div><div class="login-stat-label">Products</div></div>
+              <div><div class="login-stat-val">&lt;2s</div><div class="login-stat-label">Receipts</div></div>
+              <div><div class="login-stat-val">100%</div><div class="login-stat-label">Offline</div></div>
+            </div>
+          </div>
+          <div class="login-footer">Independence Ave, Mongu · 097 4542233</div>
+        </div>
+        <div class="login-right">
+          <div class="login-form">
+            <h2>Welcome back</h2>
+            <div class="sub">Sign in to start your shift</div>
+            <div class="fields">
+              <div><label class="field-label">Username</label><input class="field-input" placeholder="Enter username" readonly></div>
+              <div><label class="field-label">PIN</label><input class="field-input" type="password" placeholder="Enter PIN" readonly></div>
+              <button class="login-btn">Sign In</button>
+            </div>
+            <div class="login-creds">
+              <div class="login-creds-title">Demo Credentials</div>
+              <div class="login-cred-row"><span class="login-cred-label">Admin</span><span class="login-cred-val">admin / 1234</span></div>
+              <div class="login-cred-row"><span class="login-cred-label">Cashier</span><span class="login-cred-val">mary / 5678</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- POS -->
+      <div class="pos-screen" data-view="pos" style="display:none">
+        <div class="pos-topbar">
+          <div class="pos-nav-item active">Sale</div>
+          <div class="pos-nav-item">Products</div>
+          <div class="pos-nav-item">Reports</div>
+          <div class="pos-nav-item">Settings</div>
+          <div class="pos-topbar-right">
+            <div class="pos-shift-badge"><div class="pos-shift-dot"></div>Shift Open</div>
+            <div class="pos-clock">14:32:08</div>
+            <div class="pos-user">Admin</div>
+          </div>
+        </div>
+        <div class="pos-body">
+          <div class="pos-left">
+            <div class="pos-search"><span class="pos-search-icon">&#x1F50D;</span><input placeholder="Search products or scan barcode..." readonly><span class="pos-search-hint">F2</span></div>
+            <div class="cart-table">
+              <div class="cart-header"><div>#</div><div>Item</div><div>Qty</div><div class="right">Price</div><div class="right">Total</div><div></div></div>
+              <div class="cart-rows">
+                <div class="cart-row"><div class="num">1</div><div class="name">Mealie Meal 25kg<small>6901234567001</small></div><div class="qty"><button class="qty-btn">-</button><span class="qty-val">2</span><button class="qty-btn">+</button></div><div class="price">K 189.00</div><div class="total">K 378.00</div><div class="remove">×</div></div>
+                <div class="cart-row"><div class="num">2</div><div class="name">Cooking Oil 2L<small>6901234567002</small></div><div class="qty"><button class="qty-btn">-</button><span class="qty-val">1</span><button class="qty-btn">+</button></div><div class="price">K 89.50</div><div class="total">K 89.50</div><div class="remove">×</div></div>
+                <div class="cart-row"><div class="num">3</div><div class="name">Mosi Lager 330ml<small>6901234567005</small></div><div class="qty"><button class="qty-btn">-</button><span class="qty-val">6</span><button class="qty-btn">+</button></div><div class="price">K 18.00</div><div class="total">K 108.00</div><div class="remove">×</div></div>
+                <div class="cart-row"><div class="num">4</div><div class="name">White Bread<small>6901234567010</small></div><div class="qty"><button class="qty-btn">-</button><span class="qty-val">1</span><button class="qty-btn">+</button></div><div class="price">K 32.00</div><div class="total">K 32.00</div><div class="remove">×</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="pos-right">
+            <div class="pos-right-header"><div class="pos-right-title">Order Summary</div><div class="pos-right-count">4 items</div></div>
+            <div class="pos-right-body">
+              <div class="summary-row"><span class="label">Subtotal</span><span class="value">K 607.50</span></div>
+              <div class="summary-row"><span class="label">VAT (16%)</span><span class="value">K 83.79</span></div>
+              <div class="summary-divider"></div>
+              <div class="summary-total"><span class="label">Total</span><span class="value">K 607.50</span></div>
+              <button class="charge-btn">Charge K 607.50</button>
+              <button class="clear-btn">Clear Sale</button>
+            </div>
+          </div>
+        </div>
+        <div class="pos-fbar">
+          <div class="fkey"><kbd>F1</kbd> New</div>
+          <div class="fkey"><kbd>F2</kbd> Search</div>
+          <div class="fkey"><kbd>F3</kbd> Discount</div>
+          <div class="fkey"><kbd>F4</kbd> Customer</div>
+          <div class="fkey"><kbd>F5</kbd> Drawer</div>
+          <div class="fkey"><kbd>F8</kbd> Remove</div>
+          <div class="fkey"><kbd>F12</kbd> Pay</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== CARBON ==================== -->
+<div class="theme-container" id="theme-carbon">
+  <div class="theme-info">
+    <div>
+      <div class="theme-name">Carbon</div>
+      <div class="theme-subtitle">Dark Enterprise — IBM Carbon meets Bloomberg Terminal</div>
+    </div>
+    <div class="theme-tokens">
+      <div class="token-group">
+        <div class="token-label">Neutrals</div>
+        <div class="token-swatches">
+          <div class="swatch" style="background:#0a0a0a"></div>
+          <div class="swatch" style="background:#161616"></div>
+          <div class="swatch" style="background:#262626"></div>
+          <div class="swatch" style="background:#6f6f6f"></div>
+          <div class="swatch" style="background:#f4f4f4"></div>
+        </div>
+      </div>
+      <div class="token-group">
+        <div class="token-label">Accent</div>
+        <div class="token-swatches">
+          <div class="swatch" style="background:#fbbf24"></div>
+          <div class="swatch" style="background:#d97706"></div>
+          <div class="swatch" style="background:#b45309"></div>
+        </div>
+      </div>
+      <div class="token-group">
+        <div class="token-label">Font</div>
+        <div class="token-font">IBM Plex Sans · 400/600</div>
+      </div>
+      <div class="token-group">
+        <div class="token-label">Radius</div>
+        <div class="token-font">0px — sharp edges</div>
+      </div>
+    </div>
+  </div>
+  <div class="preview-frame">
+    <div class="carbon">
+      <div class="login-screen" data-view="login">
+        <div class="login-left">
+          <div class="login-brand"><div class="login-brand-icon">A</div><div><div class="login-brand-text">Ariemmas</div><div class="login-brand-sub">Point of Sale</div></div></div>
+          <div class="login-hero">
+            <h1>Manage your<br>shop with<br><em>efficiency.</em></h1>
+            <p>Fast checkout, accurate inventory, real-time tracking — built for Zambian retail.</p>
+            <div class="login-stats">
+              <div><div class="login-stat-val">25+</div><div class="login-stat-label">Products</div></div>
+              <div><div class="login-stat-val">&lt;2s</div><div class="login-stat-label">Receipts</div></div>
+              <div><div class="login-stat-val">100%</div><div class="login-stat-label">Offline</div></div>
+            </div>
+          </div>
+          <div class="login-footer">Independence Ave, Mongu · 097 4542233</div>
+        </div>
+        <div class="login-right">
+          <div class="login-form">
+            <h2>Welcome back</h2>
+            <div class="sub">Sign in to start your shift</div>
+            <div class="fields">
+              <div><label class="field-label">Username</label><input class="field-input" placeholder="Enter username" readonly></div>
+              <div><label class="field-label">PIN</label><input class="field-input" type="password" placeholder="Enter PIN" readonly></div>
+              <button class="login-btn">Sign In</button>
+            </div>
+            <div class="login-creds">
+              <div class="login-creds-title">Demo Credentials</div>
+              <div class="login-cred-row"><span class="login-cred-label">Admin</span><span class="login-cred-val">admin / 1234</span></div>
+              <div class="login-cred-row"><span class="login-cred-label">Cashier</span><span class="login-cred-val">mary / 5678</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pos-screen" data-view="pos" style="display:none">
+        <div class="pos-topbar">
+          <div class="pos-nav-item active">Sale</div>
+          <div class="pos-nav-item">Products</div>
+          <div class="pos-nav-item">Reports</div>
+          <div class="pos-nav-item">Settings</div>
+          <div class="pos-topbar-right">
+            <div class="pos-shift-badge"><div class="pos-shift-dot"></div>Shift Open</div>
+            <div class="pos-clock">14:32:08</div>
+            <div class="pos-user">Admin</div>
+          </div>
+        </div>
+        <div class="pos-body">
+          <div class="pos-left">
+            <div class="pos-search"><span class="pos-search-icon">&#x1F50D;</span><input placeholder="Search products or scan barcode..." readonly><span class="pos-search-hint">F2</span></div>
+            <div class="cart-table">
+              <div class="cart-header"><div>#</div><div>Item</div><div>Qty</div><div class="right">Price</div><div class="right">Total</div><div></div></div>
+              <div class="cart-rows">
+                <div class="cart-row"><div class="num">01</div><div class="name">Mealie Meal 25kg<small>6901234567001</small></div><div class="qty"><button class="qty-btn">-</button><span class="qty-val">2</span><button class="qty-btn">+</button></div><div class="price">K 189.00</div><div class="total">K 378.00</div><div class="remove">×</div></div>
+                <div class="cart-row"><div class="num">02</div><div class="name">Cooking Oil 2L<small>6901234567002</small></div><div class="qty"><button class="qty-btn">-</button><span class="qty-val">1</span><button class="qty-btn">+</button></div><div class="price">K 89.50</div><div class="total">K 89.50</div><div class="remove">×</div></div>
+                <div class="cart-row"><div class="num">03</div><div class="name">Mosi Lager 330ml<small>6901234567005</small></div><div class="qty"><button class="qty-btn">-</button><span class="qty-val">6</span><button class="qty-btn">+</button></div><div class="price">K 18.00</div><div class="total">K 108.00</div><div class="remove">×</div></div>
+                <div class="cart-row"><div class="num">04</div><div class="name">White Bread<small>6901234567010</small></div><div class="qty"><button class="qty-btn">-</button><span class="qty-val">1</span><button class="qty-btn">+</button></div><div class="price">K 32.00</div><div class="total">K 32.00</div><div class="remove">×</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="pos-right">
+            <div class="pos-right-header"><div class="pos-right-title">Order Summary</div><div class="pos-right-count">4 items</div></div>
+            <div class="pos-right-body">
+              <div class="summary-row"><span class="label">Subtotal</span><span class="value">K 607.50</span></div>
+              <div class="summary-row"><span class="label">VAT (16%)</span><span class="value">K 83.79</span></div>
+              <div class="summary-divider"></div>
+              <div class="summary-total"><span class="label">Total</span><span class="value">K 607.50</span></div>
+              <button class="charge-btn">Charge K 607.50</button>
+              <button class="clear-btn">Clear Sale</button>
+            </div>
+          </div>
+        </div>
+        <div class="pos-fbar">
+          <div class="fkey"><kbd>F1</kbd> New</div>
+          <div class="fkey"><kbd>F2</kbd> Search</div>
+          <div class="fkey"><kbd>F3</kbd> Discount</div>
+          <div class="fkey"><kbd>F4</kbd> Customer</div>
+          <div class="fkey"><kbd>F5</kbd> Drawer</div>
+          <div class="fkey"><kbd>F8</kbd> Remove</div>
+          <div class="fkey"><kbd>F12</kbd> Pay</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== EVERGREEN ==================== -->
+<div class="theme-container" id="theme-evergreen">
+  <div class="theme-info">
+    <div>
+      <div class="theme-name">Evergreen</div>
+      <div class="theme-subtitle">Warm &amp; Grounded — Notion meets QuickBooks</div>
+    </div>
+    <div class="theme-tokens">
+      <div class="token-group">
+        <div class="token-label">Neutrals</div>
+        <div class="token-swatches">
+          <div class="swatch" style="background:#faf9f7"></div>
+          <div class="swatch" style="background:#f5f3f0"></div>
+          <div class="swatch" style="background:#e0ddd8"></div>
+          <div class="swatch" style="background:#888"></div>
+          <div class="swatch" style="background:#1a1a1a"></div>
+        </div>
+      </div>
+      <div class="token-group">
+        <div class="token-label">Accent</div>
+        <div class="token-swatches">
+          <div class="swatch" style="background:#f0fdf4"></div>
+          <div class="swatch" style="background:#15803d"></div>
+          <div class="swatch" style="background:#166534"></div>
+        </div>
+      </div>
+      <div class="token-group">
+        <div class="token-label">Font</div>
+        <div class="token-font">Inter · 400/500/600</div>
+      </div>
+      <div class="token-group">
+        <div class="token-label">Radius</div>
+        <div class="token-font">6px input · 8px card</div>
+      </div>
+    </div>
+  </div>
+  <div class="preview-frame">
+    <div class="evergreen">
+      <div class="login-screen" data-view="login">
+        <div class="login-left">
+          <div class="login-brand"><div class="login-brand-icon">A</div><div><div class="login-brand-text">Ariemmas</div><div class="login-brand-sub">Point of Sale</div></div></div>
+          <div class="login-hero">
+            <h1>Manage your<br>shop with<br><em>clarity.</em></h1>
+            <p>Fast checkout, accurate inventory, real-time tracking — built for Zambian retail.</p>
+            <div class="login-stats">
+              <div><div class="login-stat-val">25+</div><div class="login-stat-label">Products</div></div>
+              <div><div class="login-stat-val">&lt;2s</div><div class="login-stat-label">Receipts</div></div>
+              <div><div class="login-stat-val">100%</div><div class="login-stat-label">Offline</div></div>
+            </div>
+          </div>
+          <div class="login-footer">Independence Ave, Mongu · 097 4542233</div>
+        </div>
+        <div class="login-right">
+          <div class="login-form">
+            <h2>Welcome back</h2>
+            <div class="sub">Sign in to start your shift</div>
+            <div class="fields">
+              <div><label class="field-label">Username</label><input class="field-input" placeholder="Enter username" readonly></div>
+              <div><label class="field-label">PIN</label><input class="field-input" type="password" placeholder="Enter PIN" readonly></div>
+              <button class="login-btn">Sign In</button>
+            </div>
+            <div class="login-creds">
+              <div class="login-creds-title">Demo Credentials</div>
+              <div class="login-cred-row"><span class="login-cred-label">Admin</span><span class="login-cred-val">admin / 1234</span></div>
+              <div class="login-cred-row"><span class="login-cred-label">Cashier</span><span class="login-cred-val">mary / 5678</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pos-screen" data-view="pos" style="display:none">
+        <div class="pos-topbar">
+          <div class="pos-nav-item active">Sale</div>
+          <div class="pos-nav-item">Products</div>
+          <div class="pos-nav-item">Reports</div>
+          <div class="pos-nav-item">Settings</div>
+          <div class="pos-topbar-right">
+            <div class="pos-shift-badge"><div class="pos-shift-dot"></div>Shift Open</div>
+            <div class="pos-clock">14:32:08</div>
+            <div class="pos-user">Admin</div>
+          </div>
+        </div>
+        <div class="pos-body">
+          <div class="pos-left">
+            <div class="pos-search"><span class="pos-search-icon">&#x1F50D;</span><input placeholder="Search products or scan barcode..." readonly><span class="pos-search-hint">F2</span></div>
+            <div class="cart-table">
+              <div class="cart-header"><div>#</div><div>Item</div><div>Qty</div><div class="right">Price</div><div class="right">Total</div><div></div></div>
+              <div class="cart-rows">
+                <div class="cart-row"><div class="num">1</div><div class="name">Mealie Meal 25kg<small>6901234567001</small></div><div class="qty"><button class="qty-btn">−</button><span class="qty-val">2</span><button class="qty-btn">+</button></div><div class="price">K 189.00</div><div class="total">K 378.00</div><div class="remove">×</div></div>
+                <div class="cart-row"><div class="num">2</div><div class="name">Cooking Oil 2L<small>6901234567002</small></div><div class="qty"><button class="qty-btn">−</button><span class="qty-val">1</span><button class="qty-btn">+</button></div><div class="price">K 89.50</div><div class="total">K 89.50</div><div class="remove">×</div></div>
+                <div class="cart-row"><div class="num">3</div><div class="name">Mosi Lager 330ml<small>6901234567005</small></div><div class="qty"><button class="qty-btn">−</button><span class="qty-val">6</span><button class="qty-btn">+</button></div><div class="price">K 18.00</div><div class="total">K 108.00</div><div class="remove">×</div></div>
+                <div class="cart-row"><div class="num">4</div><div class="name">White Bread<small>6901234567010</small></div><div class="qty"><button class="qty-btn">−</button><span class="qty-val">1</span><button class="qty-btn">+</button></div><div class="price">K 32.00</div><div class="total">K 32.00</div><div class="remove">×</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="pos-right">
+            <div class="pos-right-header"><div class="pos-right-title">Order Summary</div><div class="pos-right-count">4 items</div></div>
+            <div class="pos-right-body">
+              <div class="summary-row"><span class="label">Subtotal</span><span class="value">K 607.50</span></div>
+              <div class="summary-row"><span class="label">VAT (16%)</span><span class="value">K 83.79</span></div>
+              <div class="summary-divider"></div>
+              <div class="summary-total"><span class="label">Total</span><span class="value">K 607.50</span></div>
+              <button class="charge-btn">Charge K 607.50</button>
+              <button class="clear-btn">Clear Sale</button>
+            </div>
+          </div>
+        </div>
+        <div class="pos-fbar">
+          <div class="fkey"><kbd>F1</kbd> New</div>
+          <div class="fkey"><kbd>F2</kbd> Search</div>
+          <div class="fkey"><kbd>F3</kbd> Discount</div>
+          <div class="fkey"><kbd>F4</kbd> Customer</div>
+          <div class="fkey"><kbd>F5</kbd> Drawer</div>
+          <div class="fkey"><kbd>F8</kbd> Remove</div>
+          <div class="fkey"><kbd>F12</kbd> Pay</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentTheme = 'mercury';
+let currentView = 'login';
+
+function switchTheme(name) {
+  currentTheme = name;
+  document.querySelectorAll('.theme-container').forEach(c => c.classList.remove('active'));
+  document.getElementById('theme-' + name).classList.add('active');
+  document.querySelectorAll('.theme-tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  applyView();
+}
+
+function switchView(view) {
+  currentView = view;
+  document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  applyView();
+}
+
+function applyView() {
+  document.querySelectorAll('.theme-container').forEach(container => {
+    container.querySelectorAll('[data-view]').forEach(el => {
+      el.style.display = el.dataset.view === currentView ? '' : 'none';
+    });
+  });
+}
+</script>
+</body>
+</html>

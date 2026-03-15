@@ -1,0 +1,43 @@
+appId: com.ariemmas.pos
+productName: Ariemmas POS
+directories:
+  buildResources: build
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!docs/*'
+  - '!reference/*'
+  - '!scripts/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!{.env,.env.*,.npmrc}'
+asarUnpack:
+  - resources/**
+  - node_modules/better-sqlite3/**
+  - node_modules/mssql/**
+  - node_modules/tedious/**
+win:
+  executableName: AriemmasPOS
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  perMachine: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Ariemmas POS
+mac:
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+  category: public.app-category.business
+  notarize: false
+linux:
+  target:
+    - AppImage
+npmRebuild: false

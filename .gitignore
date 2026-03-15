@@ -1,0 +1,14 @@
+node_modules/
+dist/
+dist-server/
+dist-web/
+out/
+*.db
+*.db-wal
+*.db-shm
+*.tsbuildinfo
+.env
+.env.local
+.claude/
+dev-receipts/
+.DS_Store
