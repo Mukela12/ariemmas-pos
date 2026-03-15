@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Check, ShoppingCart } from 'lucide-react'
+import { X, Check } from 'lucide-react'
 import { formatZMW } from '../lib/currency'
 
 const BRAND_COLORS = ['#0D9488', '#0F766E', '#14B8A6', '#2DD4BF', '#5EEAD4']
@@ -121,15 +121,6 @@ export function ThankYouScreen({ onClose, paymentMethod, total, amountTendered, 
             className="flex flex-col items-center text-center px-8"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Animated cart icon */}
-            <motion.div
-              className="w-[120px] h-[120px] mb-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center"
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              <ShoppingCart size={56} className="text-white/50" strokeWidth={1.5} />
-            </motion.div>
-
             {/* Checkmark pulse */}
             <motion.div
               initial={{ scale: 0 }}
