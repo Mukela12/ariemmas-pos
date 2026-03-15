@@ -12,3 +12,6 @@ out/
 .claude/
 dev-receipts/
 .DS_Store
+
+# Local Netlify folder
+.netlify

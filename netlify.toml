@@ -1,5 +1,5 @@
 [build]
-  command = "npx vite build --config vite.web.config.ts"
+  command = "npx vite build --config vite.web.config.mts"
   publish = "dist-web"
 
 [[redirects]]
