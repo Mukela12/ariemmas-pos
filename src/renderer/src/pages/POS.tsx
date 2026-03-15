@@ -14,6 +14,7 @@ export function POS() {
   const [showSearch, setShowSearch] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
   const [showThankYou, setShowThankYou] = useState(false)
+  const [lastPayment, setLastPayment] = useState<{ method: 'cash' | 'mobile_money'; total: number; tendered: number | null; change: number | null } | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
   const { items, addItem, removeItem, updateQuantity, selectedIndex, selectItem, clearSale, getSubtotal, getVatTotal, getTotal, getItemCount } = useSaleStore()
@@ -245,7 +246,15 @@ export function POS() {
       </div>
 
       {/* Thank you screen */}
-      {showThankYou && <ThankYouScreen onClose={() => setShowThankYou(false)} />}
+      {showThankYou && (
+        <ThankYouScreen
+          onClose={() => { setShowThankYou(false); setLastPayment(null) }}
+          paymentMethod={lastPayment?.method}
+          total={lastPayment?.total}
+          amountTendered={lastPayment?.tendered}
+          changeGiven={lastPayment?.change}
+        />
+      )}
 
       {/* Payment modal */}
       {showPayment && (
@@ -266,6 +275,7 @@ export function POS() {
               shift_id: currentShift?.id || null
             })
             await window.api.openCashDrawer()
+            setLastPayment({ method: paymentMethod, total, tendered: amountTendered, change: changeGiven })
             clearSale()
             setShowPayment(false)
             setShowThankYou(true)
