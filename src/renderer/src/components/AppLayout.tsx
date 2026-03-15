@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { useShiftStore } from '../stores/shiftStore'
-import { LogOut, X, Cloud, CloudOff, RefreshCw } from 'lucide-react'
+import { LogOut, X, Cloud, CloudOff, RefreshCw, Clock, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { formatZMW } from '../lib/currency'
 
@@ -50,8 +50,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex flex-col h-screen bg-[#F4F4F5]">
-      {/* Top navigation bar — 48px */}
-      <header className="h-12 bg-white border-b border-[#E4E4E7] flex items-center px-4 shrink-0">
+      {/* Top navigation bar */}
+      <header className="h-14 bg-white border-b border-[#E4E4E7] flex items-center px-4 shrink-0">
         {/* Nav tabs */}
         <nav className="flex items-center gap-1">
           {visibleNav.map((item) => {
@@ -60,7 +60,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`px-3.5 py-1.5 text-[13px] font-medium rounded-md transition-colors ${
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                   isActive
                     ? 'bg-[#F4F4F5] text-[#18181B]'
                     : 'text-[#71717A] hover:text-[#18181B] hover:bg-[#FAFAFA]'
@@ -72,14 +72,29 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
+        {/* Center — Clock */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+          <Clock size={16} className="text-[#0D9488]" />
+          <span className="text-lg font-semibold text-[#18181B] tabular-nums tracking-tight">
+            {time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          </span>
+          <span className="text-xs text-[#A1A1AA] font-medium ml-1">
+            {time.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+          </span>
+        </div>
+
         {/* Right side */}
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-2.5">
           {/* Shift indicator — clickable */}
           <button
             onClick={() => setShowShiftModal(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#F4F4F5] text-[11px] text-[#52525B] hover:bg-[#E4E4E7] transition-colors"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              currentShift
+                ? 'bg-[#F0FDFA] text-[#0D9488] border border-[#99F6E4] hover:bg-[#CCFBF1]'
+                : 'bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] hover:bg-[#FEF3C7]'
+            }`}
           >
-            <div className={`w-[6px] h-[6px] rounded-full ${currentShift ? 'bg-[#0D9488]' : 'bg-[#D97706]'}`} />
+            <div className={`w-2 h-2 rounded-full ${currentShift ? 'bg-[#0D9488]' : 'bg-[#D97706] animate-pulse'}`} />
             {currentShift ? 'Shift Open' : 'No Shift'}
           </button>
 
@@ -87,43 +102,44 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {syncStatus && (
             <button
               onClick={() => window.api?.syncNow?.()}
-              className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] transition-colors ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
                 syncStatus.isOnline
                   ? syncStatus.pending > 0
-                    ? 'text-[#D97706] bg-[#FFFBEB]'
-                    : 'text-[#0D9488] bg-[#F0FDFA]'
-                  : 'text-[#A1A1AA] bg-[#F4F4F5]'
+                    ? 'text-[#D97706] bg-[#FFFBEB] border border-[#FDE68A]'
+                    : 'text-[#0D9488] bg-[#F0FDFA] border border-[#99F6E4]'
+                  : 'text-[#A1A1AA] bg-[#F4F4F5] border border-[#E4E4E7]'
               }`}
               title={syncStatus.isOnline
                 ? syncStatus.pending > 0 ? `${syncStatus.pending} pending sync` : 'Synced'
                 : 'Offline — will sync when online'}
             >
               {syncStatus.isOnline ? (
-                syncStatus.pending > 0 ? <RefreshCw size={12} className="animate-spin" /> : <Cloud size={12} />
+                syncStatus.pending > 0 ? <RefreshCw size={13} className="animate-spin" /> : <Cloud size={13} />
               ) : (
-                <CloudOff size={12} />
+                <CloudOff size={13} />
               )}
               {syncStatus.pending > 0 && <span>{syncStatus.pending}</span>}
             </button>
           )}
 
-          {/* Clock */}
-          <span className="text-[12px] text-[#A1A1AA] tabular-nums font-medium">
-            {time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          </span>
+          {/* Divider */}
+          <div className="w-px h-6 bg-[#E4E4E7]" />
 
           {/* User */}
-          <span className="text-[12px] text-[#52525B] font-medium">
-            {user?.display_name}
-          </span>
+          <div className="flex items-center gap-1.5 px-2">
+            <User size={14} className="text-[#A1A1AA]" />
+            <span className="text-[13px] text-[#52525B] font-medium">
+              {user?.display_name}
+            </span>
+          </div>
 
           {/* Logout */}
           <button
             onClick={handleLogout}
-            className="w-7 h-7 rounded-md flex items-center justify-center text-[#A1A1AA] hover:text-[#DC2626] hover:bg-[#FEF2F2] transition-colors"
+            className="w-8 h-8 rounded-md flex items-center justify-center text-[#A1A1AA] hover:text-[#DC2626] hover:bg-[#FEF2F2] transition-colors"
             title="Sign out"
           >
-            <LogOut size={14} />
+            <LogOut size={16} />
           </button>
         </div>
       </header>
