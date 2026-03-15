@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import { v4 as uuid } from 'uuid'
-import { getDb, now, dateOf } from './database/connection'
+import { getDb, now } from './database/connection'
 import { login, logout, getCurrentUser, seedDefaultAdmin } from './services/auth'
 import { completeSale, getDailySales } from './services/sales'
 import { exportDailySalesToExcel } from './services/exportExcel'
@@ -214,9 +214,15 @@ async function seedSampleProducts(): Promise<void> {
   ]
 
   for (const p of products) {
+    const id = uuid()
+    const vatRate = (p as any).vat ?? 0.16
     await db.run(`
       INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [uuid(), p.barcode, p.name, p.cat, p.price, p.cost, (p as any).vat ?? 0.16, p.stock])
+    `, [id, p.barcode, p.name, p.cat, p.price, p.cost, vatRate, p.stock])
+    queueSync('insert', 'product', id, {
+      id, barcode: p.barcode, name: p.name, category_id: p.cat, price: p.price,
+      cost_price: p.cost, vat_rate: vatRate, stock_quantity: p.stock, min_stock_level: 5, unit: 'each'
+    }).catch(() => {})
   }
 }

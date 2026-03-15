@@ -402,23 +402,33 @@ app.post('/api/sync/sales', async (req, res) => {
   res.json({ status: 'synced' })
 })
 
-// Sync a product (upsert)
+// Sync a product (upsert — replaces server-seeded product if barcode matches)
 app.post('/api/sync/products', async (req, res) => {
   const p = req.body
   if (!p?.id) return res.status(400).json({ error: 'Missing product data' })
 
-  const existing = await db.queryOne('SELECT id FROM products WHERE id = $1', [p.id])
-  if (existing) {
+  const existingById = await db.queryOne('SELECT id FROM products WHERE id = $1', [p.id])
+  if (existingById) {
     await db.run(
       'UPDATE products SET barcode=$1, name=$2, category_id=$3, price=$4, cost_price=$5, vat_rate=$6, stock_quantity=$7, min_stock_level=$8, unit=$9, updated_at=NOW() WHERE id=$10',
       [p.barcode, p.name, p.category_id, p.price, p.cost_price, p.vat_rate, p.stock_quantity, p.min_stock_level, p.unit, p.id]
     )
-  } else {
-    await db.run(
-      'INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
-      [p.id, p.barcode, p.name, p.category_id, p.price, p.cost_price || 0, p.vat_rate || 0.16, p.stock_quantity || 0, p.min_stock_level || 5, p.unit || 'each']
-    )
+    return res.json({ status: 'synced' })
   }
+
+  // If a product with the same barcode exists (server-seeded), replace it with desktop version
+  if (p.barcode) {
+    const existingByBarcode = await db.queryOne<any>('SELECT id FROM products WHERE barcode = $1', [p.barcode])
+    if (existingByBarcode) {
+      await db.run('UPDATE sale_items SET product_id = $1 WHERE product_id = $2', [p.id, existingByBarcode.id])
+      await db.run('DELETE FROM products WHERE id = $1', [existingByBarcode.id])
+    }
+  }
+
+  await db.run(
+    'INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
+    [p.id, p.barcode, p.name, p.category_id, p.price, p.cost_price || 0, p.vat_rate || 0.16, p.stock_quantity || 0, p.min_stock_level || 5, p.unit || 'each']
+  )
   res.json({ status: 'synced' })
 })
 
@@ -474,31 +484,41 @@ app.put('/api/sync/settings/:key', async (req, res) => {
   res.json({ status: 'synced' })
 })
 
-// Sync users (upsert)
+// Sync users (upsert — replace server-seeded user if desktop sends one with same username)
 app.post('/api/sync/users', async (req, res) => {
   const u = req.body
   if (!u?.id) return res.status(400).json({ error: 'Missing user data' })
-  const existing = await db.queryOne('SELECT id FROM users WHERE id = $1', [u.id])
-  if (!existing) {
-    await db.run(
-      'INSERT INTO users (id, username, display_name, pin_hash, role, active) VALUES ($1,$2,$3,$4,$5,$6)',
-      [u.id, u.username, u.display_name, u.pin_hash, u.role, u.active]
-    )
+
+  const existingById = await db.queryOne<any>('SELECT id FROM users WHERE id = $1', [u.id])
+  if (existingById) return res.json({ status: 'already_synced' })
+
+  // If a user with the same username exists (e.g. server-seeded), replace it with the desktop version
+  const existingByName = await db.queryOne<any>('SELECT id FROM users WHERE username = $1', [u.username])
+  if (existingByName) {
+    // Update all references from old ID to new ID
+    await db.run('UPDATE sales SET user_id = $1 WHERE user_id = $2', [u.id, existingByName.id])
+    await db.run('UPDATE shifts SET user_id = $1 WHERE user_id = $2', [u.id, existingByName.id])
+    await db.run('UPDATE audit_log SET user_id = $1 WHERE user_id = $2', [u.id, existingByName.id])
+    await db.run('DELETE FROM users WHERE id = $1', [existingByName.id])
   }
+
+  await db.run(
+    'INSERT INTO users (id, username, display_name, pin_hash, role, active) VALUES ($1,$2,$3,$4,$5,$6)',
+    [u.id, u.username, u.display_name, u.pin_hash, u.role, u.active]
+  )
   res.json({ status: 'synced' })
 })
 
-// Sync categories (upsert)
+// Sync categories (upsert — categories use the same IDs on both sides via seed data)
 app.post('/api/sync/categories', async (req, res) => {
   const c = req.body
   if (!c?.id) return res.status(400).json({ error: 'Missing category data' })
   const existing = await db.queryOne('SELECT id FROM categories WHERE id = $1', [c.id])
-  if (!existing) {
-    await db.run(
-      'INSERT INTO categories (id, name, description, sort_order, active) VALUES ($1,$2,$3,$4,$5)',
-      [c.id, c.name, c.description, c.sort_order, c.active]
-    )
-  }
+  if (existing) return res.json({ status: 'already_synced' })
+  await db.run(
+    'INSERT INTO categories (id, name, description, sort_order, active) VALUES ($1,$2,$3,$4,$5)',
+    [c.id, c.name, c.description, c.sort_order, c.active]
+  )
   res.json({ status: 'synced' })
 })
 

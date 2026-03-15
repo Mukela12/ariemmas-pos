@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 import { v4 as uuid } from 'uuid'
 import { getDb } from '../database/connection'
+import { queueSync } from './syncService'
 import type { User, UserPublic } from '../../shared/types'
 
 let currentUser: UserPublic | null = null
@@ -77,15 +78,23 @@ export async function seedDefaultAdmin(): Promise<void> {
   const existing = await db.queryOne('SELECT id FROM users LIMIT 1')
   if (existing) return
 
+  const adminId = uuid()
   const pinHash = bcrypt.hashSync('1234', 10)
   await db.run(
     'INSERT INTO users (id, username, display_name, pin_hash, role) VALUES (?, ?, ?, ?, ?)',
-    [uuid(), 'admin', 'Administrator', pinHash, 'admin']
+    [adminId, 'admin', 'Administrator', pinHash, 'admin']
   )
+  queueSync('insert', 'user', adminId, {
+    id: adminId, username: 'admin', display_name: 'Administrator', pin_hash: pinHash, role: 'admin', active: 1
+  }).catch(() => {})
 
+  const maryId = uuid()
   const maryHash = bcrypt.hashSync('5678', 10)
   await db.run(
     'INSERT INTO users (id, username, display_name, pin_hash, role) VALUES (?, ?, ?, ?, ?)',
-    [uuid(), 'mary', 'Mary', maryHash, 'cashier']
+    [maryId, 'mary', 'Mary', maryHash, 'cashier']
   )
+  queueSync('insert', 'user', maryId, {
+    id: maryId, username: 'mary', display_name: 'Mary', pin_hash: maryHash, role: 'cashier', active: 1
+  }).catch(() => {})
 }

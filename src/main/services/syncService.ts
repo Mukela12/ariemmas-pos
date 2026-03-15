@@ -38,6 +38,7 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
   let failed = 0
 
   try {
+    // Process in dependency order: users/categories first, then products, then shifts, then sales
     const pending = await db.query<{
       id: number
       operation: string
@@ -46,7 +47,16 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
       payload: string
       attempts: number
     }>(
-      `SELECT * FROM _sync_queue WHERE status = 'pending' AND attempts < ? ORDER BY id`,
+      `SELECT * FROM _sync_queue WHERE status = 'pending' AND attempts < ? ORDER BY
+        CASE entity_type
+          WHEN 'user' THEN 1
+          WHEN 'category' THEN 2
+          WHEN 'product' THEN 3
+          WHEN 'setting' THEN 4
+          WHEN 'shift' THEN 5
+          WHEN 'sale' THEN 6
+          ELSE 7
+        END, id`,
       [MAX_ATTEMPTS]
     )
 
@@ -146,13 +156,80 @@ function getSyncEndpoint(
   return null
 }
 
+/** Ensure all local entities have been queued for sync (catch-up for existing databases) */
+async function ensureAllDataQueued(): Promise<void> {
+  const db = getDb()
+
+  // Find users that have never been queued
+  const unsyncedUsers = await db.query<any>(
+    `SELECT * FROM users WHERE id NOT IN (SELECT entity_id FROM _sync_queue WHERE entity_type = 'user')`
+  )
+  for (const u of unsyncedUsers) {
+    await queueSync('insert', 'user', u.id, {
+      id: u.id, username: u.username, display_name: u.display_name,
+      pin_hash: u.pin_hash, role: u.role, active: u.active
+    })
+  }
+
+  // Find categories that have never been queued
+  const unsyncedCats = await db.query<any>(
+    `SELECT * FROM categories WHERE id NOT IN (SELECT entity_id FROM _sync_queue WHERE entity_type = 'category')`
+  )
+  for (const c of unsyncedCats) {
+    await queueSync('insert', 'category', c.id, {
+      id: c.id, name: c.name, description: c.description, sort_order: c.sort_order, active: c.active
+    })
+  }
+
+  // Find products that have never been queued
+  const unsyncedProducts = await db.query<any>(
+    `SELECT * FROM products WHERE id NOT IN (SELECT entity_id FROM _sync_queue WHERE entity_type = 'product')`
+  )
+  for (const p of unsyncedProducts) {
+    await queueSync('insert', 'product', p.id, p)
+  }
+
+  // Find shifts that have never been queued
+  const unsyncedShifts = await db.query<any>(
+    `SELECT * FROM shifts WHERE id NOT IN (SELECT entity_id FROM _sync_queue WHERE entity_type = 'shift')`
+  )
+  for (const s of unsyncedShifts) {
+    await queueSync('insert', 'shift', s.id, s)
+  }
+
+  // Find sales that have never been queued
+  const unsyncedSales = await db.query<any>(
+    `SELECT * FROM sales WHERE id NOT IN (SELECT entity_id FROM _sync_queue WHERE entity_type = 'sale')`
+  )
+  for (const sale of unsyncedSales) {
+    const items = await db.query('SELECT * FROM sale_items WHERE sale_id = ?', [sale.id])
+    await queueSync('insert', 'sale', sale.id, { sale, items })
+  }
+
+  // Reset any failed items back to pending so they get retried
+  await db.run(
+    `UPDATE _sync_queue SET status = 'pending', attempts = 0, error = NULL WHERE status = 'failed'`
+  )
+
+  if (unsyncedUsers.length || unsyncedCats.length || unsyncedProducts.length || unsyncedShifts.length || unsyncedSales.length) {
+    console.log(`[Sync] Catch-up: queued ${unsyncedUsers.length} users, ${unsyncedCats.length} categories, ${unsyncedProducts.length} products, ${unsyncedShifts.length} shifts, ${unsyncedSales.length} sales`)
+  }
+}
+
 /** Start the background sync timer */
 export function startSyncService(): void {
   if (syncTimer) return
   console.log(`[Sync] Started — checking every ${SYNC_INTERVAL_MS / 1000}s`)
 
-  // Run initial sync after a short delay
-  setTimeout(() => processSyncQueue(), 5000)
+  // Ensure all local data is queued, then run initial sync
+  setTimeout(async () => {
+    try {
+      await ensureAllDataQueued()
+    } catch (err: any) {
+      console.error('[Sync] Catch-up error:', err.message)
+    }
+    processSyncQueue().catch(() => {})
+  }, 5000)
 
   syncTimer = setInterval(() => {
     processSyncQueue().catch((err) => {
