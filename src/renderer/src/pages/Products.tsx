@@ -226,7 +226,7 @@ export function Products() {
                         <div>
                           <p className="text-sm font-medium text-[#18181B]">{product.name}</p>
                           <p className="text-[11px] text-[#A1A1AA]">
-                            {product.unit} · VAT {(product.vat_rate * 100).toFixed(0)}%
+                            {product.unit} · VAT {(Number(product.vat_rate) * 100).toFixed(0)}%
                           </p>
                         </div>
                       </div>

@@ -24,13 +24,15 @@ export const useSaleStore = create<SaleState>((set, get) => ({
   selectedIndex: -1,
 
   addItem: (product: Product) => {
+    const price = Number(product.price)
+    const vatRate = Number(product.vat_rate)
     set((state) => {
       const existing = state.items.findIndex(i => i.product_id === product.id)
       if (existing >= 0) {
         const updated = [...state.items]
         const item = updated[existing]
         const qty = item.quantity + 1
-        const lineTotal = product.price * qty
+        const lineTotal = price * qty
         updated[existing] = {
           ...item,
           quantity: qty,
@@ -39,16 +41,16 @@ export const useSaleStore = create<SaleState>((set, get) => ({
         }
         return { items: updated, selectedIndex: existing }
       }
-      const lineTotal = product.price
+      const lineTotal = price
       const newItem: CartItem = {
         product_id: product.id,
         barcode: product.barcode,
         name: product.name,
-        price: product.price,
-        vat_rate: product.vat_rate,
+        price,
+        vat_rate: vatRate,
         quantity: 1,
         line_total: lineTotal,
-        vat_amount: calcVat(lineTotal, product.vat_rate)
+        vat_amount: calcVat(lineTotal, vatRate)
       }
       return { items: [...state.items, newItem], selectedIndex: state.items.length }
     })

@@ -107,15 +107,14 @@ const mockApi = {
   openCashDrawer: async () => true,
 }
 
-export function installBrowserMock(): void {
+export async function installBrowserMock(): Promise<void> {
   if (typeof window !== 'undefined' && !(window as any).api) {
     const apiUrl = (import.meta as any).env?.VITE_API_URL
     if (apiUrl) {
       // Web deployment — use real API client talking to Express backend
-      import('./webApiClient').then(({ webApi }) => {
-        (window as any).api = webApi
-        console.log(`[Web Mode] API client connected to ${apiUrl}`)
-      })
+      const { webApi } = await import('./webApiClient')
+      ;(window as any).api = webApi
+      console.log(`[Web Mode] API client connected to ${apiUrl}`)
     } else {
       // Local dev preview — use mock data
       (window as any).api = mockApi
