@@ -1,15 +1,7 @@
-import { useEffect, useState, Component, type ReactNode } from 'react'
-import { useRive } from '@rive-app/react-canvas'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Check, ShoppingCart } from 'lucide-react'
 import { formatZMW } from '../lib/currency'
-
-// Error boundary so Rive failures don't crash the whole screen
-class RiveBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { hasError: boolean }> {
-  state = { hasError: false }
-  static getDerivedStateFromError() { return { hasError: true } }
-  render() { return this.state.hasError ? this.props.fallback : this.props.children }
-}
 
 const BRAND_COLORS = ['#0D9488', '#0F766E', '#14B8A6', '#2DD4BF', '#5EEAD4']
 
@@ -40,26 +32,6 @@ interface ThankYouProps {
   changeGiven?: number | null
 }
 
-function CartAnimation() {
-  const rivSrc = typeof window !== 'undefined' && window.location.protocol === 'file:'
-    ? './shopping-cart.riv'
-    : '/shopping-cart.riv'
-  const { RiveComponent } = useRive({ src: rivSrc, autoplay: true })
-  return <RiveComponent />
-}
-
-function CartFallback() {
-  return (
-    <motion.div
-      animate={{ y: [0, -8, 0] }}
-      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-      className="flex items-center justify-center w-full h-full"
-    >
-      <ShoppingCart size={72} className="text-white/40" />
-    </motion.div>
-  )
-}
-
 export function ThankYouScreen({ onClose, paymentMethod, total, amountTendered, changeGiven }: ThankYouProps) {
   const [visible, setVisible] = useState(true)
 
@@ -69,16 +41,19 @@ export function ThankYouScreen({ onClose, paymentMethod, total, amountTendered, 
     return () => clearTimeout(timer)
   }, [])
 
-  // Allow Escape key to close
+  // Allow Escape key to close (delay listener to avoid catching Enter from payment modal)
   useEffect(() => {
+    let active = false
+    const enableTimer = setTimeout(() => { active = true }, 500)
     const handleKey = (e: KeyboardEvent) => {
+      if (!active) return
       if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
         e.preventDefault()
         setVisible(false)
       }
     }
     window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
+    return () => { clearTimeout(enableTimer); window.removeEventListener('keydown', handleKey) }
   }, [])
 
   // Call onClose after exit animation
@@ -112,7 +87,7 @@ export function ThankYouScreen({ onClose, paymentMethod, total, amountTendered, 
             <X size={20} />
           </button>
 
-          {/* Decorative floating dots — behind content */}
+          {/* Decorative floating dots */}
           {BRAND_COLORS.map((color, i) => (
             <motion.div
               key={i}
@@ -146,34 +121,36 @@ export function ThankYouScreen({ onClose, paymentMethod, total, amountTendered, 
             className="flex flex-col items-center text-center px-8"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Rive Animation */}
-            <div className="w-[160px] h-[160px] mb-4">
-              <RiveBoundary fallback={<CartFallback />}>
-                <CartAnimation />
-              </RiveBoundary>
-            </div>
+            {/* Animated cart icon */}
+            <motion.div
+              className="w-[120px] h-[120px] mb-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center"
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <ShoppingCart size={56} className="text-white/50" strokeWidth={1.5} />
+            </motion.div>
 
             {/* Checkmark pulse */}
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: 'spring', stiffness: 200, damping: 12 }}
-              className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-5 shadow-lg ring-2 ring-white/30"
+              className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-6 shadow-lg ring-2 ring-white/30"
             >
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.35, type: 'spring', stiffness: 300, damping: 15 }}
               >
-                <Check size={28} className="text-white" strokeWidth={3} />
+                <Check size={40} className="text-white" strokeWidth={3} />
               </motion.div>
             </motion.div>
 
             {/* Shimmer text */}
-            <h1 className="text-[32px] font-bold text-white mb-1 leading-tight drop-shadow-md">
+            <h1 className="text-[42px] font-bold text-white mb-2 leading-tight drop-shadow-md">
               <ShimmerText text="Thank You!" />
             </h1>
-            <p className="text-[16px] text-white/80 font-medium mb-4">
+            <p className="text-[18px] text-white/80 font-medium mb-5">
               <ShimmerText text="For shopping with us" />
             </p>
 
