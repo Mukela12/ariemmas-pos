@@ -379,11 +379,18 @@ app.post('/api/sync/sales', async (req, res) => {
     if (!userExists) return res.status(422).json({ error: `User ${sale.user_id} not synced yet` })
 
     await db.transaction(async () => {
+      // Handle receipt_number conflict (web and desktop may generate same numbers)
+      let receiptNumber = sale.receipt_number
+      const receiptExists = await db.queryOne('SELECT id FROM sales WHERE receipt_number = $1', [receiptNumber])
+      if (receiptExists) {
+        receiptNumber = receiptNumber + '-D'
+      }
+
       await db.run(
         `INSERT INTO sales (id, receipt_number, user_id, shift_id, subtotal, vat_total, total,
           payment_method, amount_tendered, change_given, mobile_ref, status, created_at)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
-        [sale.id, sale.receipt_number, sale.user_id, sale.shift_id, sale.subtotal,
+        [sale.id, receiptNumber, sale.user_id, sale.shift_id, sale.subtotal,
          sale.vat_total, sale.total, sale.payment_method, sale.amount_tendered,
          sale.change_given, sale.mobile_ref, sale.status, sale.created_at]
       )
@@ -430,8 +437,17 @@ app.post('/api/sync/products', async (req, res) => {
     if (p.barcode) {
       const existingByBarcode = await db.queryOne<any>('SELECT id FROM products WHERE barcode = $1', [p.barcode])
       if (existingByBarcode) {
-        await db.run('UPDATE sale_items SET product_id = $1 WHERE product_id = $2', [p.id, existingByBarcode.id])
-        await db.run('DELETE FROM products WHERE id = $1', [existingByBarcode.id])
+        await db.transaction(async () => {
+          // Insert new product first with temp barcode (to satisfy FKs during reference update)
+          await db.run(
+            'INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
+            [p.id, '__sync_temp_' + p.id, p.name, p.category_id, p.price, p.cost_price || 0, p.vat_rate || 0.16, p.stock_quantity || 0, p.min_stock_level || 5, p.unit || 'each']
+          )
+          await db.run('UPDATE sale_items SET product_id = $1 WHERE product_id = $2', [p.id, existingByBarcode.id])
+          await db.run('DELETE FROM products WHERE id = $1', [existingByBarcode.id])
+          await db.run('UPDATE products SET barcode = $1 WHERE id = $2', [p.barcode, p.id])
+        })
+        return res.json({ status: 'synced' })
       }
     }
 
