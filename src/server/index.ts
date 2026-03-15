@@ -537,18 +537,27 @@ app.post('/api/sync/users', async (req, res) => {
     const existingByName = await db.queryOne<any>('SELECT id FROM users WHERE username = $1', [u.username])
     if (existingByName) {
       await db.transaction(async () => {
+        // Insert new user first (temporarily allow duplicate username by using temp username)
+        await db.run(
+          'INSERT INTO users (id, username, display_name, pin_hash, role, active) VALUES ($1,$2,$3,$4,$5,$6)',
+          [u.id, '__sync_temp_' + u.id, u.display_name, u.pin_hash, u.role, u.active]
+        )
+        // Update all references from old ID to new ID
         await db.run('UPDATE sales SET user_id = $1 WHERE user_id = $2', [u.id, existingByName.id])
         await db.run('UPDATE shifts SET user_id = $1 WHERE user_id = $2', [u.id, existingByName.id])
         await db.run('UPDATE audit_log SET user_id = $1 WHERE user_id = $2', [u.id, existingByName.id])
         await db.run('UPDATE draft_sales SET user_id = $1 WHERE user_id = $2', [u.id, existingByName.id])
+        // Delete old user
         await db.run('DELETE FROM users WHERE id = $1', [existingByName.id])
+        // Fix the username back
+        await db.run('UPDATE users SET username = $1 WHERE id = $2', [u.username, u.id])
       })
+    } else {
+      await db.run(
+        'INSERT INTO users (id, username, display_name, pin_hash, role, active) VALUES ($1,$2,$3,$4,$5,$6)',
+        [u.id, u.username, u.display_name, u.pin_hash, u.role, u.active]
+      )
     }
-
-    await db.run(
-      'INSERT INTO users (id, username, display_name, pin_hash, role, active) VALUES ($1,$2,$3,$4,$5,$6)',
-      [u.id, u.username, u.display_name, u.pin_hash, u.role, u.active]
-    )
     res.json({ status: 'synced' })
   } catch (err: any) {
     console.error('[Sync] User error:', err.message)
