@@ -14,6 +14,7 @@ export function POS() {
   const [showSearch, setShowSearch] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
   const [showThankYou, setShowThankYou] = useState(false)
+  const [paymentError, setPaymentError] = useState<string | null>(null)
   const [lastPayment, setLastPayment] = useState<{ method: 'cash' | 'mobile_money'; total: number; tendered: number | null; change: number | null } | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -260,25 +261,32 @@ export function POS() {
       {showPayment && (
         <PaymentModal
           total={total}
-          onClose={() => setShowPayment(false)}
+          error={paymentError}
+          onClose={() => { setShowPayment(false); setPaymentError(null) }}
           onComplete={async (paymentMethod, amountTendered, changeGiven, mobileRef) => {
-            await window.api.completeSale({
-              items,
-              subtotal,
-              vat_total: vatTotal,
-              total,
-              payment_method: paymentMethod,
-              amount_tendered: amountTendered,
-              change_given: changeGiven,
-              mobile_ref: mobileRef,
-              user_id: user!.id,
-              shift_id: currentShift?.id || null
-            })
-            await window.api.openCashDrawer()
-            setLastPayment({ method: paymentMethod, total, tendered: amountTendered, change: changeGiven })
-            clearSale()
-            setShowPayment(false)
-            setShowThankYou(true)
+            try {
+              setPaymentError(null)
+              await window.api.completeSale({
+                items,
+                subtotal,
+                vat_total: vatTotal,
+                total,
+                payment_method: paymentMethod,
+                amount_tendered: amountTendered,
+                change_given: changeGiven,
+                mobile_ref: mobileRef,
+                user_id: user!.id,
+                shift_id: currentShift?.id || null
+              })
+              try { await window.api.openCashDrawer() } catch {}
+              setLastPayment({ method: paymentMethod, total, tendered: amountTendered, change: changeGiven })
+              clearSale()
+              setShowPayment(false)
+              setShowThankYou(true)
+            } catch (err: any) {
+              console.error('Payment failed:', err)
+              setPaymentError(err?.message || 'Payment failed. Please try again.')
+            }
           }}
         />
       )}
@@ -287,33 +295,37 @@ export function POS() {
 }
 
 function PaymentModal({
-  total, onClose, onComplete
+  total, onClose, onComplete, error
 }: {
   total: number
+  error: string | null
   onClose: () => void
   onComplete: (method: 'cash' | 'mobile_money', tendered: number | null, change: number | null, mobileRef: string | null) => void
 }) {
   const [method, setMethod] = useState<'cash' | 'mobile_money'>('cash')
   const [cashAmount, setCashAmount] = useState('')
   const [mobileRef, setMobileRef] = useState('')
+  const [processing, setProcessing] = useState(false)
   const cashRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { if (method === 'cash') cashRef.current?.focus() }, [method])
 
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !processing) onClose() }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [onClose])
+  }, [onClose, processing])
 
   const tendered = parseFloat(cashAmount) || 0
   const change = tendered - total
   const canPay = method === 'cash' ? tendered >= total : mobileRef.trim().length > 0
 
-  const handlePay = () => {
-    if (!canPay) return
-    if (method === 'cash') onComplete('cash', tendered, change, null)
-    else onComplete('mobile_money', null, null, mobileRef.trim())
+  const handlePay = async () => {
+    if (!canPay || processing) return
+    setProcessing(true)
+    if (method === 'cash') await onComplete('cash', tendered, change, null)
+    else await onComplete('mobile_money', null, null, mobileRef.trim())
+    setProcessing(false)
   }
 
   const quickAmounts = [
@@ -339,6 +351,13 @@ function PaymentModal({
             <p className="text-[32px] font-semibold text-[#18181B] tabular-nums mt-0.5 tracking-tight">{formatZMW(total)}</p>
           </div>
         </div>
+
+        {/* Error banner */}
+        {error && (
+          <div className="mx-5 mt-3 px-3 py-2 bg-[#FEF2F2] border border-[#FECACA] rounded-md">
+            <p className="text-[13px] text-[#DC2626]">{error}</p>
+          </div>
+        )}
 
         {/* Method toggle */}
         <div className="px-5 pt-4">
@@ -413,9 +432,9 @@ function PaymentModal({
 
         {/* Pay button */}
         <div className="px-5 pb-5">
-          <button onClick={handlePay} disabled={!canPay}
+          <button onClick={handlePay} disabled={!canPay || processing}
             className="w-full h-12 rounded-md bg-[#0D9488] text-white text-[15px] font-semibold hover:bg-[#0F766E] disabled:opacity-30 disabled:cursor-not-allowed">
-            {method === 'cash' ? `Pay ${formatZMW(total)}` : 'Confirm Payment'}
+            {processing ? 'Processing...' : method === 'cash' ? `Pay ${formatZMW(total)}` : 'Confirm Payment'}
           </button>
         </div>
       </div>
