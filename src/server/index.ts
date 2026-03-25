@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs'
 import { v4 as uuid } from 'uuid'
 import dayjs from 'dayjs'
 import ExcelJS from 'exceljs'
-import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 import { PostgresAdapter } from '../main/database/postgresAdapter'
 import { runMigrations } from '../main/database/migrations'
 import type { DbAdapter } from '../main/database/adapter'
@@ -15,26 +15,14 @@ app.use(cors())
 app.use(express.json())
 
 let db: DbAdapter
-let mailTransport: nodemailer.Transporter | null = null
+let resend: Resend | null = null
 
-function getMailTransport(): nodemailer.Transporter | null {
-  if (mailTransport) return mailTransport
-
-  const host = process.env.SMTP_HOST
-  const port = parseInt(process.env.SMTP_PORT || '587')
-  const user = process.env.SMTP_USER
-  const pass = process.env.SMTP_PASS
-
-  if (!host || !user || !pass) return null
-
-  mailTransport = nodemailer.createTransport({
-    host,
-    port,
-    secure: process.env.SMTP_SECURE === 'true' || port === 465,
-    auth: { user, pass }
-  })
-
-  return mailTransport
+function getResend(): Resend | null {
+  if (resend) return resend
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) return null
+  resend = new Resend(apiKey)
+  return resend
 }
 
 async function getSettingsMap(): Promise<Record<string, string>> {
@@ -105,17 +93,17 @@ async function sendCashRegisterAlertEmail({
   shift: any
   settings: Record<string, string>
 }): Promise<boolean> {
-  const transport = getMailTransport()
-  if (!transport) return false
+  const client = getResend()
+  if (!client) return false
 
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@ariemmas.local'
+  const from = process.env.RESEND_FROM || 'Ariemmas POS <onboarding@resend.dev>'
   const shopName = settings.shop_name || 'Ariemmas'
   const shopAddress = settings.shop_address || ''
   const openedAt = shift.opened_at ? dayjs(shift.opened_at).format('DD MMM YYYY HH:mm') : 'Unknown'
 
-  await transport.sendMail({
+  await client.emails.send({
     from,
-    to,
+    to: [to],
     subject: `${shopName}: cash drawer reached K ${threshold.toFixed(2)}`,
     text: [
       `${shopName} cash drawer alert`,
