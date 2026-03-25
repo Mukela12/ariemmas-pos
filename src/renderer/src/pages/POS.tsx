@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useShiftStore } from '../stores/shiftStore'
 import { useScanner } from '../hooks/useScanner'
 import { formatZMW } from '../lib/currency'
+import { buildPrintableReceipt } from '../lib/receipt'
 import { ThankYouScreen } from '../components/ThankYouScreen'
 import type { Product } from '../../../shared/types'
 
@@ -20,7 +21,7 @@ export function POS() {
 
   const { items, addItem, removeItem, updateQuantity, selectedIndex, selectItem, clearSale, getSubtotal, getVatTotal, getTotal, getItemCount } = useSaleStore()
   const { user } = useAuthStore()
-  const { currentShift } = useShiftStore()
+  const { currentShift, setShift } = useShiftStore()
 
   const handleBarcodeScan = useCallback(async (barcode: string) => {
     const product = await window.api.getProductByBarcode(barcode)
@@ -184,16 +185,46 @@ export function POS() {
         </div>
       </div>
 
-      {/* Right — order summary */}
+      {/* Right — receipt */}
       <div className="w-[340px] bg-white border-l border-[#E4E4E7] flex flex-col shrink-0">
         {/* Header with item count */}
         <div className="px-5 py-3.5 border-b border-[#E4E4E7] flex justify-between items-center">
-          <span className="text-[15px] font-semibold text-[#18181B]">Order Summary</span>
+          <span className="text-[15px] font-semibold text-[#18181B]">Receipt</span>
           <span className="text-xs font-medium text-[#A1A1AA] bg-[#F4F4F5] px-2 py-0.5 rounded-full">{itemCount} {itemCount === 1 ? 'item' : 'items'}</span>
         </div>
 
+        {/* Receipt items */}
+        <div className="flex-1 min-h-0 flex flex-col">
+          <div className="grid grid-cols-[1fr_56px_84px] gap-3 px-5 py-3 text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] border-b border-[#F4F4F5]">
+            <span>Item</span>
+            <span className="text-center">Qty</span>
+            <span className="text-right">Total</span>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-5 py-3">
+            {items.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-center text-sm text-[#A1A1AA]">
+                Receipt items will appear here after you add products.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {items.map((item, index) => (
+                  <div key={`${item.product_id}-${index}`} className="grid grid-cols-[1fr_56px_84px] gap-3 text-sm">
+                    <div className="min-w-0">
+                      <p className="font-medium text-[#18181B] truncate">{item.name}</p>
+                      <p className="text-xs text-[#A1A1AA] mt-0.5">{formatZMW(item.price)} each</p>
+                    </div>
+                    <span className="text-center text-[#18181B] font-medium tabular-nums">{item.quantity}</span>
+                    <span className="text-right text-[#18181B] font-semibold tabular-nums">{formatZMW(item.line_total)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Totals — pinned to bottom */}
-        <div className="flex-1 flex flex-col justify-end px-5 pb-5">
+        <div className="px-5 pb-5 border-t border-[#E4E4E7] pt-4">
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-[#71717A]">Subtotal</span>
@@ -217,7 +248,7 @@ export function POS() {
               disabled={items.length === 0 || !currentShift}
               className="w-full h-14 rounded-lg bg-[#0D9488] text-white text-base font-semibold hover:bg-[#0F766E] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
             >
-              {!currentShift && items.length > 0 ? 'Open a Shift First' : `Charge ${formatZMW(total)}`}
+              {!currentShift && items.length > 0 ? 'Open a Shift First' : `Pay ${formatZMW(total)}`}
             </button>
             {items.length > 0 && (
               <button onClick={() => clearSale()}
@@ -266,7 +297,8 @@ export function POS() {
           onComplete={async (paymentMethod, amountTendered, changeGiven, mobileRef) => {
             try {
               setPaymentError(null)
-              await window.api.completeSale({
+              const saleItems = items.map((item) => ({ ...item }))
+              const completedSale = await window.api.completeSale({
                 items,
                 subtotal,
                 vat_total: vatTotal,
@@ -278,7 +310,26 @@ export function POS() {
                 user_id: user!.id,
                 shift_id: currentShift?.id || null
               })
-              try { await window.api.openCashDrawer() } catch {}
+              const settings = await window.api.getSettings().catch(() => ({}))
+              const receipt = buildPrintableReceipt({
+                sale: completedSale,
+                items: saleItems,
+                settings,
+                cashierName: user?.display_name || 'Cashier'
+              })
+
+              try { await window.api.printReceipt(receipt) } catch {}
+              if (paymentMethod === 'cash') {
+                try { await window.api.openCashDrawer() } catch {}
+              }
+
+              if (user?.id) {
+                try {
+                  const updatedShift = await window.api.getCurrentShift(user.id)
+                  setShift(updatedShift)
+                } catch {}
+              }
+
               setLastPayment({ method: paymentMethod, total, tendered: amountTendered, change: changeGiven })
               clearSale()
               setShowPayment(false)

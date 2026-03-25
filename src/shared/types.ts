@@ -92,6 +92,9 @@ export interface Shift {
   notes: string | null
   opened_at: string
   closed_at: string | null
+  cash_alert_sent_at?: string | null
+  cash_sales?: number
+  cash_in_drawer?: number
 }
 
 export interface AuditEntry {
@@ -108,13 +111,17 @@ export interface AppSettings {
   shop_name: string
   shop_address: string
   shop_phone: string
-  shop_tin: string
+  shop_tpin: string
   vat_rate: string
   currency_symbol: string
   currency_code: string
+  receipt_header: string
   receipt_footer: string
   auto_logout_minutes: string
   receipt_counter: string
+  opening_cash_limit: string
+  cash_alert_threshold: string
+  cash_alert_email: string
 }
 
 export interface CartItem {
@@ -147,4 +154,31 @@ export interface DailySalesReport {
   total_vat: number
   total_transactions: number
   total_items_sold: number
+}
+
+export interface ReceiptLineItem {
+  name: string
+  quantity: number
+  unit_price: number
+  total: number
+}
+
+export interface PrintableReceipt {
+  receiptNumber: string
+  shopName: string
+  shopAddress: string
+  shopPhone: string
+  shopTpin: string
+  receiptHeader: string
+  receiptFooter: string
+  items: ReceiptLineItem[]
+  subtotal: number
+  vatTotal: number
+  total: number
+  paymentMethod: 'cash' | 'mobile_money' | 'split'
+  amountTendered: number | null
+  changeGiven: number | null
+  mobileRef: string | null
+  cashierName: string
+  printedAt: string
 }

@@ -3,6 +3,9 @@
  * Used by the Netlify-deployed frontend talking to the Railway-deployed backend.
  */
 
+import type { PrintableReceipt } from '../../../shared/types'
+import { printReceiptInBrowser } from './receipt'
+
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001'
 
 async function json<T>(path: string, opts?: RequestInit): Promise<T> {
@@ -10,7 +13,11 @@ async function json<T>(path: string, opts?: RequestInit): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     ...opts
   })
-  return res.json()
+  const data = await res.json().catch(() => null)
+  if (!res.ok) {
+    throw new Error(data?.error || `Request failed (${res.status})`)
+  }
+  return data as T
 }
 
 let sessionUser: any = null
@@ -78,6 +85,6 @@ export const webApi = {
 
   // Hardware (not available on web)
   printerStatus: async () => ({ connected: false, name: 'Not available (web version)' }),
-  printReceipt: async () => true,
+  printReceipt: async (receipt: PrintableReceipt) => printReceiptInBrowser(receipt),
   openCashDrawer: async () => true
 }

@@ -1,5 +1,5 @@
 import type { ElectronAPI } from '@electron-toolkit/preload'
-import type { Product, UserPublic, Sale, Shift, Category, CompleteSaleInput } from '../shared/types'
+import type { Product, UserPublic, Sale, Shift, Category, CompleteSaleInput, PrintableReceipt } from '../shared/types'
 
 interface PosAPI {
   login(username: string, pin: string): Promise<UserPublic | null>
@@ -26,7 +26,7 @@ interface PosAPI {
   updateSetting(key: string, value: string): Promise<boolean>
 
   printerStatus(): Promise<{ connected: boolean; name: string }>
-  printReceipt(receipt: any): Promise<boolean>
+  printReceipt(receipt: PrintableReceipt): Promise<boolean>
   openCashDrawer(): Promise<boolean>
 }
 

@@ -7,6 +7,57 @@ import { exportDailySalesToExcel } from './services/exportExcel'
 import { queueSync, getSyncStatus, processSyncQueue } from './services/syncService'
 import { IPC_CHANNELS } from '../shared/constants'
 
+async function getSettingValue(key: string, fallback: string): Promise<string> {
+  const db = getDb()
+  const row = await db.queryOne<{ value: string }>('SELECT value FROM settings WHERE key = ?', [key])
+  return row?.value ?? fallback
+}
+
+async function getCashSalesForShift(shiftId: string): Promise<number> {
+  const db = getDb()
+  const row = await db.queryOne<{ total: number }>(
+    "SELECT COALESCE(SUM(total), 0) as total FROM sales WHERE shift_id = ? AND payment_method = ? AND status = ?",
+    [shiftId, 'cash', 'completed']
+  )
+  return Number(row?.total) || 0
+}
+
+async function getShiftWithCashStats(shiftId: string) {
+  const db = getDb()
+  const shift = await db.queryOne<any>(
+    `SELECT *,
+      COALESCE((
+        SELECT SUM(total)
+        FROM sales
+        WHERE shift_id = shifts.id AND payment_method = ? AND status = ?
+      ), 0) as cash_sales
+    FROM shifts
+    WHERE id = ?`,
+    ['cash', 'completed', shiftId]
+  )
+
+  if (!shift) return null
+
+  const cashSales = Number(shift.cash_sales) || 0
+  return {
+    ...shift,
+    cash_sales: cashSales,
+    cash_in_drawer: Number(shift.opening_cash || 0) + cashSales
+  }
+}
+
+async function upsertSetting(key: string, value: string): Promise<void> {
+  const db = getDb()
+  const nowExpr = now(db.engine)
+  const existing = await db.queryOne('SELECT key FROM settings WHERE key = ?', [key])
+
+  if (existing) {
+    await db.run(`UPDATE settings SET value = ?, updated_at = ${nowExpr} WHERE key = ?`, [value, key])
+  } else {
+    await db.run(`INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ${nowExpr})`, [key, value])
+  }
+}
+
 export async function registerIpcHandlers(): Promise<void> {
   await seedDefaultAdmin()
   await seedSampleProducts()
@@ -98,13 +149,21 @@ export async function registerIpcHandlers(): Promise<void> {
 
   // Shifts
   ipcMain.handle(IPC_CHANNELS.SHIFT_OPEN, async (_e, userId: string, openingCash: number) => {
+    const limit = parseFloat(await getSettingValue('opening_cash_limit', '1000')) || 1000
+    if (openingCash < 0) {
+      throw new Error('Opening cash cannot be negative')
+    }
+    if (openingCash > limit) {
+      throw new Error(`Opening cash cannot be more than K ${limit.toFixed(2)}`)
+    }
+
     const db = getDb()
     const id = uuid()
     await db.run(
       'INSERT INTO shifts (id, user_id, opening_cash, status) VALUES (?, ?, ?, ?)',
       [id, userId, openingCash, 'open']
     )
-    const shift = await db.queryOne('SELECT * FROM shifts WHERE id = ?', [id])
+    const shift = await getShiftWithCashStats(id)
     queueSync('insert', 'shift', id, shift!).catch(() => {})
     return shift
   })
@@ -114,7 +173,8 @@ export async function registerIpcHandlers(): Promise<void> {
     const shift = await db.queryOne<any>('SELECT * FROM shifts WHERE id = ?', [shiftId])
     if (!shift) return null
 
-    const expectedCash = shift.opening_cash + (shift.total_sales || 0)
+    const cashSales = await getCashSalesForShift(shiftId)
+    const expectedCash = Number(shift.opening_cash || 0) + cashSales
     const variance = closingCash - expectedCash
     const nowExpr = now(db.engine)
 
@@ -123,17 +183,19 @@ export async function registerIpcHandlers(): Promise<void> {
         status = 'closed', closed_at = ${nowExpr} WHERE id = ?
     `, [closingCash, expectedCash, variance, notes, shiftId])
 
-    const closed = await db.queryOne('SELECT * FROM shifts WHERE id = ?', [shiftId])
+    const closed = await getShiftWithCashStats(shiftId)
     queueSync('update', 'shift', shiftId, closed!).catch(() => {})
     return closed
   })
 
   ipcMain.handle(IPC_CHANNELS.SHIFT_GET_CURRENT, async (_e, userId: string) => {
     const db = getDb()
-    return db.queryOne(
+    const current = await db.queryOne<{ id: string }>(
       "SELECT * FROM shifts WHERE user_id = ? AND status = 'open' ORDER BY opened_at DESC LIMIT 1",
       [userId]
     )
+    if (!current?.id) return null
+    return getShiftWithCashStats(current.id)
   })
 
   // Settings
@@ -148,9 +210,7 @@ export async function registerIpcHandlers(): Promise<void> {
   })
 
   ipcMain.handle(IPC_CHANNELS.SETTINGS_UPDATE, async (_e, key: string, value: string) => {
-    const db = getDb()
-    const nowExpr = now(db.engine)
-    await db.run(`UPDATE settings SET value = ?, updated_at = ${nowExpr} WHERE key = ?`, [value, key])
+    await upsertSetting(key, value)
     queueSync('update', 'setting', key, { key, value }).catch(() => {})
     return true
   })

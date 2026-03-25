@@ -260,6 +260,40 @@ function getSyncQueueSQL(engine: DbAdapter['engine']): string {
   `
 }
 
+function getCashAlertSettingsSQL(engine: DbAdapter['engine']): string {
+  if (engine === 'mssql') {
+    return `
+      IF COL_LENGTH('shifts', 'cash_alert_sent_at') IS NULL
+        ALTER TABLE shifts ADD cash_alert_sent_at NVARCHAR(255) NULL;
+
+      IF NOT EXISTS (SELECT 1 FROM settings WHERE [key] = 'opening_cash_limit')
+        INSERT INTO settings ([key], value) VALUES ('opening_cash_limit', '1000');
+      IF NOT EXISTS (SELECT 1 FROM settings WHERE [key] = 'cash_alert_threshold')
+        INSERT INTO settings ([key], value) VALUES ('cash_alert_threshold', '2000');
+      IF NOT EXISTS (SELECT 1 FROM settings WHERE [key] = 'cash_alert_email')
+        INSERT INTO settings ([key], value) VALUES ('cash_alert_email', '');
+    `
+  }
+
+  if (engine === 'postgres') {
+    return `
+      ALTER TABLE shifts ADD COLUMN IF NOT EXISTS cash_alert_sent_at TEXT;
+
+      INSERT INTO settings (key, value) VALUES ('opening_cash_limit', '1000') ON CONFLICT DO NOTHING;
+      INSERT INTO settings (key, value) VALUES ('cash_alert_threshold', '2000') ON CONFLICT DO NOTHING;
+      INSERT INTO settings (key, value) VALUES ('cash_alert_email', '') ON CONFLICT DO NOTHING;
+    `
+  }
+
+  return `
+    ALTER TABLE shifts ADD COLUMN cash_alert_sent_at TEXT;
+
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('opening_cash_limit', '1000');
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('cash_alert_threshold', '2000');
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('cash_alert_email', '');
+  `
+}
+
 export const MIGRATIONS: Migration[] = [
   {
     name: '001_initial_schema',
@@ -272,6 +306,10 @@ export const MIGRATIONS: Migration[] = [
   {
     name: '003_sync_queue',
     getSql: (engine) => getSyncQueueSQL(engine)
+  },
+  {
+    name: '004_cash_alert_settings',
+    getSql: (engine) => getCashAlertSettingsSQL(engine)
   }
 ]
 

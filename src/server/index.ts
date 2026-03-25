@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 import { v4 as uuid } from 'uuid'
 import dayjs from 'dayjs'
 import ExcelJS from 'exceljs'
+import nodemailer from 'nodemailer'
 import { PostgresAdapter } from '../main/database/postgresAdapter'
 import { runMigrations } from '../main/database/migrations'
 import type { DbAdapter } from '../main/database/adapter'
@@ -14,6 +15,160 @@ app.use(cors())
 app.use(express.json())
 
 let db: DbAdapter
+let mailTransport: nodemailer.Transporter | null = null
+
+function getMailTransport(): nodemailer.Transporter | null {
+  if (mailTransport) return mailTransport
+
+  const host = process.env.SMTP_HOST
+  const port = parseInt(process.env.SMTP_PORT || '587')
+  const user = process.env.SMTP_USER
+  const pass = process.env.SMTP_PASS
+
+  if (!host || !user || !pass) return null
+
+  mailTransport = nodemailer.createTransport({
+    host,
+    port,
+    secure: process.env.SMTP_SECURE === 'true' || port === 465,
+    auth: { user, pass }
+  })
+
+  return mailTransport
+}
+
+async function getSettingsMap(): Promise<Record<string, string>> {
+  const rows = await db.query<{ key: string; value: string }>('SELECT key, value FROM settings')
+  const settings: Record<string, string> = {}
+  for (const row of rows) settings[row.key] = row.value
+  return settings
+}
+
+async function upsertSetting(key: string, value: string): Promise<void> {
+  const existing = await db.queryOne('SELECT key FROM settings WHERE key = $1', [key])
+
+  if (existing) {
+    await db.run('UPDATE settings SET value = $1, updated_at = NOW() WHERE key = $2', [value, key])
+  } else {
+    await db.run('INSERT INTO settings (key, value, updated_at) VALUES ($1, $2, NOW())', [key, value])
+  }
+}
+
+async function getShiftWithCashStats(shiftId: string) {
+  const shift = await db.queryOne<any>(`
+    SELECT sh.*, u.display_name as cashier_name,
+      COALESCE((
+        SELECT SUM(s.total)
+        FROM sales s
+        WHERE s.shift_id = sh.id AND s.payment_method = $1 AND s.status = $2
+      ), 0) as cash_sales
+    FROM shifts sh
+    LEFT JOIN users u ON u.id = sh.user_id
+    WHERE sh.id = $3
+  `, ['cash', 'completed', shiftId])
+
+  if (!shift) return null
+
+  const cashSales = Number(shift.cash_sales) || 0
+  return {
+    ...shift,
+    cash_sales: cashSales,
+    cash_in_drawer: Number(shift.opening_cash || 0) + cashSales
+  }
+}
+
+async function getCurrentShiftForUser(userId: string) {
+  const shift = await db.queryOne<{ id: string }>(
+    "SELECT id FROM shifts WHERE user_id = $1 AND status = 'open' ORDER BY opened_at DESC LIMIT 1",
+    [userId]
+  )
+  if (!shift?.id) return null
+  return getShiftWithCashStats(shift.id)
+}
+
+async function getCashSalesForShift(shiftId: string): Promise<number> {
+  const row = await db.queryOne<{ total: string }>(
+    "SELECT COALESCE(SUM(total), 0) as total FROM sales WHERE shift_id = $1 AND payment_method = $2 AND status = $3",
+    [shiftId, 'cash', 'completed']
+  )
+  return Number(row?.total) || 0
+}
+
+async function sendCashRegisterAlertEmail({
+  to,
+  threshold,
+  shift,
+  settings
+}: {
+  to: string
+  threshold: number
+  shift: any
+  settings: Record<string, string>
+}): Promise<boolean> {
+  const transport = getMailTransport()
+  if (!transport) return false
+
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@ariemmas.local'
+  const shopName = settings.shop_name || 'Ariemmas'
+  const shopAddress = settings.shop_address || ''
+  const openedAt = shift.opened_at ? dayjs(shift.opened_at).format('DD MMM YYYY HH:mm') : 'Unknown'
+
+  await transport.sendMail({
+    from,
+    to,
+    subject: `${shopName}: cash drawer reached K ${threshold.toFixed(2)}`,
+    text: [
+      `${shopName} cash drawer alert`,
+      '',
+      `Cash in drawer: K ${Number(shift.cash_in_drawer || 0).toFixed(2)}`,
+      `Opening cash: K ${Number(shift.opening_cash || 0).toFixed(2)}`,
+      `Cash sales: K ${Number(shift.cash_sales || 0).toFixed(2)}`,
+      `Threshold: K ${threshold.toFixed(2)}`,
+      `Cashier: ${shift.cashier_name || shift.user_id}`,
+      `Shift opened: ${openedAt}`,
+      shopAddress ? `Location: ${shopAddress}` : ''
+    ].filter(Boolean).join('\n'),
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #18181B;">
+        <h2 style="margin-bottom: 8px;">${shopName} cash drawer alert</h2>
+        <p>The cash register has reached the configured threshold.</p>
+        <table style="border-collapse: collapse; margin-top: 16px;">
+          <tr><td style="padding: 6px 12px 6px 0;"><strong>Cash in drawer</strong></td><td>K ${Number(shift.cash_in_drawer || 0).toFixed(2)}</td></tr>
+          <tr><td style="padding: 6px 12px 6px 0;"><strong>Opening cash</strong></td><td>K ${Number(shift.opening_cash || 0).toFixed(2)}</td></tr>
+          <tr><td style="padding: 6px 12px 6px 0;"><strong>Cash sales</strong></td><td>K ${Number(shift.cash_sales || 0).toFixed(2)}</td></tr>
+          <tr><td style="padding: 6px 12px 6px 0;"><strong>Threshold</strong></td><td>K ${threshold.toFixed(2)}</td></tr>
+          <tr><td style="padding: 6px 12px 6px 0;"><strong>Cashier</strong></td><td>${shift.cashier_name || shift.user_id}</td></tr>
+          <tr><td style="padding: 6px 12px 6px 0;"><strong>Shift opened</strong></td><td>${openedAt}</td></tr>
+        </table>
+        ${shopAddress ? `<p style="margin-top: 16px;">${shopAddress}</p>` : ''}
+      </div>
+    `
+  })
+
+  return true
+}
+
+async function sendCashDrawerAlertIfNeeded(shiftId: string | null | undefined): Promise<void> {
+  if (!shiftId) return
+
+  const shift = await getShiftWithCashStats(shiftId)
+  if (!shift || shift.cash_alert_sent_at) return
+
+  const settings = await getSettingsMap()
+  const threshold = parseFloat(settings.cash_alert_threshold || '2000') || 2000
+  const recipient = (settings.cash_alert_email || '').trim()
+
+  if (!recipient || Number(shift.cash_in_drawer || 0) < threshold) return
+
+  try {
+    const sent = await sendCashRegisterAlertEmail({ to: recipient, threshold, shift, settings })
+    if (sent) {
+      await db.run('UPDATE shifts SET cash_alert_sent_at = NOW() WHERE id = $1', [shiftId])
+    }
+  } catch (error) {
+    console.error('[Cash Alert] Failed to send email:', error)
+  }
+}
 
 async function initDb(): Promise<void> {
   const connectionString = process.env.DATABASE_URL
@@ -182,6 +337,7 @@ app.post('/api/sales', async (req, res) => {
     }
   })
 
+  await sendCashDrawerAlertIfNeeded(input.shift_id)
   const sale = await db.queryOne('SELECT * FROM sales WHERE id = $1', [saleId])
   res.json(sale)
 })
@@ -326,9 +482,19 @@ app.get('/api/sales/export', async (req, res) => {
 // --- Shifts ---
 app.post('/api/shifts/open', async (req, res) => {
   const { userId, openingCash } = req.body
+  const settings = await getSettingsMap()
+  const openingLimit = parseFloat(settings.opening_cash_limit || '1000') || 1000
+
+  if (Number(openingCash) < 0) {
+    return res.status(400).json({ error: 'Opening cash cannot be negative' })
+  }
+  if (Number(openingCash) > openingLimit) {
+    return res.status(400).json({ error: `Opening cash cannot be more than K ${openingLimit.toFixed(2)}` })
+  }
+
   const id = uuid()
   await db.run('INSERT INTO shifts (id, user_id, opening_cash, status) VALUES ($1,$2,$3,$4)', [id, userId, openingCash, 'open'])
-  const shift = await db.queryOne('SELECT * FROM shifts WHERE id = $1', [id])
+  const shift = await getShiftWithCashStats(id)
   res.json(shift)
 })
 
@@ -336,29 +502,28 @@ app.post('/api/shifts/close', async (req, res) => {
   const { shiftId, closingCash, notes } = req.body
   const shift = await db.queryOne<any>('SELECT * FROM shifts WHERE id = $1', [shiftId])
   if (!shift) return res.json(null)
-  const expectedCash = Number(shift.opening_cash) + Number(shift.total_sales || 0)
+  const cashSales = await getCashSalesForShift(shiftId)
+  const expectedCash = Number(shift.opening_cash) + cashSales
   const variance = closingCash - expectedCash
   await db.run("UPDATE shifts SET closing_cash=$1, expected_cash=$2, variance=$3, notes=$4, status='closed', closed_at=NOW() WHERE id=$5",
     [closingCash, expectedCash, variance, notes, shiftId])
-  const updated = await db.queryOne('SELECT * FROM shifts WHERE id = $1', [shiftId])
+  const updated = await getShiftWithCashStats(shiftId)
   res.json(updated)
 })
 
 app.get('/api/shifts/current/:userId', async (req, res) => {
-  const shift = await db.queryOne("SELECT * FROM shifts WHERE user_id = $1 AND status = 'open' ORDER BY opened_at DESC LIMIT 1", [req.params.userId])
+  const shift = await getCurrentShiftForUser(req.params.userId)
   res.json(shift)
 })
 
 // --- Settings ---
 app.get('/api/settings', async (_req, res) => {
-  const rows = await db.query<{ key: string; value: string }>('SELECT key, value FROM settings')
-  const settings: Record<string, string> = {}
-  for (const row of rows) settings[row.key] = row.value
+  const settings = await getSettingsMap()
   res.json(settings)
 })
 
 app.put('/api/settings/:key', async (req, res) => {
-  await db.run('UPDATE settings SET value = $1, updated_at = NOW() WHERE key = $2', [req.body.value, req.params.key])
+  await upsertSetting(req.params.key, req.body.value)
   res.json(true)
 })
 
@@ -411,6 +576,7 @@ app.post('/api/sync/sales', async (req, res) => {
       }
     })
 
+    await sendCashDrawerAlertIfNeeded(sale.shift_id)
     res.json({ status: 'synced' })
   } catch (err: any) {
     console.error('[Sync] Sales error:', err.message)
@@ -532,7 +698,7 @@ app.put('/api/sync/shifts/:id', async (req, res) => {
 app.put('/api/sync/settings/:key', async (req, res) => {
   try {
     const { key, value } = req.body
-    await db.run('UPDATE settings SET value = $1, updated_at = NOW() WHERE key = $2', [value, key || req.params.key])
+    await upsertSetting(key || req.params.key, value)
     res.json({ status: 'synced' })
   } catch (err: any) {
     console.error('[Sync] Setting error:', err.message)

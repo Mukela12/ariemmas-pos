@@ -3,6 +3,9 @@
  * Only active when window.api is not provided by the Electron preload.
  */
 
+import type { PrintableReceipt } from '../../../shared/types'
+import { printReceiptInBrowser } from './receipt'
+
 const MOCK_USERS = [
   { id: 'u1', username: 'admin', display_name: 'Admin User', role: 'admin' as const, active: 1, pin: '1234' },
   { id: 'u2', username: 'mary', display_name: 'Mary Banda', role: 'cashier' as const, active: 1, pin: '5678' }
@@ -69,7 +72,18 @@ const mockApi = {
   updateProduct: async (product: any) => product,
 
   // Sales
-  completeSale: async () => ({ id: 'sale-' + Date.now(), receipt_number: String(Math.floor(Math.random() * 10000)).padStart(6, '0') }),
+  completeSale: async (sale: any) => ({
+    id: 'sale-' + Date.now(),
+    receipt_number: String(Math.floor(Math.random() * 10000)).padStart(6, '0'),
+    subtotal: sale.subtotal,
+    vat_total: sale.vat_total,
+    total: sale.total,
+    payment_method: sale.payment_method,
+    amount_tendered: sale.amount_tendered,
+    change_given: sale.change_given,
+    mobile_ref: sale.mobile_ref,
+    created_at: new Date().toISOString()
+  }),
   exportDailySales: async () => { alert('No sales data available in demo mode.'); return null },
   getDailySales: async () => ({
     total_sales: 12,
@@ -85,9 +99,31 @@ const mockApi = {
   getCategories: async () => MOCK_CATEGORIES,
 
   // Shifts
-  openShift: async (_userId: string, openingCash: number) => ({ id: 'shift-1', user_id: _userId, opening_cash: openingCash, status: 'open', opened_at: new Date().toISOString() }),
+  openShift: async (_userId: string, openingCash: number) => ({
+    id: 'shift-1',
+    user_id: _userId,
+    opening_cash: openingCash,
+    status: 'open',
+    opened_at: new Date().toISOString(),
+    total_sales: 0,
+    total_transactions: 0,
+    total_vat: 0,
+    cash_sales: 0,
+    cash_in_drawer: openingCash
+  }),
   closeShift: async () => null,
-  getCurrentShift: async () => ({ id: 'shift-1', user_id: 'u1', opening_cash: 500, status: 'open', opened_at: new Date().toISOString(), total_sales: 0, total_transactions: 0, total_vat: 0 }),
+  getCurrentShift: async () => ({
+    id: 'shift-1',
+    user_id: 'u1',
+    opening_cash: 1000,
+    status: 'open',
+    opened_at: new Date().toISOString(),
+    total_sales: 0,
+    total_transactions: 0,
+    total_vat: 0,
+    cash_sales: 0,
+    cash_in_drawer: 1000
+  }),
 
   // Settings
   getSettings: async () => ({
@@ -97,13 +133,16 @@ const mockApi = {
     shop_tpin: '',
     vat_rate: '16',
     receipt_header: 'Welcome to Ariemmas!',
-    receipt_footer: 'Thank you for shopping at Ariemmas!'
+    receipt_footer: 'Thank you for shopping at Ariemmas!',
+    opening_cash_limit: '1000',
+    cash_alert_threshold: '2000',
+    cash_alert_email: ''
   }),
   updateSetting: async () => true,
 
   // Hardware
   printerStatus: async () => ({ connected: false, name: 'No printer (browser preview)' }),
-  printReceipt: async () => true,
+  printReceipt: async (receipt: PrintableReceipt) => printReceiptInBrowser(receipt),
   openCashDrawer: async () => true,
 }
 

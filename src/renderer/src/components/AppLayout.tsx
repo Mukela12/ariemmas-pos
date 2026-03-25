@@ -170,28 +170,74 @@ function ShiftModal({
   onClose: () => void
   onShiftChange: (shift: any) => void
 }) {
-  const [openingCash, setOpeningCash] = useState('')
+  const [openingCash, setOpeningCash] = useState('1000')
   const [closingCash, setClosingCash] = useState('')
   const [notes, setNotes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [openingLimit, setOpeningLimit] = useState(1000)
+  const [error, setError] = useState<string | null>(null)
 
   const inputClass = 'w-full h-10 px-3 rounded-md border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]'
 
+  useEffect(() => {
+    let isActive = true
+
+    window.api.getSettings().then((settings) => {
+      if (!isActive) return
+      const limit = parseFloat(settings.opening_cash_limit || '1000') || 1000
+      setOpeningLimit(limit)
+      if (!shift) {
+        setOpeningCash((current) => {
+          const currentValue = parseFloat(current)
+          if (!current || Number.isNaN(currentValue) || currentValue > limit) {
+            return String(limit)
+          }
+          return current
+        })
+      }
+    }).catch(() => {})
+
+    return () => {
+      isActive = false
+    }
+  }, [shift])
+
   const handleOpen = async () => {
     const amount = parseFloat(openingCash) || 0
+    if (amount < 0) {
+      setError('Opening cash cannot be negative.')
+      return
+    }
+    if (amount > openingLimit) {
+      setError(`Opening cash cannot be more than ${formatZMW(openingLimit)}.`)
+      return
+    }
+
+    setError(null)
     setIsSubmitting(true)
-    const newShift = await window.api.openShift(userId, amount)
-    onShiftChange(newShift)
-    setIsSubmitting(false)
+    try {
+      const newShift = await window.api.openShift(userId, amount)
+      onShiftChange(newShift)
+    } catch (err: any) {
+      setError(err?.message || 'Failed to open shift.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleClose = async () => {
     if (!shift) return
     const amount = parseFloat(closingCash) || 0
+    setError(null)
     setIsSubmitting(true)
-    await window.api.closeShift(shift.id, amount, notes)
-    onShiftChange(null)
-    setIsSubmitting(false)
+    try {
+      await window.api.closeShift(shift.id, amount, notes)
+      onShiftChange(null)
+    } catch (err: any) {
+      setError(err?.message || 'Failed to close shift.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -221,6 +267,14 @@ function ShiftModal({
                 <div className="flex justify-between">
                   <span className="text-[#71717A]">Sales Total</span>
                   <span className="text-[#18181B] font-medium tabular-nums">{formatZMW(shift.total_sales || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#71717A]">Cash Sales</span>
+                  <span className="text-[#18181B] font-medium tabular-nums">{formatZMW(shift.cash_sales || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#71717A]">Cash in Drawer</span>
+                  <span className="text-[#18181B] font-medium tabular-nums">{formatZMW(shift.cash_in_drawer || shift.opening_cash || 0)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#71717A]">Transactions</span>
@@ -267,13 +321,22 @@ function ShiftModal({
                   type="number"
                   step="0.01"
                   min="0"
+                  max={openingLimit}
                   value={openingCash}
-                  onChange={(e) => setOpeningCash(e.target.value)}
+                  onChange={(e) => { setOpeningCash(e.target.value); setError(null) }}
                   className={`${inputClass} tabular-nums`}
-                  placeholder="0.00"
+                  placeholder={openingLimit.toFixed(2)}
                   autoFocus
                 />
+                <p className="mt-2 text-[11px] text-[#71717A]">
+                  Opening cash should be {formatZMW(openingLimit)} or less.
+                </p>
               </div>
+              {error && (
+                <div className="px-3 py-2 bg-[#FEF2F2] border border-[#FECACA] rounded-md">
+                  <p className="text-[13px] text-[#DC2626]">{error}</p>
+                </div>
+              )}
               <button
                 onClick={handleOpen}
                 disabled={isSubmitting}
@@ -282,6 +345,11 @@ function ShiftModal({
                 {isSubmitting ? 'Opening...' : 'Open Shift'}
               </button>
             </>
+          )}
+          {shift && error && (
+            <div className="px-3 py-2 bg-[#FEF2F2] border border-[#FECACA] rounded-md">
+              <p className="text-[13px] text-[#DC2626]">{error}</p>
+            </div>
           )}
         </div>
       </div>

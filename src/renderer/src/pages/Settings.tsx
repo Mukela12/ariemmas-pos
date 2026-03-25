@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Store, Receipt, Printer, Save, Check, Wifi, WifiOff } from 'lucide-react'
+import { Store, Receipt, Printer, Save, Check, Wifi, WifiOff, BellRing } from 'lucide-react'
 
 export function Settings() {
   const [settings, setSettings] = useState<Record<string, string>>({})
@@ -180,6 +180,55 @@ export function Settings() {
                   onChange={(e) => updateField('vat_rate', e.target.value)}
                   className={`${inputClass} max-w-[120px] tabular-nums`}
                 />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-[#E4E4E7] rounded-md overflow-hidden">
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-[#F4F4F5]">
+              <BellRing size={18} className="text-[#71717A]" />
+              <div>
+                <h2 className="text-sm font-semibold text-[#18181B]">Cash Drawer Alerts</h2>
+                <p className="text-[11px] text-[#71717A]">Track cash in the register and notify when it reaches the threshold</p>
+              </div>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Opening Cash Limit (K)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={settings.opening_cash_limit || '1000'}
+                    onChange={(e) => updateField('opening_cash_limit', e.target.value)}
+                    className={`${inputClass} tabular-nums`}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Cash Alert Threshold (K)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={settings.cash_alert_threshold || '2000'}
+                    onChange={(e) => updateField('cash_alert_threshold', e.target.value)}
+                    className={`${inputClass} tabular-nums`}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className={labelClass}>Alert Email Recipient</label>
+                <input
+                  type="email"
+                  value={settings.cash_alert_email || ''}
+                  onChange={(e) => updateField('cash_alert_email', e.target.value)}
+                  className={inputClass}
+                  placeholder="owner@example.com"
+                />
+                <p className="text-[11px] text-[#71717A] mt-2">
+                  The app sends an alert when opening cash plus cash sales reaches the threshold above.
+                </p>
               </div>
             </div>
           </div>
