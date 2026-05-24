@@ -52,8 +52,12 @@ const api = {
   // Hardware
   printerStatus: () =>
     ipcRenderer.invoke(IPC_CHANNELS.HW_PRINTER_STATUS),
+  listPrinters: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.HW_LIST_PRINTERS),
   printReceipt: (receipt: any) =>
     ipcRenderer.invoke(IPC_CHANNELS.HW_PRINT_RECEIPT, receipt),
+  testPrint: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.HW_TEST_PRINT),
   openCashDrawer: () =>
     ipcRenderer.invoke(IPC_CHANNELS.HW_OPEN_DRAWER),
 

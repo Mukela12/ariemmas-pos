@@ -85,6 +85,8 @@ export const webApi = {
 
   // Hardware (not available on web)
   printerStatus: async () => ({ connected: false, name: 'Not available (web version)' }),
+  listPrinters: async () => [],
   printReceipt: async (receipt: PrintableReceipt) => printReceiptInBrowser(receipt),
+  testPrint: async () => ({ ok: false, error: 'Not available on web version' }),
   openCashDrawer: async () => true
 }
