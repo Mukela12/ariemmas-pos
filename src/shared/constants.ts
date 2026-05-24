@@ -60,5 +60,7 @@ export const IPC_CHANNELS = {
   // Hardware
   HW_PRINT_RECEIPT: 'hw:printReceipt',
   HW_OPEN_DRAWER: 'hw:openCashDrawer',
-  HW_PRINTER_STATUS: 'hw:printerStatus'
+  HW_PRINTER_STATUS: 'hw:printerStatus',
+  HW_LIST_PRINTERS: 'hw:listPrinters',
+  HW_TEST_PRINT: 'hw:testPrint'
 } as const

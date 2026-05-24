@@ -142,7 +142,9 @@ const mockApi = {
 
   // Hardware
   printerStatus: async () => ({ connected: false, name: 'No printer (browser preview)' }),
+  listPrinters: async () => [],
   printReceipt: async (receipt: PrintableReceipt) => printReceiptInBrowser(receipt),
+  testPrint: async () => ({ ok: false, error: 'Not available in browser preview' }),
   openCashDrawer: async () => true,
 }
 

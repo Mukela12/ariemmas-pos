@@ -26,7 +26,9 @@ interface PosAPI {
   updateSetting(key: string, value: string): Promise<boolean>
 
   printerStatus(): Promise<{ connected: boolean; name: string }>
+  listPrinters(): Promise<{ name: string; displayName: string; isDefault: boolean }[]>
   printReceipt(receipt: PrintableReceipt): Promise<boolean>
+  testPrint(): Promise<{ ok: boolean; error?: string }>
   openCashDrawer(): Promise<boolean>
 }
 

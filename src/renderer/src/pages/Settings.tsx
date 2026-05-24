@@ -7,10 +7,14 @@ export function Settings() {
   const [isSaving, setIsSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [printerStatus, setPrinterStatus] = useState<{ connected: boolean; name: string } | null>(null)
+  const [printers, setPrinters] = useState<{ name: string; displayName: string; isDefault: boolean }[]>([])
+  const [hwBusy, setHwBusy] = useState<'test' | 'drawer' | null>(null)
+  const [hwMessage, setHwMessage] = useState<{ ok: boolean; text: string } | null>(null)
 
   useEffect(() => {
     loadSettings()
     checkPrinter()
+    loadPrinters()
   }, [])
 
   async function loadSettings() {
@@ -26,6 +30,46 @@ export function Settings() {
       setPrinterStatus(status)
     } catch {
       setPrinterStatus({ connected: false, name: 'Unknown' })
+    }
+  }
+
+  async function loadPrinters() {
+    try {
+      setPrinters(await window.api.listPrinters())
+    } catch {
+      setPrinters([])
+    }
+  }
+
+  async function selectPrinter(name: string) {
+    updateField('printer_name', name)
+    await window.api.updateSetting('printer_name', name)
+    await checkPrinter()
+  }
+
+  async function handleTestPrint() {
+    setHwBusy('test')
+    setHwMessage(null)
+    try {
+      const res = await window.api.testPrint()
+      setHwMessage(res.ok ? { ok: true, text: 'Test page sent to printer' } : { ok: false, text: res.error || 'Test print failed' })
+    } catch {
+      setHwMessage({ ok: false, text: 'Test print failed' })
+    } finally {
+      setHwBusy(null)
+    }
+  }
+
+  async function handleOpenDrawer() {
+    setHwBusy('drawer')
+    setHwMessage(null)
+    try {
+      const ok = await window.api.openCashDrawer()
+      setHwMessage(ok ? { ok: true, text: 'Drawer kick sent' } : { ok: false, text: 'Could not open drawer — check printer' })
+    } catch {
+      setHwMessage({ ok: false, text: 'Could not open drawer' })
+    } finally {
+      setHwBusy(null)
     }
   }
 
@@ -264,6 +308,57 @@ export function Settings() {
                       <WifiOff size={14} className="text-[#A1A1AA]" />
                       <span className="text-xs font-medium text-[#A1A1AA]">Not Connected</span>
                     </>
+                  )}
+                </div>
+              </div>
+
+              {/* Printer selection + tests */}
+              <div className="py-3 px-4 bg-[#FAFAFA] rounded-md border border-[#F4F4F5] space-y-3">
+                <div>
+                  <label className={labelClass}>Active Printer</label>
+                  <select
+                    value={settings.printer_name || ''}
+                    onChange={(e) => selectPrinter(e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">System default printer</option>
+                    {printers.map((p) => (
+                      <option key={p.name} value={p.name}>
+                        {p.displayName}{p.isDefault ? ' (default)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-[#71717A] mt-1.5">
+                    {printers.length === 0
+                      ? 'No printers found in Windows. Install the printer driver first, then click Refresh.'
+                      : 'Choose the receipt printer the cash drawer is plugged into.'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={loadPrinters}
+                    className="h-9 px-3 rounded-md border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA]"
+                  >
+                    Refresh
+                  </button>
+                  <button
+                    onClick={handleTestPrint}
+                    disabled={hwBusy !== null}
+                    className="h-9 px-3 rounded-md border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA] disabled:opacity-60"
+                  >
+                    {hwBusy === 'test' ? 'Printing...' : 'Test Print'}
+                  </button>
+                  <button
+                    onClick={handleOpenDrawer}
+                    disabled={hwBusy !== null}
+                    className="h-9 px-3 rounded-md border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA] disabled:opacity-60"
+                  >
+                    {hwBusy === 'drawer' ? 'Opening...' : 'Open Drawer'}
+                  </button>
+                  {hwMessage && (
+                    <span className={`text-xs font-medium ${hwMessage.ok ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+                      {hwMessage.text}
+                    </span>
                   )}
                 </div>
               </div>

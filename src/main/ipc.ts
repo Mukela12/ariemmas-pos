@@ -5,6 +5,15 @@ import { login, logout, getCurrentUser, seedDefaultAdmin } from './services/auth
 import { completeSale, getDailySales } from './services/sales'
 import { exportDailySalesToExcel } from './services/exportExcel'
 import { queueSync, getSyncStatus, processSyncQueue } from './services/syncService'
+import {
+  buildReceiptBytes,
+  buildTestBytes,
+  getDrawerKickBytes,
+  listPrinters,
+  resolvePrinter,
+  sendRaw
+} from './services/printer'
+import type { PrintableReceipt } from '../shared/types'
 import { IPC_CHANNELS } from '../shared/constants'
 
 async function getSettingValue(key: string, fallback: string): Promise<string> {
@@ -224,19 +233,60 @@ export async function registerIpcHandlers(): Promise<void> {
     return processSyncQueue()
   })
 
-  // Hardware (stubs for dev)
-  ipcMain.handle(IPC_CHANNELS.HW_PRINTER_STATUS, () => {
-    return { connected: false, name: 'No printer configured' }
+  // Hardware
+  ipcMain.handle(IPC_CHANNELS.HW_LIST_PRINTERS, async () => {
+    return listPrinters()
   })
 
-  ipcMain.handle(IPC_CHANNELS.HW_PRINT_RECEIPT, (_e, _receipt) => {
-    console.log('[DEV] Receipt would print here')
-    return true
+  ipcMain.handle(IPC_CHANNELS.HW_PRINTER_STATUS, async () => {
+    const saved = await getSettingValue('printer_name', '')
+    const printer = await resolvePrinter(saved)
+    if (!printer) return { connected: false, name: 'No printer found' }
+    return { connected: true, name: printer.displayName }
   })
 
-  ipcMain.handle(IPC_CHANNELS.HW_OPEN_DRAWER, () => {
-    console.log('[DEV] Cash drawer would open here')
-    return true
+  ipcMain.handle(IPC_CHANNELS.HW_PRINT_RECEIPT, async (_e, receipt: PrintableReceipt) => {
+    const saved = await getSettingValue('printer_name', '')
+    const printer = await resolvePrinter(saved)
+    if (!printer) {
+      console.error('[printer] No printer available to print receipt')
+      return false
+    }
+    try {
+      await sendRaw(printer.name, buildReceiptBytes(receipt))
+      return true
+    } catch (err) {
+      console.error('[printer] Failed to print receipt:', err)
+      return false
+    }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.HW_TEST_PRINT, async () => {
+    const saved = await getSettingValue('printer_name', '')
+    const printer = await resolvePrinter(saved)
+    if (!printer) return { ok: false, error: 'No printer found' }
+    try {
+      await sendRaw(printer.name, buildTestBytes())
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) }
+    }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.HW_OPEN_DRAWER, async () => {
+    const saved = await getSettingValue('printer_name', '')
+    const printer = await resolvePrinter(saved)
+    if (!printer) {
+      console.error('[printer] No printer available to open drawer')
+      return false
+    }
+    try {
+      await sendRaw(printer.name, getDrawerKickBytes())
+      return true
+    } catch (err) {
+      console.error('[printer] Failed to open drawer:', err)
+      return false
+    }
   })
 }
 
