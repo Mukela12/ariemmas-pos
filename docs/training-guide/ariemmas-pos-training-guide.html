@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ariemmas POS — Training Guide</title>
+<style>
+  :root {
+    --teal: #0D9488;
+    --teal-dark: #0F766E;
+    --ink: #18181B;
+    --ink-2: #3F3F46;
+    --muted: #71717A;
+    --line: #E4E4E7;
+    --bg-soft: #F4F4F5;
+    --green: #16A34A;
+    --amber: #B45309;
+    --amber-bg: #FFFBEB;
+    --red: #B91C1C;
+    --red-bg: #FEF2F2;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    font-size: 11.5pt;
+    line-height: 1.55;
+    background: #fff;
+  }
+  .page {
+    width: 210mm;
+    padding: 14mm 18mm;
+    margin: 0 auto;
+    background: #fff;
+  }
+  .page-break { page-break-before: always; }
+  .no-break { page-break-inside: avoid; }
+  h2, h3 { page-break-after: avoid; }
+  figure { page-break-inside: avoid; }
+  .footer-tag { display: none; } /* running footer is added by the PDF renderer */
+  @media screen {
+    body { background: #d9d9d6; padding: 20px 0; }
+    .page { box-shadow: 0 2px 16px rgba(0,0,0,.12); margin-bottom: 22px; min-height: 269mm; }
+  }
+
+  /* ---- Cover ---- */
+  .cover { display: flex; flex-direction: column; min-height: 263mm; }
+  .cover-top { display: flex; align-items: center; gap: 16px; }
+  .cover-logo { width: 64px; height: 64px; border-radius: 14px; }
+  .cover-brand { font-size: 22pt; font-weight: 800; letter-spacing: -.02em; }
+  .cover-brand small { display: block; font-size: 10pt; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: var(--teal); margin-top: 2px; }
+  .cover-mid { margin-top: auto; }
+  .cover-title { font-size: 40pt; font-weight: 800; letter-spacing: -.03em; line-height: 1.04; margin: 0; }
+  .cover-sub { font-size: 14pt; color: var(--muted); margin-top: 14px; max-width: 130mm; }
+  .cover-meta { margin-top: auto; padding-top: 22px; border-top: 2px solid var(--line); display: flex; justify-content: space-between; font-size: 10pt; color: var(--muted); }
+  .pill-row { display: flex; gap: 8px; margin-top: 22px; flex-wrap: wrap; }
+  .pill { background: var(--bg-soft); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 9.5pt; font-weight: 600; color: var(--ink-2); }
+
+  /* ---- Typography ---- */
+  h2 { font-size: 19pt; font-weight: 800; letter-spacing: -.02em; margin: 0 0 4px; padding-top: 4px; }
+  .sec-kicker { font-size: 9pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--teal); margin-bottom: 4px; }
+  h3 { font-size: 13.5pt; font-weight: 700; margin: 26px 0 8px; color: var(--ink); }
+  h3 .num { color: var(--teal); font-weight: 800; margin-right: 8px; }
+  p { margin: 0 0 11px; }
+  ul, ol { margin: 0 0 12px; padding-left: 20px; }
+  li { margin-bottom: 5px; }
+  strong { font-weight: 700; }
+  code, .kbd { font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace; font-size: .88em; }
+  .kbd { background: var(--ink); color: #fff; border-radius: 5px; padding: 1px 7px; font-weight: 600; font-size: .8em; }
+
+  /* ---- Figures ---- */
+  figure { margin: 10px 0 12px; text-align: center; }
+  figure img { max-width: 100%; max-height: 76mm; width: auto; border: 1px solid var(--line); border-radius: 8px; display: inline-block; }
+  figcaption { font-size: 9.5pt; color: var(--muted); margin-top: 6px; text-align: left; }
+  figcaption b { color: var(--ink-2); }
+
+  /* ---- Callouts ---- */
+  .note, .warn, .tip { border-radius: 8px; padding: 12px 15px; margin: 14px 0; font-size: 10.5pt; border: 1px solid; }
+  .note { background: #F0FDFA; border-color: #99F6E4; }
+  .warn { background: var(--amber-bg); border-color: #FDE68A; }
+  .tip  { background: #F0FDF4; border-color: #BBF7D0; }
+  .note b, .warn b, .tip b { display: block; margin-bottom: 3px; }
+  .warn b { color: var(--amber); }
+  .tip b { color: var(--green); }
+  .note b { color: var(--teal-dark); }
+
+  /* ---- Steps ---- */
+  .steps { counter-reset: step; padding-left: 0; list-style: none; }
+  .steps > li { position: relative; padding-left: 38px; margin-bottom: 12px; min-height: 26px; }
+  .steps > li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 0; top: -1px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--teal); color: #fff; font-weight: 700; font-size: 11pt;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ---- Tables ---- */
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 10.5pt; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--bg-soft); font-weight: 700; font-size: 9.5pt; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2); }
+  td code { background: var(--bg-soft); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---- TOC ---- */
+  .toc { columns: 1; }
+  .toc-item { display: flex; align-items: baseline; gap: 8px; padding: 7px 0; border-bottom: 1px dotted var(--line); }
+  .toc-num { color: var(--teal); font-weight: 800; width: 30px; }
+  .toc-title { font-weight: 600; }
+  .toc-sub { color: var(--muted); font-size: 10pt; }
+
+  /* ---- Cards ---- */
+  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .card h4 { margin: 0 0 6px; font-size: 11.5pt; }
+  .card p { font-size: 10pt; color: var(--ink-2); margin: 0; }
+
+  .role-badge { display: inline-block; font-size: 9pt; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 3px 10px; border-radius: 999px; }
+  .role-cashier { background: #F0FDFA; color: var(--teal-dark); border: 1px solid #99F6E4; }
+  .role-admin { background: #EEF2FF; color: #4338CA; border: 1px solid #C7D2FE; }
+
+  .footer-tag { position: absolute; bottom: 12mm; left: 20mm; right: 20mm; display: flex; justify-content: space-between; font-size: 8.5pt; color: #A1A1AA; border-top: 1px solid var(--line); padding-top: 6px; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<section class="page cover">
+  <div class="cover-top">
+    <img class="cover-logo" src="img/logo.png" alt="Ariemmas logo" />
+    <div class="cover-brand">Ariemmas<small>Point of Sale</small></div>
+  </div>
+  <div class="cover-mid">
+    <h1 class="cover-title">Staff Training Guide</h1>
+    <p class="cover-sub">Everything cashiers and administrators need to run the till, sell by weight, take payment, and track every transaction — with pictures of every screen.</p>
+    <div class="pill-row">
+      <span class="pill">For Cashiers</span>
+      <span class="pill">For Administrators</span>
+      <span class="pill">Hardware Setup</span>
+      <span class="pill">Troubleshooting</span>
+    </div>
+  </div>
+  <div class="cover-meta">
+    <span>Ariemmas Shop &middot; Mongu, Zambia</span>
+    <span>Version 1.0 &middot; Application v1.0.10</span>
+  </div>
+</section>
+
+<!-- ============ TOC ============ -->
+<section class="page page-break">
+  <div class="sec-kicker">Contents</div>
+  <h2>What's in this guide</h2>
+  <div class="toc" style="margin-top:18px;">
+    <div class="toc-item"><span class="toc-num">1</span><span class="toc-title">Welcome &amp; the basics</span><span class="toc-sub">— what the system is, who uses it</span></div>
+    <div class="toc-item"><span class="toc-num">2</span><span class="toc-title">Cashier Guide</span><span class="toc-sub">— sign in, shift, sell, weigh, take payment, close</span></div>
+    <div class="toc-item" style="padding-left:30px;"><span class="toc-sub">2.1 Signing in &nbsp;·&nbsp; 2.2 Opening your shift &nbsp;·&nbsp; 2.3 The sale screen</span></div>
+    <div class="toc-item" style="padding-left:30px;"><span class="toc-sub">2.4 Adding products &nbsp;·&nbsp; 2.5 Selling by weight &nbsp;·&nbsp; 2.6 Taking payment</span></div>
+    <div class="toc-item" style="padding-left:30px;"><span class="toc-sub">2.7 Receipt &amp; cash drawer &nbsp;·&nbsp; 2.8 Closing your shift &nbsp;·&nbsp; 2.9 The rules</span></div>
+    <div class="toc-item"><span class="toc-num">3</span><span class="toc-title">Administrator Guide</span><span class="toc-sub">— products, barcodes, reports, exports</span></div>
+    <div class="toc-item" style="padding-left:30px;"><span class="toc-sub">3.1 Products &nbsp;·&nbsp; 3.2 Barcodes &nbsp;·&nbsp; 3.3 Butchery items &nbsp;·&nbsp; 3.4 Reports &nbsp;·&nbsp; 3.5 Settings</span></div>
+    <div class="toc-item"><span class="toc-num">4</span><span class="toc-title">Hardware: printer &amp; cash drawer</span><span class="toc-sub">— wiring and first-time setup</span></div>
+    <div class="toc-item"><span class="toc-num">5</span><span class="toc-title">Troubleshooting &amp; FAQ</span><span class="toc-sub">— common problems and fixes</span></div>
+    <div class="toc-item"><span class="toc-num">6</span><span class="toc-title">Quick reference card</span><span class="toc-sub">— logins and keyboard shortcuts (print &amp; pin up)</span></div>
+  </div>
+
+  <div class="note" style="margin-top:30px;">
+    <b>How to read this guide</b>
+    Steps you perform are <strong>numbered</strong>. Buttons and screen labels look like <strong>“Open Shift”</strong>. Keys on the keyboard look like <span class="kbd">F12</span>. Every important screen has a picture so you can match what you see.
+  </div>
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Contents</span></div>
+</section>
+
+<!-- ============ 1. WELCOME ============ -->
+<section class="page page-break">
+  <div class="sec-kicker">Part 1</div>
+  <h2>Welcome &amp; the basics</h2>
+
+  <p>Ariemmas POS is the till software the shop runs on its touchscreen terminals. It records every sale, prints receipts, opens the cash drawer, tracks stock, and shows the owner exactly how much was sold and by whom.</p>
+
+  <h3><span class="num">1.1</span>Who uses it</h3>
+  <div class="card-grid">
+    <div class="card">
+      <span class="role-badge role-cashier">Cashier</span>
+      <h4 style="margin-top:8px;">Runs the till</h4>
+      <p>Signs in with a cashier login, opens a shift with their name, scans or searches products, weighs butchery items, takes cash or mobile money, and closes the shift at the end of the day.</p>
+    </div>
+    <div class="card">
+      <span class="role-badge role-admin">Administrator</span>
+      <h4 style="margin-top:8px;">Runs the shop</h4>
+      <p>Adds and prices products, prints barcodes, marks items as sold-by-weight, reads the daily reports (who sold what), exports to Excel, and configures the printer and drawer.</p>
+    </div>
+  </div>
+
+  <h3><span class="num">1.2</span>The three things every cashier does, every day</h3>
+  <ol class="steps">
+    <li><strong>Open a shift</strong> when you start — type your name and the cash in the drawer.</li>
+    <li><strong>Ring up sales</strong> all day — scan/search items, take payment, hand over the receipt.</li>
+    <li><strong>Close the shift</strong> when you finish — count the drawer so the totals balance.</li>
+  </ol>
+
+  <div class="tip">
+    <b>Works without internet</b>
+    The till keeps working even if the internet goes down. Sales are saved on the terminal and sent to the owner’s dashboard automatically when the connection returns.
+  </div>
+
+  <h3><span class="num">1.3</span>A note on prices and VAT</h3>
+  <p>All prices are entered <strong>VAT-inclusive</strong> (the price on the shelf is the price the customer pays). The system works out the 16% VAT portion automatically and shows it on the receipt and in reports. You never calculate VAT by hand.</p>
+
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 1 · The basics</span></div>
+</section>
+
+<!-- ============ 2. CASHIER GUIDE ============ -->
+<section class="page page-break">
+  <div class="sec-kicker">Part 2 · For Cashiers</div>
+  <h2>Cashier Guide</h2>
+  <p>This is everything you do on the till, from signing in to closing your shift. Follow it in order the first few times and it will quickly become second nature.</p>
+
+  <h3><span class="num">2.1</span>Signing in</h3>
+  <p>When the terminal is ready you’ll see the sign-in screen. Each cashier has their own login and 4-digit PIN.</p>
+  <figure>
+    <img src="img/01-login.png" alt="Login screen" />
+    <figcaption><b>The sign-in screen.</b> Your cashier logins are listed on the right under <strong>“Cashier Logins”</strong>.</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>Find your name in the <strong>Cashier Logins</strong> list (Cashier 1 to Cashier 5).</li>
+    <li><strong>Tap your row</strong> — this fills in your username and PIN automatically.</li>
+    <li>Tap <strong>“Sign In”</strong>.</li>
+  </ol>
+  <figure>
+    <img src="img/02-login-filled.png" alt="Login filled in" />
+    <figcaption>Tapping a cashier row fills the username and PIN ready to sign in.</figcaption>
+  </figure>
+  <div class="note">
+    <b>Use your own login</b>
+    Always sign in as yourself. Every sale is tagged with your login, so the owner can see who served each customer. Signing in as someone else makes the reports wrong.
+  </div>
+
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 2 · Cashier Guide</span></div>
+</section>
+
+<section class="page page-break">
+  <h3><span class="num">2.2</span>Opening your shift</h3>
+  <p>Before you can sell anything you must open a shift. This records who is on the till and how much cash you started with.</p>
+  <figure>
+    <img src="img/03-open-shift.png" alt="Open shift modal" />
+    <figcaption><b>The Open Shift window.</b> It asks for your real name and the opening cash.</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>If you see <strong>“No Shift”</strong> at the top right, tap it to open this window.</li>
+    <li>In <strong>“Cashier’s Name”</strong>, type the name of the real person on the till today — for example <em>Mary Banda</em>. (The login may be “Cashier 1”, but the owner wants the real name.)</li>
+    <li>In <strong>“Opening Cash (K)”</strong>, type the amount of cash counted in the drawer.</li>
+    <li>Tap <strong>“Open Shift”</strong>. The badge at the top changes to <strong>“Shift Open”</strong>.</li>
+  </ol>
+  <div class="warn">
+    <b>Why the name matters</b>
+    Five cashiers share three terminals and swap during the day. The name you type here is how the owner’s report tells <em>who</em> actually rang each sale. Always type your own name.
+  </div>
+
+  <h3><span class="num">2.3</span>The sale screen</h3>
+  <figure>
+    <img src="img/04-pos-empty.png" alt="Empty POS screen" />
+    <figcaption><b>The sale screen.</b> Search bar at the top, the cart in the middle, and the running <strong>Receipt</strong> with the total on the right.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>Search bar (top):</strong> scan a barcode or type a product name here.</li>
+    <li><strong>Cart (middle):</strong> the items in the current sale, with quantity and price.</li>
+    <li><strong>Receipt panel (right):</strong> the running subtotal, VAT, and the big <strong>Total</strong>.</li>
+    <li><strong>Pay button (bottom right):</strong> shows the amount due — tap it to take payment.</li>
+  </ul>
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 2 · Cashier Guide</span></div>
+</section>
+
+<section class="page page-break">
+  <h3><span class="num">2.4</span>Adding products to the sale</h3>
+  <p>There are two ways to add an item — whichever is faster for you.</p>
+  <p><strong>A. Scan the barcode.</strong> Point the barcode scanner at the product. It’s added to the cart instantly.</p>
+  <p><strong>B. Search by name.</strong> Tap the search bar (or press <span class="kbd">F2</span>) and start typing. A list appears — tap the item you want.</p>
+  <figure>
+    <img src="img/05-search.png" alt="Search results" />
+    <figcaption>Typing in the search bar shows matching products with their price and stock.</figcaption>
+  </figure>
+  <figure>
+    <img src="img/06-cart-items.png" alt="Cart with items" />
+    <figcaption><b>Items in the cart.</b> Use the <strong>–</strong> and <strong>+</strong> buttons to change quantity, or the <strong>✕</strong> to remove a line. The total updates on the right.</figcaption>
+  </figure>
+  <div class="tip">
+    <b>Handy keys</b>
+    <span class="kbd">F2</span> jump to search &nbsp;·&nbsp; <span class="kbd">F8</span> remove the selected line &nbsp;·&nbsp; <span class="kbd">F1</span> clear the whole sale &nbsp;·&nbsp; <span class="kbd">F12</span> take payment.
+  </div>
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 2 · Cashier Guide</span></div>
+</section>
+
+<section class="page page-break">
+  <h3><span class="num">2.5</span>Selling by weight — the butchery</h3>
+  <p>Meat and other items sold by weight work a little differently. The price you see is the <strong>price per kilogram</strong>, and you tell the till how much the item weighs.</p>
+  <ol class="steps">
+    <li><strong>Weigh the item on the shop scale.</strong> The scale shows the weight, for example <strong>0.450 kg</strong>. (The scale is separate — the till does not read it automatically.)</li>
+    <li>Scan or search the item as normal — for example <em>T-Bone Steak</em>.</li>
+    <li>Because it’s a weighed item, a <strong>“Weigh item”</strong> window pops up.</li>
+  </ol>
+  <figure>
+    <img src="img/07-weigh-empty.png" alt="Weigh item modal empty" />
+    <figcaption><b>The Weigh item window.</b> It shows the item name and the price per kg at the top.</figcaption>
+  </figure>
+  <ol class="steps" start="4">
+    <li>Type the weight from the scale into <strong>“Weight (kg)”</strong> — for example <code>0.450</code>. Use a dot for the decimal.</li>
+    <li>The <strong>Line total</strong> updates as you type, so you can check it before adding.</li>
+    <li>Tap <strong>“Add to cart”</strong> (or press Enter).</li>
+  </ol>
+  <figure>
+    <img src="img/08-weigh-typed.png" alt="Weigh item with weight typed" />
+    <figcaption>0.450 kg of T-Bone at K 289.99/kg = <b>K 130.50</b>, shown live before you add it.</figcaption>
+  </figure>
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 2 · Cashier Guide</span></div>
+</section>
+
+<section class="page page-break">
+  <figure>
+    <img src="img/09-cart-weighted.png" alt="Cart with weighted item" />
+    <figcaption><b>The weighed item in the cart.</b> It reads <strong>“T-Bone Steak (0.450 kg)”</strong> so it’s clear how much was sold.</figcaption>
+  </figure>
+  <div class="warn">
+    <b>Careful: kilograms, not grams</b>
+    The scale shows kilograms. If it reads <strong>0.450</strong>, type <code>0.450</code> — not <code>450</code>. Typing 450 would charge the customer for 450 kilograms. If the line total looks far too big, you typed grams by mistake — tap <strong>✕</strong> and re-do it.
+  </div>
+  <div class="tip">
+    <b>Each weighing is its own line</b>
+    If a customer buys two separate cuts of the same meat, weigh and add them one at a time. Each becomes its own line, so you can sell different weights of the same product in one sale.
+  </div>
+
+  <h3><span class="num">2.6</span>Taking payment</h3>
+  <p>When the cart is complete, tap the green <strong>“Pay”</strong> button (or press <span class="kbd">F12</span>).</p>
+  <figure>
+    <img src="img/10-payment.png" alt="Payment screen" />
+    <figcaption><b>The payment window.</b> Choose <strong>Cash</strong> or <strong>Mobile Money</strong>. The amount due is shown big at the top.</figcaption>
+  </figure>
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 2 · Cashier Guide</span></div>
+</section>
+
+<section class="page page-break">
+  <p><strong>For a cash payment:</strong></p>
+  <ol class="steps">
+    <li>Type the cash the customer handed you into <strong>“Cash Received”</strong>, or tap one of the quick amounts (<strong>K 50</strong>, <strong>K 100</strong>, <strong>K 500</strong>…).</li>
+    <li>The <strong>Change</strong> to give back is worked out for you.</li>
+    <li>Tap <strong>“Pay”</strong> to finish.</li>
+  </ol>
+  <figure>
+    <img src="img/11-payment-change.png" alt="Payment with change" />
+    <figcaption>Customer paid <b>K 500</b> on a <b>K 170.50</b> sale → the till shows <b>K 329.50</b> change.</figcaption>
+  </figure>
+  <p><strong>For mobile money:</strong> tap <strong>Mobile Money</strong>, enter the reference number from the customer’s payment confirmation, and tap Pay.</p>
+
+  <h3><span class="num">2.7</span>Receipt &amp; cash drawer</h3>
+  <p>As soon as the sale is finished:</p>
+  <ul>
+    <li>The <strong>receipt prints</strong> automatically — hand it to the customer.</li>
+    <li>On a <strong>cash</strong> sale, the <strong>cash drawer opens</strong> automatically so you can put the money in and take out change.</li>
+    <li>A <strong>“Thank You”</strong> screen confirms the sale, showing the total, amount paid, and change.</li>
+  </ul>
+  <figure>
+    <img src="img/12-thankyou.png" alt="Thank you screen" />
+    <figcaption><b>Sale complete.</b> The screen confirms total, paid, and change, then returns to a fresh sale.</figcaption>
+  </figure>
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 2 · Cashier Guide</span></div>
+</section>
+
+<section class="page page-break">
+  <h3><span class="num">2.8</span>Closing your shift</h3>
+  <p>At the end of your time on the till, close your shift so the day’s cash can be checked.</p>
+  <ol class="steps">
+    <li>Tap the <strong>“Shift Open”</strong> badge at the top right.</li>
+    <li>Count the cash in the drawer and type it into <strong>“Closing Cash”</strong>.</li>
+    <li>Add a note if anything unusual happened (optional).</li>
+    <li>Tap <strong>“Close Shift”</strong>. The system compares your count to what it expected and records any difference.</li>
+  </ol>
+  <div class="note">
+    <b>Swapping cashiers on one terminal</b>
+    When you hand the till to the next person: <strong>close your shift</strong>, then <strong>sign out</strong> (the arrow icon, top right). The next cashier signs in with their own login and opens their own shift.
+  </div>
+
+  <h3><span class="num">2.9</span>The rules — read this once</h3>
+  <table>
+    <tr><th>Rule</th><th>Why</th></tr>
+    <tr><td>Sign in as yourself</td><td>Every sale is tagged to your login for the owner’s report.</td></tr>
+    <tr><td>Type your real name at shift open</td><td>So the report shows the person, not just “Cashier 1”.</td></tr>
+    <tr><td>One cashier login, one terminal at a time</td><td>If you’re already signed in on another till, the system will stop a second sign-in with the same login.</td></tr>
+    <tr><td>Check the weight before adding meat</td><td>Kilograms, not grams. A wrong weight overcharges the customer.</td></tr>
+    <tr><td>Close your shift before handing over</td><td>So the drawer balances against your sales.</td></tr>
+  </table>
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 2 · Cashier Guide</span></div>
+</section>
+
+<!-- ============ 3. ADMIN GUIDE ============ -->
+<section class="page page-break">
+  <div class="sec-kicker">Part 3 · For Administrators</div>
+  <h2>Administrator Guide</h2>
+  <p>Admins sign in with the <strong>admin</strong> login (the PIN is in the credentials file saved to the Downloads folder when the app is first installed). Admins see extra tabs: <strong>Products</strong>, <strong>Reports</strong>, and <strong>Settings</strong>.</p>
+
+  <h3><span class="num">3.1</span>Managing products</h3>
+  <figure>
+    <img src="img/20-products.png" alt="Products list" />
+    <figcaption><b>The Products screen.</b> Every item with its barcode, price, stock and status. Tap <strong>“Add Product”</strong> to create one, or the pencil to edit.</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>Go to the <strong>Products</strong> tab.</li>
+    <li>Tap <strong>“Add Product”</strong> (top right) to add a new item, or the <strong>pencil</strong> icon to edit an existing one.</li>
+    <li>Fill in the name, price, category, stock and VAT rate, then tap <strong>“Add Product”</strong> / <strong>“Update Product”</strong>.</li>
+  </ol>
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 3 · Administrator Guide</span></div>
+</section>
+
+<section class="page page-break">
+  <h3><span class="num">3.2</span>Generating &amp; printing barcodes</h3>
+  <p>For items you prepare in-store (like home-made food) that have no barcode, the system can <strong>make one for you</strong> and you can print it as a label.</p>
+  <figure>
+    <img src="img/21-add-product.png" alt="Add product with barcode" />
+    <figcaption><b>Add/Edit Product.</b> Tap <strong>“Generate”</strong> to create a barcode, see it previewed, then tap <strong>“PNG”</strong> to download a printable label.</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>In the product window, tap <strong>“Generate”</strong> next to the barcode field — a unique barcode is created.</li>
+    <li>The barcode preview appears below.</li>
+    <li>Tap <strong>“PNG”</strong> to download the barcode image, then print it and stick it on the product.</li>
+  </ol>
+  <div class="tip"><b>Works offline</b> The barcode generator needs no internet — it works on the terminal at any time.</div>
+
+  <h3><span class="num">3.3</span>Setting up a butchery (weighed) item</h3>
+  <figure>
+    <img src="img/22-weighted-toggle.png" alt="Weighted toggle" />
+    <figcaption>Tick <strong>“Sold by weight (butchery)”</strong>. The unit switches to <strong>kg</strong> and the price becomes <strong>price per kg</strong>.</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>Add or edit the product (for example, <em>T-Bone Steak</em>).</li>
+    <li>Set the <strong>Selling Price</strong> to the <strong>price per kilogram</strong>.</li>
+    <li>Tick <strong>“Sold by weight (butchery)”</strong> near the bottom.</li>
+    <li>Save. Now, whenever a cashier adds this item, the <strong>Weigh item</strong> window appears automatically (see section 2.5).</li>
+  </ol>
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 3 · Administrator Guide</span></div>
+</section>
+
+<section class="page page-break">
+  <h3><span class="num">3.4</span>Reports — who sold what</h3>
+  <p>The <strong>Reports</strong> tab is where the owner sees the day’s trading. Pick a date at the top right; everything updates for that day.</p>
+  <figure>
+    <img src="img/30-reports-top.png" alt="Reports top" />
+    <figcaption><b>Daily overview.</b> Total revenue, number of sales, items sold, average sale, the cash/mobile split, and the VAT summary.</figcaption>
+  </figure>
+  <p>Scroll down for the part that matters most for staff accountability — <strong>By cashier</strong> and the full <strong>Transactions</strong> list.</p>
+  <figure>
+    <img src="img/31-reports-cashier.png" alt="Reports by cashier" />
+    <figcaption><b>By cashier.</b> Each login, the <strong>real person on shift</strong>, how many sales they made and their total — for example <em>Joyce Mwanza: 3 sales, K 245.00</em>.</figcaption>
+  </figure>
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 3 · Administrator Guide</span></div>
+</section>
+
+<section class="page page-break">
+  <figure>
+    <img src="img/32-reports-transactions.png" alt="Reports transactions" />
+    <figcaption><b>Every transaction.</b> Time, receipt number, cashier login, the person on shift, terminal, payment method and total — newest first.</figcaption>
+  </figure>
+  <p>This is exactly how the owner answers “who served this customer and on which till?” — the cashier login and the typed name are recorded on every single sale, even across the different terminals.</p>
+
+  <h3><span class="num">3.5</span>Exporting to Excel</h3>
+  <ol class="steps">
+    <li>Pick the date you want.</li>
+    <li>Tap <strong>“Export Excel”</strong> (top right of Reports).</li>
+    <li>A spreadsheet is saved with two sheets: a <strong>Sales Summary</strong> (every receipt with cashier, person on shift, terminal, payment and totals) and a <strong>Line Items</strong> sheet (every product sold).</li>
+  </ol>
+  <div class="note"><b>Good for record-keeping</b> Export at the end of each day or week and keep the files as the shop’s sales record and for ZRA bookkeeping.</div>
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 3 · Administrator Guide</span></div>
+</section>
+
+<section class="page page-break">
+  <h3><span class="num">3.6</span>Settings &amp; hardware</h3>
+  <p>The <strong>Settings</strong> tab holds the shop details on the receipt, cash-drawer alerts, and the hardware controls.</p>
+  <figure>
+    <img src="img/40-settings.png" alt="Settings" />
+    <figcaption><b>Settings.</b> Shop name, address and details printed on receipts, plus cash-alert options.</figcaption>
+  </figure>
+  <figure>
+    <img src="img/41-settings-hardware.png" alt="Settings hardware" />
+    <figcaption><b>Hardware section.</b> Choose the receipt printer, then use <strong>Test Print</strong> and <strong>Open Drawer</strong> to confirm the hardware works.</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>Under <strong>Hardware → Active Printer</strong>, pick your receipt printer from the list.</li>
+    <li>Tap <strong>“Test Print”</strong> — a test slip should print.</li>
+    <li>Tap <strong>“Open Drawer”</strong> — the cash drawer should pop open.</li>
+  </ol>
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 3 · Administrator Guide</span></div>
+</section>
+
+<!-- ============ 4. HARDWARE ============ -->
+<section class="page page-break">
+  <div class="sec-kicker">Part 4 · Setup</div>
+  <h2>Hardware: printer &amp; cash drawer</h2>
+  <p>This is a one-time setup, usually done by the administrator when a terminal is installed.</p>
+
+  <h3><span class="num">4.1</span>How the pieces connect</h3>
+  <p>The important thing to understand: <strong>the cash drawer is opened by the printer, not the terminal.</strong> The drawer’s cable plugs into the <em>printer</em>, and the printer sends the pulse that pops it open when a receipt prints.</p>
+  <table>
+    <tr><th>Cable</th><th>Plugs into</th></tr>
+    <tr><td>Printer power</td><td>Wall socket → round power port on the printer</td></tr>
+    <tr><td>Printer → PC (USB)</td><td>The square <strong>USB-B</strong> port on the printer → the terminal</td></tr>
+    <tr><td><strong>Cash drawer cable</strong></td><td>The <strong>white “DK / Cash Drawer” port</strong> on the printer — <em>not</em> the LAN port, <em>not</em> the touchscreen</td></tr>
+  </table>
+  <div class="warn">
+    <b>The drawer cable looks like a network cable but isn’t</b>
+    It’s a telephone-style (RJ11/RJ12) plug — slightly narrower than a network (LAN) cable. It must go into the printer’s white drawer port. Plugged into the terminal or the LAN port, the drawer will never open.
+  </div>
+
+  <h3><span class="num">4.2</span>First-time setup checklist</h3>
+  <ol class="steps">
+    <li>Plug the <strong>drawer cable into the printer’s white DK port</strong>.</li>
+    <li>Connect the printer to the terminal by <strong>USB</strong> and switch it on.</li>
+    <li>On Windows, make sure the printer appears under <strong>Printers &amp; scanners</strong> and prints a Windows test page. (Install the printer’s driver if it doesn’t show up.)</li>
+    <li>In the app, go to <strong>Settings → Hardware</strong>, choose the printer, and run <strong>Test Print</strong> and <strong>Open Drawer</strong>.</li>
+  </ol>
+  <div class="tip"><b>Once it’s set up</b> Every cash sale prints the receipt and opens the drawer automatically — cashiers don’t need to do anything extra.</div>
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 4 · Hardware</span></div>
+</section>
+
+<!-- ============ 5. TROUBLESHOOTING ============ -->
+<section class="page page-break">
+  <div class="sec-kicker">Part 5</div>
+  <h2>Troubleshooting &amp; FAQ</h2>
+  <table>
+    <tr><th>Problem</th><th>What to do</th></tr>
+    <tr><td>“Invalid username or PIN”</td><td>Check you tapped the right cashier row. PINs are 4 digits. If it still fails, ask the admin to confirm your login is active.</td></tr>
+    <tr><td>It won’t let me sign in — says I’m already signed in elsewhere</td><td>Your login is open on another terminal. Close the shift and sign out there first, or wait a few minutes for it to release.</td></tr>
+    <tr><td>The cash drawer didn’t open</td><td>Check the drawer cable is in the <strong>printer’s white DK port</strong>. The drawer only opens on cash sales and only when the receipt prints.</td></tr>
+    <tr><td>The receipt didn’t print</td><td>Check the printer is on, has paper, and is selected in <strong>Settings → Hardware</strong>. Run <strong>Test Print</strong>.</td></tr>
+    <tr><td>A meat sale total looks far too high</td><td>You likely typed grams instead of kilograms. Remove the line (<strong>✕</strong>) and re-add it — type kilograms, e.g. <code>0.450</code>.</td></tr>
+    <tr><td>The “Pay” button is greyed out</td><td>Either the cart is empty or no shift is open. Add an item and make sure the badge says <strong>“Shift Open”</strong>.</td></tr>
+    <tr><td>I can’t see Products / Reports / Settings</td><td>Those are admin-only. Sign in with the admin login.</td></tr>
+    <tr><td>The internet is down</td><td>Keep selling — the till works offline and syncs automatically when the connection returns.</td></tr>
+  </table>
+
+  <h3>Frequently asked</h3>
+  <p><strong>Do I need internet to sell?</strong> No. The till works fully offline and catches up later.</p>
+  <p><strong>Can two cashiers use the same login?</strong> No — one login works on one terminal at a time, on purpose, so sales are tracked to the right person.</p>
+  <p><strong>What if I make a mistake on a line?</strong> Tap the <strong>✕</strong> on that line to remove it, or <span class="kbd">F1</span> to clear the whole sale and start again.</p>
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 5 · Troubleshooting</span></div>
+</section>
+
+<!-- ============ 6. QUICK REFERENCE ============ -->
+<section class="page page-break">
+  <div class="sec-kicker">Part 6</div>
+  <h2>Quick reference card</h2>
+  <p>Print this page and pin it next to each till.</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <h4>Keyboard shortcuts</h4>
+      <table style="margin:6px 0 0;">
+        <tr><td><span class="kbd">F1</span></td><td>Clear / new sale</td></tr>
+        <tr><td><span class="kbd">F2</span></td><td>Jump to search</td></tr>
+        <tr><td><span class="kbd">F8</span></td><td>Remove selected line</td></tr>
+        <tr><td><span class="kbd">F12</span></td><td>Take payment</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h4>Everyday checklist</h4>
+      <p style="margin-top:6px;">☐ Sign in as yourself<br/>☐ Open shift — type your name<br/>☐ Enter opening cash<br/>☐ Sell all day<br/>☐ Close shift &amp; count drawer<br/>☐ Sign out when handing over</p>
+    </div>
+  </div>
+
+  <h3>Selling by weight, in three steps</h3>
+  <ol class="steps">
+    <li>Weigh on the scale (e.g. <strong>0.450 kg</strong>).</li>
+    <li>Scan/search the item → the <strong>Weigh item</strong> window opens.</li>
+    <li>Type the kilograms (<code>0.450</code>), check the total, <strong>Add to cart</strong>.</li>
+  </ol>
+
+  <h3>Golden rules</h3>
+  <ul>
+    <li>Always sign in as <strong>yourself</strong> and type your <strong>real name</strong> at shift open.</li>
+    <li>Weighed items are in <strong>kilograms</strong> — never grams.</li>
+    <li><strong>Close your shift</strong> before you hand the till to the next person.</li>
+  </ul>
+
+  <div class="note" style="margin-top:24px;">
+    <b>Need help?</b>
+    Show this guide to the administrator, or contact the system supplier. Keep the admin credentials file (saved in the Downloads folder) somewhere safe and private.
+  </div>
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 6 · Quick reference</span></div>
+</section>
+
+</body>
+</html>
