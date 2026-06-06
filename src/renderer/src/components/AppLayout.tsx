@@ -1,10 +1,9 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { useShiftStore } from '../stores/shiftStore'
-import { LogOut, X, Cloud, CloudOff, RefreshCw } from 'lucide-react'
+import { LogOut, X, Cloud, CloudOff, RefreshCw, Clock, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { formatZMW } from '../lib/currency'
-import logoUrl from '../assets/logo.png'
 
 const NAV_ITEMS = [
   { path: '/', label: 'Sale', roles: ['cashier', 'manager', 'admin'] },
@@ -49,36 +48,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     item.roles.includes(user?.role || 'cashier')
   )
 
-  const cashSold = Number(currentShift?.total_sales || 0)
-  const txnCount = Number(currentShift?.total_transactions || 0)
-
   return (
-    <div className="flex flex-col h-screen bg-[var(--color-surface-alt)]">
-      {/* Top bar — dark, dense, till-style */}
-      <header className="h-14 bg-[var(--color-surface-deep)] flex items-stretch shrink-0 text-white">
-        {/* Brand chip */}
-        <div className="flex items-center gap-2.5 px-4 border-r border-white/10 min-w-[200px]">
-          <div className="w-8 h-8 rounded bg-white/[0.08] flex items-center justify-center overflow-hidden shrink-0">
-            <img src={logoUrl} alt="" className="w-5 h-5 object-contain" />
-          </div>
-          <div className="leading-tight">
-            <div className="text-[13px] font-semibold tracking-tight">Ariemmas</div>
-            <div className="text-[10px] text-white/50 uppercase tracking-wider">POS Till</div>
-          </div>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex items-stretch">
+    <div className="flex flex-col h-screen bg-[#F4F4F5]">
+      {/* Top navigation bar */}
+      <header className="h-14 bg-white border-b border-[#E4E4E7] flex items-center px-4 shrink-0">
+        {/* Nav tabs */}
+        <nav className="flex items-center gap-1">
           {visibleNav.map((item) => {
             const isActive = location.pathname === item.path
             return (
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`px-5 text-[13px] font-medium transition-colors border-b-2 ${
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                   isActive
-                    ? 'text-white border-[var(--color-brand)] bg-white/[0.04]'
-                    : 'text-white/60 border-transparent hover:text-white hover:bg-white/[0.04]'
+                    ? 'bg-[#F4F4F5] text-[#18181B]'
+                    : 'text-[#71717A] hover:text-[#18181B] hover:bg-[#FAFAFA]'
                 }`}
               >
                 {item.label}
@@ -87,73 +72,75 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Spacer */}
-        <div className="flex-1" />
+        {/* Center — Clock */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+          <Clock size={16} className="text-[#0D9488]" />
+          <span className="text-lg font-semibold text-[#18181B] tabular-nums tracking-tight">
+            {time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          </span>
+          <span className="text-xs text-[#A1A1AA] font-medium ml-1">
+            {time.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+          </span>
+        </div>
 
-        {/* Live status strip */}
-        <div className="flex items-stretch divide-x divide-white/10">
-          {/* Shift card */}
+        {/* Right side */}
+        <div className="ml-auto flex items-center gap-2.5">
+          {/* Shift indicator — clickable */}
           <button
             onClick={() => setShowShiftModal(true)}
-            className="px-4 text-left hover:bg-white/[0.04] transition-colors"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              currentShift
+                ? 'bg-[#F0FDFA] text-[#0D9488] border border-[#99F6E4] hover:bg-[#CCFBF1]'
+                : 'bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] hover:bg-[#FEF3C7]'
+            }`}
           >
-            <div className="text-[10px] text-white/50 uppercase tracking-wider leading-none mb-1">Shift</div>
-            <div className="flex items-center gap-2">
-              <div className={`w-1.5 h-1.5 rounded-full ${currentShift ? 'bg-[var(--color-pay)]' : 'bg-[var(--color-warning)] animate-pulse'}`} />
-              <span className="text-[13px] font-semibold tabular-nums">
-                {currentShift ? formatZMW(cashSold) : 'Open shift'}
-              </span>
-              {currentShift && <span className="text-[10px] text-white/40 tabular-nums">{txnCount} txns</span>}
-            </div>
+            <div className={`w-2 h-2 rounded-full ${currentShift ? 'bg-[#0D9488]' : 'bg-[#D97706] animate-pulse'}`} />
+            {currentShift ? 'Shift Open' : 'No Shift'}
           </button>
 
-          {/* Sync */}
+          {/* Sync indicator */}
           {syncStatus && (
             <button
               onClick={() => window.api?.syncNow?.()}
-              className="px-4 text-left hover:bg-white/[0.04] transition-colors"
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                syncStatus.isOnline
+                  ? syncStatus.pending > 0
+                    ? 'text-[#D97706] bg-[#FFFBEB] border border-[#FDE68A]'
+                    : 'text-[#0D9488] bg-[#F0FDFA] border border-[#99F6E4]'
+                  : 'text-[#A1A1AA] bg-[#F4F4F5] border border-[#E4E4E7]'
+              }`}
               title={syncStatus.isOnline
                 ? syncStatus.pending > 0 ? `${syncStatus.pending} pending sync` : 'Synced'
-                : 'Offline — sales queued for sync'}
+                : 'Offline — will sync when online'}
             >
-              <div className="text-[10px] text-white/50 uppercase tracking-wider leading-none mb-1">Sync</div>
-              <div className="flex items-center gap-1.5">
-                {syncStatus.isOnline ? (
-                  syncStatus.pending > 0
-                    ? <RefreshCw size={12} className="animate-spin text-[var(--color-warning)]" />
-                    : <Cloud size={12} className="text-[var(--color-pay)]" />
-                ) : <CloudOff size={12} className="text-white/40" />}
-                <span className="text-[13px] font-semibold">
-                  {syncStatus.isOnline ? (syncStatus.pending > 0 ? `${syncStatus.pending} queued` : 'Live') : 'Offline'}
-                </span>
-              </div>
+              {syncStatus.isOnline ? (
+                syncStatus.pending > 0 ? <RefreshCw size={13} className="animate-spin" /> : <Cloud size={13} />
+              ) : (
+                <CloudOff size={13} />
+              )}
+              {syncStatus.pending > 0 && <span>{syncStatus.pending}</span>}
             </button>
           )}
 
-          {/* Clock */}
-          <div className="px-4 flex flex-col justify-center">
-            <div className="text-[10px] text-white/50 uppercase tracking-wider leading-none mb-1">
-              {time.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
-            </div>
-            <div className="text-[15px] font-semibold tabular-nums tracking-tight">
-              {time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-            </div>
+          {/* Divider */}
+          <div className="w-px h-6 bg-[#E4E4E7]" />
+
+          {/* User */}
+          <div className="flex items-center gap-1.5 px-2">
+            <User size={14} className="text-[#A1A1AA]" />
+            <span className="text-[13px] text-[#52525B] font-medium">
+              {user?.display_name}
+            </span>
           </div>
 
-          {/* Cashier + logout */}
-          <div className="px-4 flex items-center gap-3 bg-black/20">
-            <div className="text-right leading-tight">
-              <div className="text-[10px] text-white/50 uppercase tracking-wider">Cashier</div>
-              <div className="text-[13px] font-semibold">{user?.display_name}</div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="w-9 h-9 rounded flex items-center justify-center bg-white/[0.06] hover:bg-[var(--color-error)]/80 transition-colors"
-              title="Sign out"
-            >
-              <LogOut size={15} />
-            </button>
-          </div>
+          {/* Logout */}
+          <button
+            onClick={handleLogout}
+            className="w-8 h-8 rounded-md flex items-center justify-center text-[#A1A1AA] hover:text-[#DC2626] hover:bg-[#FEF2F2] transition-colors"
+            title="Sign out"
+          >
+            <LogOut size={16} />
+          </button>
         </div>
       </header>
 
