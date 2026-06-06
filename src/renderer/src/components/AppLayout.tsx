@@ -4,6 +4,7 @@ import { useShiftStore } from '../stores/shiftStore'
 import { LogOut, X, Cloud, CloudOff, RefreshCw, Clock, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { formatZMW } from '../lib/currency'
+import logoUrl from '../assets/logo.png'
 
 const NAV_ITEMS = [
   { path: '/', label: 'Sale', roles: ['cashier', 'manager', 'admin'] },
@@ -52,6 +53,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex flex-col h-screen bg-[#F4F4F5]">
       {/* Top navigation bar */}
       <header className="h-14 bg-white border-b border-[#E4E4E7] flex items-center px-4 shrink-0">
+        {/* Brand mark — persistent logo so it shows post-login too */}
+        <div className="flex items-center gap-2 mr-4 pr-4 border-r border-[#E4E4E7]">
+          <img src={logoUrl} alt="Ariemmas" className="w-7 h-7 object-contain" />
+          <span className="text-[15px] font-semibold text-[#18181B] tracking-tight">Ariemmas</span>
+        </div>
+
         {/* Nav tabs */}
         <nav className="flex items-center gap-1">
           {visibleNav.map((item) => {
