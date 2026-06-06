@@ -43,8 +43,12 @@ async function upsertSetting(key: string, value: string): Promise<void> {
 }
 
 async function getShiftWithCashStats(shiftId: string) {
+  // Prefer the human name typed at shift open (sh.cashier_name) over the
+  // generic login display_name (e.g. "Cashier 1"). Falls back to login name
+  // for shifts opened before the cashier-name field existed.
   const shift = await db.queryOne<any>(`
-    SELECT sh.*, u.display_name as cashier_name,
+    SELECT sh.*,
+      COALESCE(sh.cashier_name, u.display_name) as cashier_name,
       COALESCE((
         SELECT SUM(s.total)
         FROM sales s
