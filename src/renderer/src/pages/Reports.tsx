@@ -1,6 +1,33 @@
 import { useState, useEffect } from 'react'
-import { BarChart3, Calendar, TrendingUp, DollarSign, ShoppingBag, Download } from 'lucide-react'
+import { BarChart3, Calendar, TrendingUp, DollarSign, ShoppingBag, Download, Users, Monitor, Receipt } from 'lucide-react'
 import { formatZMW } from '../lib/currency'
+
+interface CashierRow {
+  user_id: string
+  username: string
+  display_name: string
+  shift_cashier_name: string | null
+  sales_count: number
+  revenue: number
+}
+
+interface TerminalRow {
+  terminal_id: string
+  sales_count: number
+  revenue: number
+}
+
+interface TransactionRow {
+  id: string
+  receipt_number: string
+  total: number
+  payment_method: string
+  terminal_id: string | null
+  created_at: string
+  username: string | null
+  display_name: string | null
+  shift_cashier_name: string | null
+}
 
 interface DailySalesData {
   total_sales: number
@@ -10,6 +37,25 @@ interface DailySalesData {
   cash_sales: number
   mobile_sales: number
   average_sale: number
+  by_cashier?: CashierRow[]
+  by_terminal?: TerminalRow[]
+  transactions?: TransactionRow[]
+}
+
+function shortTerminal(id: string | null): string {
+  if (!id) return '—'
+  if (id === 'unknown') return 'Unknown'
+  return id.slice(0, 8)
+}
+
+function fmtTime(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}
+
+function paymentLabel(m: string): string {
+  return m === 'cash' ? 'Cash' : m === 'mobile_money' ? 'Mobile' : m === 'split' ? 'Split' : m
 }
 
 export function Reports() {
@@ -180,6 +226,76 @@ export function Reports() {
                 </div>
               </div>
             </div>
+
+            {/* Per-cashier breakdown */}
+            {data && data.total_sales > 0 && data.by_cashier && data.by_cashier.length > 0 && (
+              <div className="bg-white border border-[#E4E4E7] rounded-md overflow-hidden">
+                <div className="flex items-center gap-2 px-5 py-3 border-b border-[#E4E4E7]">
+                  <Users size={16} className="text-[#71717A]" />
+                  <h3 className="text-sm font-semibold text-[#18181B]">By cashier</h3>
+                  <span className="text-[11px] text-[#71717A] ml-1">who rang what today</span>
+                </div>
+                <div className="grid grid-cols-[1fr_1fr_90px_110px] gap-3 px-5 py-2 text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.04em] bg-[#FAFAFA] border-b border-[#F4F4F5]">
+                  <span>Login</span><span>Person on shift</span><span className="text-right">Sales</span><span className="text-right">Revenue</span>
+                </div>
+                {data.by_cashier.map((c) => (
+                  <div key={c.user_id} className="grid grid-cols-[1fr_1fr_90px_110px] gap-3 px-5 py-2.5 text-sm border-b border-[#F4F4F5] last:border-0">
+                    <span className="text-[#18181B] font-medium">{c.display_name}</span>
+                    <span className="text-[#52525B]">{c.shift_cashier_name || <em className="text-[#A1A1AA]">not set</em>}</span>
+                    <span className="text-right text-[#52525B] tabular-nums">{c.sales_count}</span>
+                    <span className="text-right text-[#18181B] font-semibold tabular-nums">{formatZMW(c.revenue)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Per-terminal breakdown */}
+            {data && data.by_terminal && data.by_terminal.length > 1 && (
+              <div className="bg-white border border-[#E4E4E7] rounded-md overflow-hidden">
+                <div className="flex items-center gap-2 px-5 py-3 border-b border-[#E4E4E7]">
+                  <Monitor size={16} className="text-[#71717A]" />
+                  <h3 className="text-sm font-semibold text-[#18181B]">By terminal</h3>
+                  <span className="text-[11px] text-[#71717A] ml-1">which till rang what</span>
+                </div>
+                <div className="grid grid-cols-[1fr_90px_110px] gap-3 px-5 py-2 text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.04em] bg-[#FAFAFA] border-b border-[#F4F4F5]">
+                  <span>Terminal</span><span className="text-right">Sales</span><span className="text-right">Revenue</span>
+                </div>
+                {data.by_terminal.map((t) => (
+                  <div key={t.terminal_id} className="grid grid-cols-[1fr_90px_110px] gap-3 px-5 py-2.5 text-sm border-b border-[#F4F4F5] last:border-0">
+                    <span className="text-[#18181B] font-mono text-[12px]">{shortTerminal(t.terminal_id)}</span>
+                    <span className="text-right text-[#52525B] tabular-nums">{t.sales_count}</span>
+                    <span className="text-right text-[#18181B] font-semibold tabular-nums">{formatZMW(t.revenue)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Transactions list */}
+            {data && data.transactions && data.transactions.length > 0 && (
+              <div className="bg-white border border-[#E4E4E7] rounded-md overflow-hidden">
+                <div className="flex items-center gap-2 px-5 py-3 border-b border-[#E4E4E7]">
+                  <Receipt size={16} className="text-[#71717A]" />
+                  <h3 className="text-sm font-semibold text-[#18181B]">Transactions</h3>
+                  <span className="text-[11px] text-[#71717A] ml-1">newest first</span>
+                </div>
+                <div className="grid grid-cols-[90px_120px_1fr_1fr_90px_80px_110px] gap-3 px-5 py-2 text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.04em] bg-[#FAFAFA] border-b border-[#F4F4F5]">
+                  <span>Time</span><span>Receipt</span><span>Cashier</span><span>Person</span><span>Terminal</span><span>Pay</span><span className="text-right">Total</span>
+                </div>
+                <div className="max-h-[420px] overflow-y-auto">
+                  {data.transactions.map((t) => (
+                    <div key={t.id} className="grid grid-cols-[90px_120px_1fr_1fr_90px_80px_110px] gap-3 px-5 py-2 text-sm border-b border-[#F4F4F5] last:border-0">
+                      <span className="text-[#52525B] tabular-nums">{fmtTime(t.created_at)}</span>
+                      <span className="text-[#18181B] font-mono text-[12px]">{t.receipt_number}</span>
+                      <span className="text-[#18181B]">{t.display_name || t.username || '—'}</span>
+                      <span className="text-[#52525B]">{t.shift_cashier_name || <em className="text-[#A1A1AA]">—</em>}</span>
+                      <span className="text-[#52525B] font-mono text-[11px]">{shortTerminal(t.terminal_id)}</span>
+                      <span className="text-[#52525B]">{paymentLabel(t.payment_method)}</span>
+                      <span className="text-right text-[#18181B] font-semibold tabular-nums">{formatZMW(t.total)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Empty state for no sales */}
             {data && data.total_sales === 0 && (

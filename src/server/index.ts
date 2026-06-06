@@ -361,6 +361,38 @@ app.get('/api/sales/daily', async (req, res) => {
   const totalSales = Number(summary?.total_sales) || 0
   const totalRevenue = Number(summary?.total_revenue) || 0
 
+  // Per-cashier breakdown — prefer the human name typed at shift open.
+  const byCashier = await db.query<any>(`
+    SELECT s.user_id, u.username, u.display_name,
+      MAX(sh.cashier_name) as shift_cashier_name,
+      COUNT(s.id) as sales_count, COALESCE(SUM(s.total),0) as revenue
+    FROM sales s
+    LEFT JOIN users u ON u.id = s.user_id
+    LEFT JOIN shifts sh ON sh.id = s.shift_id
+    WHERE s.created_at::date = $1 AND s.status = 'completed'
+    GROUP BY s.user_id, u.username, u.display_name
+    ORDER BY revenue DESC
+  `, [date])
+
+  const byTerminal = await db.query<any>(`
+    SELECT COALESCE(terminal_id, 'unknown') as terminal_id,
+      COUNT(id) as sales_count, COALESCE(SUM(total),0) as revenue
+    FROM sales
+    WHERE created_at::date = $1 AND status = 'completed'
+    GROUP BY terminal_id
+    ORDER BY revenue DESC
+  `, [date])
+
+  const transactions = await db.query<any>(`
+    SELECT s.id, s.receipt_number, s.total, s.payment_method, s.terminal_id, s.created_at,
+      u.username, u.display_name, sh.cashier_name
+    FROM sales s
+    LEFT JOIN users u ON u.id = s.user_id
+    LEFT JOIN shifts sh ON sh.id = s.shift_id
+    WHERE s.created_at::date = $1 AND s.status = 'completed'
+    ORDER BY s.created_at DESC
+  `, [date])
+
   res.json({
     total_sales: totalSales,
     total_revenue: totalRevenue,
@@ -368,7 +400,31 @@ app.get('/api/sales/daily', async (req, res) => {
     items_sold: Number(itemsRow?.items_sold) || 0,
     cash_sales: Number(summary?.cash_sales) || 0,
     mobile_sales: Number(summary?.mobile_sales) || 0,
-    average_sale: totalSales > 0 ? totalRevenue / totalSales : 0
+    average_sale: totalSales > 0 ? totalRevenue / totalSales : 0,
+    by_cashier: byCashier.map((r: any) => ({
+      user_id: r.user_id,
+      username: r.username || '—',
+      display_name: r.display_name || r.username || '—',
+      shift_cashier_name: r.shift_cashier_name || null,
+      sales_count: Number(r.sales_count) || 0,
+      revenue: Number(r.revenue) || 0
+    })),
+    by_terminal: byTerminal.map((r: any) => ({
+      terminal_id: r.terminal_id,
+      sales_count: Number(r.sales_count) || 0,
+      revenue: Number(r.revenue) || 0
+    })),
+    transactions: transactions.map((r: any) => ({
+      id: r.id,
+      receipt_number: r.receipt_number,
+      total: Number(r.total) || 0,
+      payment_method: r.payment_method,
+      terminal_id: r.terminal_id,
+      created_at: r.created_at,
+      username: r.username,
+      display_name: r.display_name,
+      shift_cashier_name: r.cashier_name
+    }))
   })
 })
 
@@ -379,10 +435,12 @@ app.get('/api/sales/export', async (req, res) => {
 
   const sales = await db.query<any>(`
     SELECT s.receipt_number, s.created_at, u.display_name as cashier,
+      sh.cashier_name as shift_cashier_name, s.terminal_id,
       s.payment_method, s.subtotal, s.vat_total, s.total,
       s.amount_tendered, s.change_given, s.mobile_ref, s.status
     FROM sales s
     LEFT JOIN users u ON s.user_id = u.id
+    LEFT JOIN shifts sh ON sh.id = s.shift_id
     WHERE s.created_at::date = $1 AND s.status = 'completed'
     ORDER BY s.created_at ASC
   `, [date])
@@ -403,7 +461,7 @@ app.get('/api/sales/export', async (req, res) => {
 
   // Sales Summary sheet
   const ws = wb.addWorksheet('Sales Summary')
-  ws.mergeCells('A1:H1')
+  ws.mergeCells('A1:J1')
   const titleCell = ws.getCell('A1')
   titleCell.value = `Ariemmas — Daily Sales Report (${dateFormatted})`
   titleCell.font = { size: 14, bold: true }
@@ -421,7 +479,7 @@ app.get('/api/sales/export', async (req, res) => {
   ws.addRow(['Mobile Money Sales', mobileSales])
   ws.addRow([])
 
-  const headerRow = ws.addRow(['Receipt #', 'Time', 'Cashier', 'Payment', 'Subtotal', 'VAT', 'Total', 'Status'])
+  const headerRow = ws.addRow(['Receipt #', 'Time', 'Cashier', 'Person on shift', 'Terminal', 'Payment', 'Subtotal', 'VAT', 'Total', 'Status'])
   headerRow.font = { bold: true }
   headerRow.eachCell((cell) => {
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D9488' } }
@@ -434,15 +492,17 @@ app.get('/api/sales/export', async (req, res) => {
       sale.receipt_number,
       dayjs(sale.created_at).format('HH:mm:ss'),
       sale.cashier || 'Unknown',
+      sale.shift_cashier_name || '',
+      sale.terminal_id ? String(sale.terminal_id).slice(0, 8) : '',
       sale.payment_method === 'mobile_money' ? 'Mobile Money' : 'Cash',
       Number(sale.subtotal), Number(sale.vat_total), Number(sale.total), sale.status
     ])
   }
 
-  for (const col of [5, 6, 7]) ws.getColumn(col).numFmt = '#,##0.00'
-  ws.getColumn(1).width = 18; ws.getColumn(2).width = 10; ws.getColumn(3).width = 18
-  ws.getColumn(4).width = 14; ws.getColumn(5).width = 12; ws.getColumn(6).width = 12
-  ws.getColumn(7).width = 12; ws.getColumn(8).width = 10
+  for (const col of [7, 8, 9]) ws.getColumn(col).numFmt = '#,##0.00'
+  ws.getColumn(1).width = 18; ws.getColumn(2).width = 10; ws.getColumn(3).width = 16
+  ws.getColumn(4).width = 20; ws.getColumn(5).width = 12; ws.getColumn(6).width = 14
+  ws.getColumn(7).width = 12; ws.getColumn(8).width = 12; ws.getColumn(9).width = 12; ws.getColumn(10).width = 10
 
   // Line Items sheet
   const wsItems = wb.addWorksheet('Line Items')
@@ -554,11 +614,11 @@ app.post('/api/sync/sales', async (req, res) => {
 
       await db.run(
         `INSERT INTO sales (id, receipt_number, user_id, shift_id, subtotal, vat_total, total,
-          payment_method, amount_tendered, change_given, mobile_ref, status, created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+          payment_method, amount_tendered, change_given, mobile_ref, status, terminal_id, created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
         [sale.id, receiptNumber, sale.user_id, sale.shift_id, sale.subtotal,
          sale.vat_total, sale.total, sale.payment_method, sale.amount_tendered,
-         sale.change_given, sale.mobile_ref, sale.status, sale.created_at]
+         sale.change_given, sale.mobile_ref, sale.status, sale.terminal_id || null, sale.created_at]
       )
 
       for (const item of items || []) {

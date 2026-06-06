@@ -8,6 +8,8 @@ interface SaleRow {
   receipt_number: string
   created_at: string
   cashier: string
+  shift_cashier_name: string | null
+  terminal_id: string | null
   payment_method: string
   subtotal: number
   vat_total: number
@@ -35,10 +37,12 @@ export async function exportDailySalesToExcel(date: string): Promise<string | nu
 
   const sales = await db.query<SaleRow>(`
     SELECT s.receipt_number, s.created_at, u.display_name as cashier,
+      sh.cashier_name as shift_cashier_name, s.terminal_id,
       s.payment_method, s.subtotal, s.vat_total, s.total,
       s.amount_tendered, s.change_given, s.mobile_ref, s.status
     FROM sales s
     LEFT JOIN users u ON s.user_id = u.id
+    LEFT JOIN shifts sh ON sh.id = s.shift_id
     WHERE ${dateExpr} = ? AND s.status = 'completed'
     ORDER BY s.created_at ASC
   `, [date])
@@ -70,7 +74,7 @@ export async function exportDailySalesToExcel(date: string): Promise<string | nu
   // --- Sales Summary Sheet ---
   const ws = wb.addWorksheet('Sales Summary')
 
-  ws.mergeCells('A1:H1')
+  ws.mergeCells('A1:J1')
   const titleCell = ws.getCell('A1')
   titleCell.value = `Ariemmas — Daily Sales Report (${dateFormatted})`
   titleCell.font = { size: 14, bold: true }
@@ -91,7 +95,7 @@ export async function exportDailySalesToExcel(date: string): Promise<string | nu
   ws.addRow([])
 
   const headerRow = ws.addRow([
-    'Receipt #', 'Time', 'Cashier', 'Payment', 'Subtotal', 'VAT', 'Total', 'Status'
+    'Receipt #', 'Time', 'Cashier', 'Person on shift', 'Terminal', 'Payment', 'Subtotal', 'VAT', 'Total', 'Status'
   ])
   headerRow.font = { bold: true }
   headerRow.eachCell((cell) => {
@@ -105,6 +109,8 @@ export async function exportDailySalesToExcel(date: string): Promise<string | nu
       sale.receipt_number,
       dayjs(sale.created_at).format('HH:mm:ss'),
       sale.cashier || 'Unknown',
+      sale.shift_cashier_name || '',
+      sale.terminal_id ? sale.terminal_id.slice(0, 8) : '',
       sale.payment_method === 'mobile_money' ? 'Mobile Money' : 'Cash',
       Number(sale.subtotal),
       Number(sale.vat_total),
@@ -113,18 +119,19 @@ export async function exportDailySalesToExcel(date: string): Promise<string | nu
     ])
   }
 
-  const currCols = [5, 6, 7]
-  for (const col of currCols) {
+  for (const col of [7, 8, 9]) {
     ws.getColumn(col).numFmt = '#,##0.00'
   }
-  ws.getColumn(1).width = 18
-  ws.getColumn(2).width = 10
-  ws.getColumn(3).width = 18
-  ws.getColumn(4).width = 14
-  ws.getColumn(5).width = 12
-  ws.getColumn(6).width = 12
-  ws.getColumn(7).width = 12
-  ws.getColumn(8).width = 10
+  ws.getColumn(1).width = 18  // Receipt #
+  ws.getColumn(2).width = 10  // Time
+  ws.getColumn(3).width = 16  // Cashier login
+  ws.getColumn(4).width = 20  // Person on shift
+  ws.getColumn(5).width = 12  // Terminal
+  ws.getColumn(6).width = 14  // Payment
+  ws.getColumn(7).width = 12  // Subtotal
+  ws.getColumn(8).width = 12  // VAT
+  ws.getColumn(9).width = 12  // Total
+  ws.getColumn(10).width = 10 // Status
 
   // --- Line Items Sheet ---
   const wsItems = wb.addWorksheet('Line Items')

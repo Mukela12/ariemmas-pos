@@ -102,6 +102,7 @@ export async function completeSale(input: CompleteSaleInput): Promise<Sale> {
 export async function getDailySales(date: string) {
   const db = getDb()
   const dateExpr = dateOf('created_at', db.engine)
+  const saleDateExpr = dateOf('s.created_at', db.engine)
 
   const summary = await db.queryOne<any>(`
     SELECT
@@ -118,7 +119,57 @@ export async function getDailySales(date: string) {
     SELECT COALESCE(SUM(si.quantity), 0) as items_sold
     FROM sale_items si
     JOIN sales s ON si.sale_id = s.id
-    WHERE ${dateOf('s.created_at', db.engine)} = ? AND s.status = 'completed'
+    WHERE ${saleDateExpr} = ? AND s.status = 'completed'
+  `, [date])
+
+  // Per-cashier breakdown — group by user_id, prefer the human name typed at
+  // shift open over the slot username.
+  const byCashier = await db.query<any>(`
+    SELECT
+      s.user_id,
+      u.username,
+      u.display_name,
+      MAX(sh.cashier_name) as shift_cashier_name,
+      COUNT(s.id) as sales_count,
+      COALESCE(SUM(s.total), 0) as revenue
+    FROM sales s
+    LEFT JOIN users u ON u.id = s.user_id
+    LEFT JOIN shifts sh ON sh.id = s.shift_id
+    WHERE ${saleDateExpr} = ? AND s.status = 'completed'
+    GROUP BY s.user_id, u.username, u.display_name
+    ORDER BY revenue DESC
+  `, [date])
+
+  // Per-terminal breakdown — pulls terminal_name from settings if this terminal
+  // is the one running the query, otherwise just shows the short id.
+  const byTerminal = await db.query<any>(`
+    SELECT
+      COALESCE(terminal_id, 'unknown') as terminal_id,
+      COUNT(id) as sales_count,
+      COALESCE(SUM(total), 0) as revenue
+    FROM sales
+    WHERE ${dateExpr} = ? AND status = 'completed'
+    GROUP BY terminal_id
+    ORDER BY revenue DESC
+  `, [date])
+
+  // Full transaction list for the day — newest first
+  const transactions = await db.query<any>(`
+    SELECT
+      s.id,
+      s.receipt_number,
+      s.total,
+      s.payment_method,
+      s.terminal_id,
+      s.created_at,
+      u.username,
+      u.display_name,
+      sh.cashier_name
+    FROM sales s
+    LEFT JOIN users u ON u.id = s.user_id
+    LEFT JOIN shifts sh ON sh.id = s.shift_id
+    WHERE ${saleDateExpr} = ? AND s.status = 'completed'
+    ORDER BY s.created_at DESC
   `, [date])
 
   const totalSales = Number(summary?.total_sales) || 0
@@ -131,6 +182,30 @@ export async function getDailySales(date: string) {
     items_sold: Number(itemsRow?.items_sold) || 0,
     cash_sales: Number(summary?.cash_sales) || 0,
     mobile_sales: Number(summary?.mobile_sales) || 0,
-    average_sale: totalSales > 0 ? totalRevenue / totalSales : 0
+    average_sale: totalSales > 0 ? totalRevenue / totalSales : 0,
+    by_cashier: byCashier.map((row: any) => ({
+      user_id: row.user_id,
+      username: row.username || '—',
+      display_name: row.display_name || row.username || '—',
+      shift_cashier_name: row.shift_cashier_name || null,
+      sales_count: Number(row.sales_count) || 0,
+      revenue: Number(row.revenue) || 0
+    })),
+    by_terminal: byTerminal.map((row: any) => ({
+      terminal_id: row.terminal_id,
+      sales_count: Number(row.sales_count) || 0,
+      revenue: Number(row.revenue) || 0
+    })),
+    transactions: transactions.map((row: any) => ({
+      id: row.id,
+      receipt_number: row.receipt_number,
+      total: Number(row.total) || 0,
+      payment_method: row.payment_method,
+      terminal_id: row.terminal_id,
+      created_at: row.created_at,
+      username: row.username,
+      display_name: row.display_name,
+      shift_cashier_name: row.cashier_name
+    }))
   }
 }
