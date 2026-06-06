@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
-import { AnimatedGridPattern } from '../components/ui/AnimatedGridPattern'
 import logoUrl from '../assets/logo.png'
 
 const CASHIER_CREDENTIALS = [
@@ -35,121 +34,127 @@ export function Login() {
 
   return (
     <div className="h-screen w-screen flex bg-white overflow-hidden">
-      {/* Left — brand panel with animated grid */}
-      <div className="hidden lg:flex w-[44%] bg-[#18181B] flex-col items-center justify-center relative overflow-hidden">
-        {/* Teal glow accents */}
-        <div className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-100"
-          style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.15) 0%, transparent 70%)' }} />
-        <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full opacity-100"
-          style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.08) 0%, transparent 70%)' }} />
+      {/* Left — confident dark brand panel */}
+      <div className="hidden lg:flex w-[44%] bg-[var(--color-surface-deep)] flex-col justify-between p-12 relative overflow-hidden">
+        {/* Subtle gradient accent — no animated grid */}
+        <div className="absolute -top-20 -right-20 w-[420px] h-[420px] rounded-full opacity-60"
+          style={{ background: 'radial-gradient(circle, rgba(15,118,110,0.20) 0%, transparent 70%)' }} />
 
-        {/* Animated grid pattern */}
-        <AnimatedGridPattern
-          numSquares={30}
-          maxOpacity={0.15}
-          duration={3}
-          width={50}
-          height={50}
-          className="text-teal-500/40"
-        />
-
-        {/* Brand text */}
-        <div className="relative z-10 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-white/[0.08] flex items-center justify-center border border-white/[0.06] mx-auto mb-6 overflow-hidden">
-            <img src={logoUrl} alt="" className="w-10 h-10 object-contain" />
+        {/* Brand mark */}
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="w-10 h-10 rounded bg-white/[0.08] flex items-center justify-center overflow-hidden">
+            <img src={logoUrl} alt="" className="w-6 h-6 object-contain" />
           </div>
-          <h1 className="text-[42px] font-bold text-[#FAFAFA] tracking-tight leading-none">
-            Ariemmas
+          <div>
+            <div className="text-[15px] font-semibold text-white tracking-tight">Ariemmas</div>
+            <div className="text-[11px] uppercase tracking-wider text-white/40">Mongu</div>
+          </div>
+        </div>
+
+        {/* Headline */}
+        <div className="relative z-10">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-brand)] mb-3">Point of Sale</div>
+          <h1 className="text-[44px] leading-[1.05] font-bold text-white tracking-tight max-w-[420px]">
+            Run the till, close the day.
           </h1>
-          <div className="text-sm font-medium text-[#2DD4BF] mt-2 tracking-[0.2em] uppercase">
-            Point of Sale
-          </div>
+          <p className="text-[14px] text-white/60 mt-4 max-w-[360px] leading-relaxed">
+            Sign in to your shift. Sales, cash drawer, receipts and reports run from this terminal.
+          </p>
+        </div>
+
+        {/* Footer */}
+        <div className="relative z-10 flex items-center justify-between text-[11px] text-white/40">
+          <span>v1.0.7</span>
+          <span>{new Date().getFullYear()} · Ariemmas Shop</span>
         </div>
       </div>
 
       {/* Right — form */}
       <div className="flex-1 flex items-center justify-center px-8 bg-white">
-        <div className="w-full max-w-[340px]">
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-2.5 mb-8">
-            <div className="w-9 h-9 rounded-lg bg-[#18181B] flex items-center justify-center overflow-hidden">
+        <div className="w-full max-w-[360px]">
+          {/* Mobile brand */}
+          <div className="lg:hidden flex items-center gap-3 mb-10">
+            <div className="w-10 h-10 rounded bg-[var(--color-surface-deep)] flex items-center justify-center overflow-hidden">
               <img src={logoUrl} alt="" className="w-6 h-6 object-contain" />
             </div>
             <div>
-              <div className="text-base font-semibold text-[#18181B]">Ariemmas</div>
-              <div className="text-[11px] text-[#71717A]">Point of Sale</div>
+              <div className="text-[15px] font-semibold text-[var(--color-ink)]">Ariemmas POS</div>
+              <div className="text-[11px] text-[var(--color-ink-3)]">Mongu</div>
             </div>
           </div>
 
-          <h2 className="text-[22px] font-semibold text-[#18181B] tracking-tight">Welcome back</h2>
-          <p className="text-[13px] text-[#71717A] mt-1">Sign in to start your shift</p>
+          <h2 className="text-[24px] font-bold text-[var(--color-ink)] tracking-tight">Sign in</h2>
+          <p className="text-[13px] text-[var(--color-ink-3)] mt-1.5">Pick your cashier below or type your username and PIN.</p>
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+          <form onSubmit={handleSubmit} className="mt-7 space-y-4">
             <div>
-              <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Username</label>
+              <label className="block text-[13px] font-semibold text-[var(--color-ink-2)] mb-1.5">Username</label>
               <input
                 ref={usernameRef}
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
+                placeholder="cashier1"
                 autoComplete="off"
                 spellCheck={false}
-                className="w-full h-10 px-3 rounded-md border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
+                className="w-full h-11 px-3 rounded-md border border-[var(--color-border)] bg-white text-[15px] text-[var(--color-ink)] placeholder:text-[var(--color-ink-4)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/20"
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); pinRef.current?.focus() } }}
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">PIN</label>
+              <label className="block text-[13px] font-semibold text-[var(--color-ink-2)] mb-1.5">PIN</label>
               <div className="relative">
                 <input
                   ref={pinRef}
                   type={showPin ? 'text' : 'password'}
                   value={pin}
                   onChange={(e) => setPin(e.target.value)}
-                  placeholder="Enter PIN"
+                  placeholder="••••"
                   maxLength={6}
                   autoComplete="off"
-                  className="w-full h-10 px-3 pr-10 rounded-md border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08] tracking-[0.15em]"
+                  className="w-full h-11 px-3 pr-10 rounded-md border border-[var(--color-border)] bg-white text-[15px] text-[var(--color-ink)] placeholder:text-[var(--color-ink-4)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/20 tracking-[0.15em]"
                 />
                 <button type="button" onClick={() => setShowPin(!showPin)} tabIndex={-1}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] hover:text-[#52525B]">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-3)] hover:text-[var(--color-ink)]">
                   {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 px-3 py-2.5 rounded-md bg-[#FEF2F2] border border-[#FECACA]">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#DC2626] shrink-0" />
-                <p className="text-[13px] text-[#DC2626]">{error}</p>
+              <div className="flex items-start gap-2 px-3 py-2.5 rounded-md bg-[var(--color-error-bg)] border border-[var(--color-error)]/30">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-error)] shrink-0 mt-1.5" />
+                <p className="text-[13px] text-[var(--color-error)] leading-snug">{error}</p>
               </div>
             )}
 
             <button
               type="submit"
               disabled={isLoading || !username.trim() || !pin.trim()}
-              className="w-full h-10 rounded-md bg-[#18181B] text-white text-sm font-medium hover:bg-[#27272A] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full h-11 rounded-md bg-[var(--color-surface-deep)] text-white text-[14px] font-semibold hover:bg-[var(--color-surface-deep-2)] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
             >
-              {isLoading ? <><Loader2 size={15} className="animate-spin" />Signing in...</> : 'Sign In'}
+              {isLoading ? <><Loader2 size={15} className="animate-spin" />Signing in…</> : 'Sign in'}
             </button>
           </form>
 
-          {/* Cashier credentials */}
-          <div className="mt-8 p-3.5 rounded-md bg-[#F4F4F5] border border-[#E4E4E7]">
-            <div className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-[0.06em] mb-2">Cashier Logins</div>
-            <div className="space-y-1">
-              {CASHIER_CREDENTIALS.map((c) => (
+          {/* Cashier picker — looks like a real "select your name" list */}
+          <div className="mt-8">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-ink-3)]">Cashier on shift</span>
+              <span className="text-[11px] text-[var(--color-ink-4)]">click to sign in</span>
+            </div>
+            <div className="grid grid-cols-5 gap-1.5">
+              {CASHIER_CREDENTIALS.map((c, i) => (
                 <button
                   key={c.username}
                   type="button"
                   onClick={() => { setUsername(c.username); setPin(c.pin); pinRef.current?.focus() }}
-                  className="w-full flex justify-between items-center hover:bg-white rounded px-1 py-0.5 transition-colors"
-                  title="Click to fill"
+                  className="flex flex-col items-center justify-center h-16 rounded-md border border-[var(--color-border)] bg-white hover:bg-[var(--color-surface-alt)] hover:border-[var(--color-brand)] transition-colors"
+                  title={`${c.username} / ${c.pin}`}
                 >
-                  <span className="text-[12px] text-[#71717A]">{c.name}</span>
-                  <code className="text-[12px] font-mono text-[#3F3F46] bg-white px-2 py-0.5 rounded border border-[#E4E4E7]">{c.username} / {c.pin}</code>
+                  <span className="text-[20px] font-bold text-[var(--color-ink)] tabular-nums leading-none">{i + 1}</span>
+                  <span className="text-[10px] font-medium text-[var(--color-ink-3)] mt-1">PIN {c.pin}</span>
                 </button>
               ))}
             </div>
