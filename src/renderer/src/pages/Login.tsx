@@ -3,6 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { AnimatedGridPattern } from '../components/ui/AnimatedGridPattern'
+import logoUrl from '../assets/logo.png'
+
+const CASHIER_CREDENTIALS = [
+  { name: 'Cashier 1', username: 'cashier1', pin: '1111' },
+  { name: 'Cashier 2', username: 'cashier2', pin: '2222' },
+  { name: 'Cashier 3', username: 'cashier3', pin: '3333' },
+  { name: 'Cashier 4', username: 'cashier4', pin: '4444' },
+  { name: 'Cashier 5', username: 'cashier5', pin: '5555' }
+]
 
 export function Login() {
   const [username, setUsername] = useState('')
@@ -47,7 +56,7 @@ export function Login() {
         {/* Brand text */}
         <div className="relative z-10 text-center">
           <div className="w-16 h-16 rounded-2xl bg-white/[0.08] flex items-center justify-center border border-white/[0.06] mx-auto mb-6 overflow-hidden">
-            <img src="/logo.png" alt="" className="w-10 h-10 object-contain" />
+            <img src={logoUrl} alt="" className="w-10 h-10 object-contain" />
           </div>
           <h1 className="text-[42px] font-bold text-[#FAFAFA] tracking-tight leading-none">
             Ariemmas
@@ -64,7 +73,7 @@ export function Login() {
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2.5 mb-8">
             <div className="w-9 h-9 rounded-lg bg-[#18181B] flex items-center justify-center overflow-hidden">
-              <img src="/logo.png" alt="" className="w-6 h-6 object-contain" />
+              <img src={logoUrl} alt="" className="w-6 h-6 object-contain" />
             </div>
             <div>
               <div className="text-base font-semibold text-[#18181B]">Ariemmas</div>
@@ -127,18 +136,22 @@ export function Login() {
             </button>
           </form>
 
-          {/* Credentials hint */}
+          {/* Cashier credentials */}
           <div className="mt-8 p-3.5 rounded-md bg-[#F4F4F5] border border-[#E4E4E7]">
-            <div className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-[0.06em] mb-2">Demo Credentials</div>
+            <div className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-[0.06em] mb-2">Cashier Logins</div>
             <div className="space-y-1">
-              <div className="flex justify-between items-center">
-                <span className="text-[12px] text-[#71717A]">Admin</span>
-                <code className="text-[12px] font-mono text-[#3F3F46] bg-white px-2 py-0.5 rounded border border-[#E4E4E7]">admin / 1234</code>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[12px] text-[#71717A]">Cashier</span>
-                <code className="text-[12px] font-mono text-[#3F3F46] bg-white px-2 py-0.5 rounded border border-[#E4E4E7]">mary / 5678</code>
-              </div>
+              {CASHIER_CREDENTIALS.map((c) => (
+                <button
+                  key={c.username}
+                  type="button"
+                  onClick={() => { setUsername(c.username); setPin(c.pin); pinRef.current?.focus() }}
+                  className="w-full flex justify-between items-center hover:bg-white rounded px-1 py-0.5 transition-colors"
+                  title="Click to fill"
+                >
+                  <span className="text-[12px] text-[#71717A]">{c.name}</span>
+                  <code className="text-[12px] font-mono text-[#3F3F46] bg-white px-2 py-0.5 rounded border border-[#E4E4E7]">{c.username} / {c.pin}</code>
+                </button>
+              ))}
             </div>
           </div>
         </div>

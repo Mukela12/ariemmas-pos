@@ -114,9 +114,9 @@ export async function registerIpcHandlers(): Promise<void> {
     const db = getDb()
     const id = uuid()
     await db.run(`
-      INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [id, product.barcode, product.name, product.category_id, product.price, product.cost_price || 0, product.vat_rate || 0.16, product.stock_quantity || 0, product.min_stock_level || 5, product.unit || 'each'])
+      INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit, is_weighted)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [id, product.barcode, product.name, product.category_id, product.price, product.cost_price || 0, product.vat_rate || 0.16, product.stock_quantity || 0, product.min_stock_level || 5, product.unit || 'each', product.is_weighted ? 1 : 0])
     const created = await db.queryOne('SELECT * FROM products WHERE id = ?', [id])
     queueSync('insert', 'product', id, created!).catch(() => {})
     return created
@@ -127,11 +127,11 @@ export async function registerIpcHandlers(): Promise<void> {
     const nowExpr = now(db.engine)
     await db.run(`
       UPDATE products SET barcode = ?, name = ?, category_id = ?, price = ?, cost_price = ?,
-        vat_rate = ?, stock_quantity = ?, min_stock_level = ?, unit = ?, updated_at = ${nowExpr}
+        vat_rate = ?, stock_quantity = ?, min_stock_level = ?, unit = ?, is_weighted = ?, updated_at = ${nowExpr}
       WHERE id = ?
     `, [product.barcode, product.name, product.category_id, product.price, product.cost_price || 0,
       product.vat_rate || 0.16, product.stock_quantity || 0, product.min_stock_level || 5,
-      product.unit || 'each', product.id])
+      product.unit || 'each', product.is_weighted ? 1 : 0, product.id])
     const updated = await db.queryOne('SELECT * FROM products WHERE id = ?', [product.id])
     queueSync('update', 'product', product.id, updated!).catch(() => {})
     return updated

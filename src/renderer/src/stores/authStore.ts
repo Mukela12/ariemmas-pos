@@ -27,8 +27,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
       set({ isLoading: false, error: 'Invalid username or PIN' })
       return false
-    } catch {
-      set({ isLoading: false, error: 'Login failed. Please try again.' })
+    } catch (e: any) {
+      // Surface a specific message from the main process when it's meaningful
+      // (e.g. the cross-terminal session lock), otherwise show a generic line.
+      const raw = e?.message || 'Login failed. Please try again.'
+      const cleaned = raw.replace(/^Error invoking remote method '[^']+':\s*Error:\s*/, '').replace(/^Error:\s*/, '')
+      set({ isLoading: false, error: cleaned })
       return false
     }
   },

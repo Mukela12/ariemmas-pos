@@ -62,6 +62,7 @@ export function ThankYouScreen({ onClose, paymentMethod, total, amountTendered, 
       const timer = setTimeout(onClose, 400)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [visible, onClose])
 
   const showCashDetails = paymentMethod === 'cash' && amountTendered != null && changeGiven != null

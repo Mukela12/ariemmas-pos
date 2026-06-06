@@ -17,20 +17,29 @@ export function POS() {
   const [showThankYou, setShowThankYou] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [lastPayment, setLastPayment] = useState<{ method: 'cash' | 'mobile_money'; total: number; tendered: number | null; change: number | null } | null>(null)
+  const [weighingProduct, setWeighingProduct] = useState<Product | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
   const { items, addItem, removeItem, updateQuantity, selectedIndex, selectItem, clearSale, getSubtotal, getVatTotal, getTotal, getItemCount } = useSaleStore()
   const { user } = useAuthStore()
   const { currentShift, setShift } = useShiftStore()
 
+  const requestAddProduct = useCallback((product: Product) => {
+    if (product.is_weighted) {
+      setWeighingProduct(product)
+    } else {
+      addItem(product)
+    }
+  }, [addItem])
+
   const handleBarcodeScan = useCallback(async (barcode: string) => {
     const product = await window.api.getProductByBarcode(barcode)
     if (product) {
-      addItem(product)
+      requestAddProduct(product)
       setSearchQuery('')
       setShowSearch(false)
     }
-  }, [addItem])
+  }, [requestAddProduct])
 
   useScanner({ onScan: handleBarcodeScan, enabled: !showPayment })
 
@@ -47,7 +56,7 @@ export function POS() {
   }
 
   const handleSearchSelect = (product: Product) => {
-    addItem(product)
+    requestAddProduct(product)
     setSearchQuery('')
     setSearchResults([])
     setShowSearch(false)
@@ -58,14 +67,14 @@ export function POS() {
     if (e.key === 'Enter' && searchQuery.length >= 3) {
       const product = await window.api.getProductByBarcode(searchQuery)
       if (product) {
-        addItem(product)
+        requestAddProduct(product)
         setSearchQuery('')
         setShowSearch(false)
         return
       }
       const results = await window.api.searchProducts(searchQuery)
       if (results.length === 1) {
-        addItem(results[0])
+        requestAddProduct(results[0])
         setSearchQuery('')
         setShowSearch(false)
       }
@@ -341,6 +350,79 @@ export function POS() {
           }}
         />
       )}
+
+      {/* Weight entry modal for butchery / by-kg items */}
+      {weighingProduct && (
+        <WeightModal
+          product={weighingProduct}
+          onCancel={() => setWeighingProduct(null)}
+          onConfirm={(weight) => {
+            addItem(weighingProduct, weight)
+            setWeighingProduct(null)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function WeightModal({
+  product, onConfirm, onCancel
+}: {
+  product: Product
+  onConfirm: (weight: number) => void
+  onCancel: () => void
+}) {
+  const [value, setValue] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => { inputRef.current?.focus() }, [])
+
+  const weight = parseFloat(value) || 0
+  const total = weight * Number(product.price)
+  const canConfirm = weight > 0
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
+      <div className="relative bg-white rounded-lg border border-[#E4E4E7] w-full max-w-md mx-4 overflow-hidden">
+        <div className="px-6 py-4 border-b border-[#E4E4E7]">
+          <h2 className="text-base font-semibold text-[#18181B]">Weigh item</h2>
+          <p className="text-[13px] text-[#71717A] mt-0.5">{product.name} &middot; {formatZMW(product.price)} per kg</p>
+        </div>
+        <form
+          onSubmit={(e) => { e.preventDefault(); if (canConfirm) onConfirm(weight) }}
+          className="p-6 space-y-4"
+        >
+          <div>
+            <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Weight (kg)</label>
+            <input
+              ref={inputRef}
+              type="number"
+              step="0.001"
+              min="0"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="0.000"
+              className="w-full h-12 px-3 rounded-md border border-[#E4E4E7] bg-white text-2xl font-semibold tabular-nums text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
+            />
+            <p className="text-[11px] text-[#71717A] mt-1.5">Type the weight from the scale (kg). Decimals allowed (e.g. 0.450).</p>
+          </div>
+          <div className="flex items-center justify-between p-3 rounded-md bg-[#F4F4F5] border border-[#E4E4E7]">
+            <span className="text-sm font-medium text-[#71717A]">Line total</span>
+            <span className="text-lg font-semibold text-[#18181B] tabular-nums">{formatZMW(total)}</span>
+          </div>
+          <div className="flex items-center justify-end gap-3 pt-1">
+            <button type="button" onClick={onCancel}
+              className="h-10 px-4 text-sm font-medium text-[#52525B] hover:bg-[#F4F4F5] rounded-md">
+              Cancel
+            </button>
+            <button type="submit" disabled={!canConfirm}
+              className="h-10 px-5 bg-[#0D9488] text-white text-sm font-medium rounded-md hover:bg-[#0F766E] disabled:opacity-40 disabled:cursor-not-allowed">
+              Add to cart
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
