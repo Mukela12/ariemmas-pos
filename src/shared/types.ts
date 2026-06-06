@@ -83,6 +83,7 @@ export interface Sale {
 export interface Shift {
   id: string
   user_id: string
+  cashier_name: string | null
   opening_cash: number
   closing_cash: number | null
   expected_cash: number | null

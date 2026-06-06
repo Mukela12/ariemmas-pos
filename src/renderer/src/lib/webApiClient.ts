@@ -71,8 +71,8 @@ export const webApi = {
   getCategories: async () => json<any[]>('/api/categories'),
 
   // Shifts
-  openShift: async (userId: string, openingCash: number) =>
-    json<any>('/api/shifts/open', { method: 'POST', body: JSON.stringify({ userId, openingCash }) }),
+  openShift: async (userId: string, openingCash: number, cashierName?: string) =>
+    json<any>('/api/shifts/open', { method: 'POST', body: JSON.stringify({ userId, openingCash, cashierName }) }),
   closeShift: async (shiftId: string, closingCash: number, notes?: string) =>
     json<any>('/api/shifts/close', { method: 'POST', body: JSON.stringify({ shiftId, closingCash, notes }) }),
   getCurrentShift: async (userId: string) =>

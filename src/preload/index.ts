@@ -36,8 +36,8 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.CATEGORY_GET_ALL),
 
   // Shifts
-  openShift: (userId: string, openingCash: number) =>
-    ipcRenderer.invoke(IPC_CHANNELS.SHIFT_OPEN, userId, openingCash),
+  openShift: (userId: string, openingCash: number, cashierName?: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SHIFT_OPEN, userId, openingCash, cashierName),
   closeShift: (shiftId: string, closingCash: number, notes: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SHIFT_CLOSE, shiftId, closingCash, notes),
   getCurrentShift: (userId: string) =>

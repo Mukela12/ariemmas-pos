@@ -345,6 +345,18 @@ export const MIGRATIONS: Migration[] = [
   {
     name: '005_weighted_and_terminal',
     getSql: (engine) => getWeightedAndTerminalSQL(engine)
+  },
+  {
+    name: '006_shifts_cashier_name',
+    getSql: (engine) => {
+      if (engine === 'mssql') {
+        return `IF COL_LENGTH('shifts', 'cashier_name') IS NULL ALTER TABLE shifts ADD cashier_name NVARCHAR(255) NULL;`
+      }
+      if (engine === 'postgres') {
+        return `ALTER TABLE shifts ADD COLUMN IF NOT EXISTS cashier_name TEXT;`
+      }
+      return `ALTER TABLE shifts ADD COLUMN cashier_name TEXT;`
+    }
   }
 ]
 

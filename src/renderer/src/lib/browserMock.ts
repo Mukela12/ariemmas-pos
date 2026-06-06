@@ -99,9 +99,10 @@ const mockApi = {
   getCategories: async () => MOCK_CATEGORIES,
 
   // Shifts
-  openShift: async (_userId: string, openingCash: number) => ({
+  openShift: async (_userId: string, openingCash: number, cashierName?: string) => ({
     id: 'shift-1',
     user_id: _userId,
+    cashier_name: cashierName || null,
     opening_cash: openingCash,
     status: 'open',
     opened_at: new Date().toISOString(),

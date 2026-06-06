@@ -173,6 +173,7 @@ function ShiftModal({
   const [openingCash, setOpeningCash] = useState('1000')
   const [closingCash, setClosingCash] = useState('')
   const [notes, setNotes] = useState('')
+  const [cashierName, setCashierName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [openingLimit, setOpeningLimit] = useState(1000)
   const [error, setError] = useState<string | null>(null)
@@ -216,7 +217,12 @@ function ShiftModal({
     setError(null)
     setIsSubmitting(true)
     try {
-      const newShift = await window.api.openShift(userId, amount)
+      if (!cashierName.trim()) {
+        setError('Please enter the cashier\'s name (the actual person on shift).')
+        setIsSubmitting(false)
+        return
+      }
+      const newShift = await window.api.openShift(userId, amount, cashierName.trim())
       onShiftChange(newShift)
     } catch (err: any) {
       setError(err?.message || 'Failed to open shift.')
@@ -316,6 +322,20 @@ function ShiftModal({
             <>
               <p className="text-[13px] text-[#71717A]">Open a new shift to start recording sales. Count the cash in the drawer before you begin.</p>
               <div>
+                <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Cashier&apos;s Name</label>
+                <input
+                  type="text"
+                  value={cashierName}
+                  onChange={(e) => { setCashierName(e.target.value); setError(null) }}
+                  className={inputClass}
+                  placeholder="e.g. Mary Banda"
+                  autoFocus
+                />
+                <p className="mt-2 text-[11px] text-[#71717A]">
+                  Type the name of the person taking the till today, so admin reports show who was on shift.
+                </p>
+              </div>
+              <div>
                 <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Opening Cash (K)</label>
                 <input
                   type="number"
@@ -326,7 +346,6 @@ function ShiftModal({
                   onChange={(e) => { setOpeningCash(e.target.value); setError(null) }}
                   className={`${inputClass} tabular-nums`}
                   placeholder={openingLimit.toFixed(2)}
-                  autoFocus
                 />
                 <p className="mt-2 text-[11px] text-[#71717A]">
                   Opening cash should be {formatZMW(openingLimit)} or less.

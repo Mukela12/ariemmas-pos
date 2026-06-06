@@ -157,7 +157,7 @@ export async function registerIpcHandlers(): Promise<void> {
   })
 
   // Shifts
-  ipcMain.handle(IPC_CHANNELS.SHIFT_OPEN, async (_e, userId: string, openingCash: number) => {
+  ipcMain.handle(IPC_CHANNELS.SHIFT_OPEN, async (_e, userId: string, openingCash: number, cashierName?: string) => {
     const limit = parseFloat(await getSettingValue('opening_cash_limit', '1000')) || 1000
     if (openingCash < 0) {
       throw new Error('Opening cash cannot be negative')
@@ -169,8 +169,8 @@ export async function registerIpcHandlers(): Promise<void> {
     const db = getDb()
     const id = uuid()
     await db.run(
-      'INSERT INTO shifts (id, user_id, opening_cash, status) VALUES (?, ?, ?, ?)',
-      [id, userId, openingCash, 'open']
+      'INSERT INTO shifts (id, user_id, cashier_name, opening_cash, status) VALUES (?, ?, ?, ?, ?)',
+      [id, userId, (cashierName || '').trim() || null, openingCash, 'open']
     )
     const shift = await getShiftWithCashStats(id)
     queueSync('insert', 'shift', id, shift!).catch(() => {})

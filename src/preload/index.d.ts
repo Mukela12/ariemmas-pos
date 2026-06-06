@@ -18,7 +18,7 @@ interface PosAPI {
 
   getCategories(): Promise<Category[]>
 
-  openShift(userId: string, openingCash: number): Promise<Shift>
+  openShift(userId: string, openingCash: number, cashierName?: string): Promise<Shift>
   closeShift(shiftId: string, closingCash: number, notes: string): Promise<Shift | null>
   getCurrentShift(userId: string): Promise<Shift | null>
 

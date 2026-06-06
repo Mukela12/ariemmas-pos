@@ -172,19 +172,31 @@ async function initDb(): Promise<void> {
 
   await runMigrations(db)
 
-  // Seed admin if no users exist
-  const existing = await db.queryOne('SELECT id FROM users LIMIT 1')
-  if (!existing) {
-    const pinHash = bcrypt.hashSync('1234', 10)
-    await db.run(
-      'INSERT INTO users (id, username, display_name, pin_hash, role) VALUES ($1, $2, $3, $4, $5)',
-      [uuid(), 'admin', 'Administrator', pinHash, 'admin']
-    )
-    const maryHash = bcrypt.hashSync('5678', 10)
-    await db.run(
-      'INSERT INTO users (id, username, display_name, pin_hash, role) VALUES ($1, $2, $3, $4, $5)',
-      [uuid(), 'mary', 'Mary', maryHash, 'cashier']
-    )
+  // Idempotent per-username seeding so cashier1..5 + admin always exist
+  // on the Railway database (the web/Netlify build talks to this server).
+  const SEED = [
+    { username: 'admin',    display_name: 'Administrator', pin: '9012', role: 'admin'   as const, resetPin: true },
+    { username: 'cashier1', display_name: 'Cashier 1',     pin: '1111', role: 'cashier' as const, resetPin: true },
+    { username: 'cashier2', display_name: 'Cashier 2',     pin: '2222', role: 'cashier' as const, resetPin: true },
+    { username: 'cashier3', display_name: 'Cashier 3',     pin: '3333', role: 'cashier' as const, resetPin: true },
+    { username: 'cashier4', display_name: 'Cashier 4',     pin: '4444', role: 'cashier' as const, resetPin: true },
+    { username: 'cashier5', display_name: 'Cashier 5',     pin: '5555', role: 'cashier' as const, resetPin: true }
+  ]
+  for (const u of SEED) {
+    const existing = await db.queryOne<{ id: string }>('SELECT id FROM users WHERE username = $1', [u.username])
+    const pinHash = bcrypt.hashSync(u.pin, 10)
+    if (!existing) {
+      await db.run(
+        'INSERT INTO users (id, username, display_name, pin_hash, role, active) VALUES ($1,$2,$3,$4,$5,1)',
+        [uuid(), u.username, u.display_name, pinHash, u.role]
+      )
+    } else if (u.resetPin) {
+      // Reset PIN + display_name so server matches the install's known credentials.
+      await db.run(
+        'UPDATE users SET display_name = $1, pin_hash = $2, role = $3, active = 1, failed_attempts = 0, locked_until = NULL WHERE id = $4',
+        [u.display_name, pinHash, u.role, existing.id]
+      )
+    }
   }
 
   // Seed products if none exist
@@ -469,7 +481,7 @@ app.get('/api/sales/export', async (req, res) => {
 
 // --- Shifts ---
 app.post('/api/shifts/open', async (req, res) => {
-  const { userId, openingCash } = req.body
+  const { userId, openingCash, cashierName } = req.body
   const settings = await getSettingsMap()
   const openingLimit = parseFloat(settings.opening_cash_limit || '1000') || 1000
 
@@ -481,7 +493,8 @@ app.post('/api/shifts/open', async (req, res) => {
   }
 
   const id = uuid()
-  await db.run('INSERT INTO shifts (id, user_id, opening_cash, status) VALUES ($1,$2,$3,$4)', [id, userId, openingCash, 'open'])
+  const name = (cashierName || '').trim() || null
+  await db.run('INSERT INTO shifts (id, user_id, cashier_name, opening_cash, status) VALUES ($1,$2,$3,$4,$5)', [id, userId, name, openingCash, 'open'])
   const shift = await getShiftWithCashStats(id)
   res.json(shift)
 })
@@ -645,17 +658,17 @@ app.post('/api/sync/shifts', async (req, res) => {
     const existing = await db.queryOne('SELECT id FROM shifts WHERE id = $1', [s.id])
     if (existing) {
       await db.run(
-        `UPDATE shifts SET opening_cash=$1, closing_cash=$2, expected_cash=$3, variance=$4,
-         total_sales=$5, total_transactions=$6, total_vat=$7, status=$8, notes=$9, closed_at=$10 WHERE id=$11`,
-        [s.opening_cash, s.closing_cash, s.expected_cash, s.variance, s.total_sales,
+        `UPDATE shifts SET cashier_name=$1, opening_cash=$2, closing_cash=$3, expected_cash=$4, variance=$5,
+         total_sales=$6, total_transactions=$7, total_vat=$8, status=$9, notes=$10, closed_at=$11 WHERE id=$12`,
+        [s.cashier_name || null, s.opening_cash, s.closing_cash, s.expected_cash, s.variance, s.total_sales,
          s.total_transactions, s.total_vat, s.status, s.notes, s.closed_at, s.id]
       )
     } else {
       await db.run(
-        `INSERT INTO shifts (id, user_id, opening_cash, closing_cash, expected_cash, variance,
+        `INSERT INTO shifts (id, user_id, cashier_name, opening_cash, closing_cash, expected_cash, variance,
          total_sales, total_transactions, total_vat, status, notes, opened_at, closed_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
-        [s.id, s.user_id, s.opening_cash, s.closing_cash, s.expected_cash, s.variance,
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+        [s.id, s.user_id, s.cashier_name || null, s.opening_cash, s.closing_cash, s.expected_cash, s.variance,
          s.total_sales, s.total_transactions, s.total_vat, s.status, s.notes, s.opened_at, s.closed_at]
       )
     }
