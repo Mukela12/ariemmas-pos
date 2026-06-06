@@ -4,7 +4,7 @@ import { useSaleStore } from '../stores/saleStore'
 import { useAuthStore } from '../stores/authStore'
 import { useShiftStore } from '../stores/shiftStore'
 import { useScanner } from '../hooks/useScanner'
-import { formatZMW } from '../lib/currency'
+import { formatZMW, formatStock } from '../lib/currency'
 import { buildPrintableReceipt } from '../lib/receipt'
 import { ThankYouScreen } from '../components/ThankYouScreen'
 import type { Product } from '../../../shared/types'
@@ -132,7 +132,7 @@ export function POS() {
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-[#18181B] truncate">{product.name}</p>
-                    <p className="text-xs text-[#A1A1AA] mt-0.5">{product.barcode || 'No barcode'} &middot; {product.stock_quantity} in stock</p>
+                    <p className="text-xs text-[#A1A1AA] mt-0.5">{product.barcode || 'No barcode'} &middot; {formatStock(product.stock_quantity)} in stock</p>
                   </div>
                   <span className="text-sm font-semibold text-[#18181B] tabular-nums ml-3 shrink-0">{formatZMW(product.price)}</span>
                 </button>

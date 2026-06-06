@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Package, Plus, Search, Edit2, Download, RefreshCw } from 'lucide-react'
 import JsBarcode from 'jsbarcode'
-import { formatZMW } from '../lib/currency'
+import { formatZMW, formatStock } from '../lib/currency'
 import type { Product, Category } from '../../../shared/types'
 
 function generateBarcodeValue(): string {
@@ -325,7 +325,7 @@ export function Products() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className="text-sm font-medium text-[#18181B] tabular-nums">
-                        {product.stock_quantity}
+                        {formatStock(product.stock_quantity)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">

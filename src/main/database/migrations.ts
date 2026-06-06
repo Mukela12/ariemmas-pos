@@ -357,6 +357,22 @@ export const MIGRATIONS: Migration[] = [
       }
       return `ALTER TABLE shifts ADD COLUMN cashier_name TEXT;`
     }
+  },
+  {
+    // Weighted (butchery) items sell fractional quantities (e.g. 0.450 kg), so
+    // stock must hold decimals. Postgres/MSSQL declared stock_quantity as
+    // INTEGER, which rejects a fractional decrement and 500s the sale. Widen to
+    // a numeric type. SQLite is dynamically typed and already stores decimals.
+    name: '007_stock_quantity_numeric',
+    getSql: (engine) => {
+      if (engine === 'mssql') {
+        return `ALTER TABLE products ALTER COLUMN stock_quantity DECIMAL(12,3) NOT NULL;`
+      }
+      if (engine === 'postgres') {
+        return `ALTER TABLE products ALTER COLUMN stock_quantity TYPE NUMERIC(12,3);`
+      }
+      return `SELECT 1;` // sqlite: no-op, column already holds reals
+    }
   }
 ]
 
