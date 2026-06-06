@@ -4,7 +4,7 @@ import type { CartItem, Product } from '../../../shared/types'
 interface SaleState {
   items: CartItem[]
   selectedIndex: number
-  addItem: (product: Product) => void
+  addItem: (product: Product, explicitQuantity?: number) => void
   removeItem: (index: number) => void
   updateQuantity: (index: number, quantity: number) => void
   clearSale: () => void
@@ -23,10 +23,29 @@ export const useSaleStore = create<SaleState>((set, get) => ({
   items: [],
   selectedIndex: -1,
 
-  addItem: (product: Product) => {
+  addItem: (product: Product, explicitQuantity?: number) => {
     const price = Number(product.price)
     const vatRate = Number(product.vat_rate)
+    const isWeighted = !!product.is_weighted
     set((state) => {
+      // Weighted items (or any call with an explicit quantity) always create a new line —
+      // each weighing is its own transaction line.
+      if (explicitQuantity != null || isWeighted) {
+        const qty = explicitQuantity ?? 1
+        const lineTotal = price * qty
+        const newItem: CartItem = {
+          product_id: product.id,
+          barcode: product.barcode,
+          name: isWeighted ? `${product.name} (${qty.toFixed(3)} kg)` : product.name,
+          price,
+          vat_rate: vatRate,
+          quantity: qty,
+          line_total: lineTotal,
+          vat_amount: calcVat(lineTotal, vatRate)
+        }
+        return { items: [...state.items, newItem], selectedIndex: state.items.length }
+      }
+
       const existing = state.items.findIndex(i => i.product_id === product.id)
       if (existing >= 0) {
         const updated = [...state.items]

@@ -1,7 +1,75 @@
-import { useState, useEffect } from 'react'
-import { Package, Plus, Search, Edit2 } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Package, Plus, Search, Edit2, Download, RefreshCw } from 'lucide-react'
+import JsBarcode from 'jsbarcode'
 import { formatZMW } from '../lib/currency'
 import type { Product, Category } from '../../../shared/types'
+
+function generateBarcodeValue(): string {
+  // 12-digit numeric, prefixed with 2 (internal-use convention), to encode safely as Code128.
+  const ts = Date.now().toString()
+  const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+  return ('2' + ts.slice(-8) + rand).slice(0, 12)
+}
+
+function BarcodePreview({ value }: { value: string }) {
+  const svgRef = useRef<SVGSVGElement>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!svgRef.current || !value) return
+    try {
+      JsBarcode(svgRef.current, value, {
+        format: 'CODE128',
+        width: 2,
+        height: 60,
+        displayValue: true,
+        fontSize: 14,
+        margin: 8
+      })
+      setError(null)
+    } catch (e) {
+      setError('Invalid barcode value')
+    }
+  }, [value])
+
+  function handleDownload() {
+    const svg = svgRef.current
+    if (!svg) return
+    const xml = new XMLSerializer().serializeToString(svg)
+    const svg64 = btoa(unescape(encodeURIComponent(xml)))
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width * 3
+      canvas.height = img.height * 3
+      const ctx = canvas.getContext('2d')!
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      const link = document.createElement('a')
+      link.download = `barcode-${value}.png`
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+    }
+    img.src = 'data:image/svg+xml;base64,' + svg64
+  }
+
+  if (!value) return null
+  return (
+    <div className="bg-white border border-[#E4E4E7] rounded-md p-3 flex items-center gap-3">
+      <svg ref={svgRef} className="flex-1" />
+      <button
+        type="button"
+        onClick={handleDownload}
+        disabled={!!error}
+        className="shrink-0 h-9 px-3 rounded-md border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA] flex items-center gap-1.5 disabled:opacity-50"
+        title="Download as PNG"
+      >
+        <Download size={13} /> PNG
+      </button>
+    </div>
+  )
+}
 
 export function Products() {
   const [products, setProducts] = useState<Product[]>([])
@@ -25,7 +93,8 @@ export function Products() {
     category_id: '',
     vat_rate: '0.16',
     min_stock_level: '5',
-    unit: 'each'
+    unit: 'each',
+    is_weighted: false
   })
 
   useEffect(() => {
@@ -57,7 +126,8 @@ export function Products() {
       category_id: categories[0]?.id || '',
       vat_rate: '0.16',
       min_stock_level: '5',
-      unit: 'each'
+      unit: 'each',
+      is_weighted: false
     })
     setShowForm(true)
   }
@@ -73,7 +143,8 @@ export function Products() {
       category_id: product.category_id || '',
       vat_rate: String(product.vat_rate),
       min_stock_level: String(product.min_stock_level),
-      unit: product.unit
+      unit: product.unit,
+      is_weighted: !!product.is_weighted
     })
     setShowForm(true)
   }
@@ -89,7 +160,8 @@ export function Products() {
       category_id: form.category_id || undefined,
       vat_rate: parseFloat(form.vat_rate),
       min_stock_level: parseInt(form.min_stock_level) || 5,
-      unit: form.unit
+      unit: form.is_weighted ? 'kg' : form.unit,
+      is_weighted: form.is_weighted ? 1 : 0
     }
 
     if (editingProduct) {
@@ -333,15 +405,33 @@ export function Products() {
                     placeholder="e.g. Mealie Meal 25kg"
                   />
                 </div>
-                <div>
+                <div className="col-span-2">
                   <label className={labelClass}>Barcode</label>
-                  <input
-                    type="text"
-                    value={form.barcode}
-                    onChange={(e) => setForm({ ...form, barcode: e.target.value })}
-                    className={`${inputClass} font-mono`}
-                    placeholder="Scan or type"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={form.barcode}
+                      onChange={(e) => setForm({ ...form, barcode: e.target.value })}
+                      className={`${inputClass} font-mono`}
+                      placeholder="Scan, type, or generate"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, barcode: generateBarcodeValue() })}
+                      className="shrink-0 h-10 px-3 rounded-md border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA] flex items-center gap-1.5"
+                      title="Generate a new offline barcode"
+                    >
+                      <RefreshCw size={13} /> Generate
+                    </button>
+                  </div>
+                  {form.barcode && (
+                    <div className="mt-2">
+                      <BarcodePreview value={form.barcode} />
+                      <p className="text-[11px] text-[#71717A] mt-1.5">
+                        Download the PNG to print labels for items prepared in-store.
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className={labelClass}>Category</label>
@@ -419,9 +509,10 @@ export function Products() {
                 <div>
                   <label className={labelClass}>Unit</label>
                   <select
-                    value={form.unit}
+                    value={form.is_weighted ? 'kg' : form.unit}
+                    disabled={form.is_weighted}
                     onChange={(e) => setForm({ ...form, unit: e.target.value })}
-                    className={inputClass}
+                    className={`${inputClass} disabled:opacity-60`}
                   >
                     <option value="each">Each</option>
                     <option value="kg">Kilogram</option>
@@ -430,6 +521,20 @@ export function Products() {
                     <option value="box">Box</option>
                     <option value="metre">Metre</option>
                   </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="flex items-center gap-2.5 py-2 px-3 rounded-md border border-[#E4E4E7] cursor-pointer hover:bg-[#FAFAFA]">
+                    <input
+                      type="checkbox"
+                      checked={form.is_weighted}
+                      onChange={(e) => setForm({ ...form, is_weighted: e.target.checked, unit: e.target.checked ? 'kg' : form.unit })}
+                      className="w-4 h-4 accent-[#0D9488]"
+                    />
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-[#18181B]">Sold by weight (butchery)</div>
+                      <div className="text-[11px] text-[#71717A]">Cashier weighs the item and types the weight in kg; the price above is price per kg.</div>
+                    </div>
+                  </label>
                 </div>
               </div>
               <div className="flex items-center justify-end gap-3 pt-2">

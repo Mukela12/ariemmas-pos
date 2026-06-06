@@ -753,6 +753,57 @@ app.post('/api/sync/categories', async (req, res) => {
   }
 })
 
+// --- Active cashier sessions (cross-terminal lock) ---
+// In-memory: a cashier may only be signed in on one terminal at a time. TTL of
+// 10 minutes refreshed by login/heartbeat; if a terminal crashes, the lock
+// auto-clears in ~10 min.
+interface ActiveSession { user_id: string; terminal_id: string; terminal_name: string; last_seen: number }
+const activeSessions = new Map<string, ActiveSession>()
+const SESSION_TTL_MS = 10 * 60 * 1000
+
+function getActiveSession(userId: string): ActiveSession | null {
+  const s = activeSessions.get(userId)
+  if (!s) return null
+  if (Date.now() - s.last_seen > SESSION_TTL_MS) { activeSessions.delete(userId); return null }
+  return s
+}
+
+app.get('/api/sessions/active/:userId', (req, res) => {
+  const s = getActiveSession(req.params.userId)
+  if (!s) return res.json({ active: false })
+  res.json({ active: true, terminal_id: s.terminal_id, terminal_name: s.terminal_name })
+})
+
+app.post('/api/sessions/login', (req, res) => {
+  const { user_id, terminal_id, terminal_name } = req.body || {}
+  if (!user_id || !terminal_id) return res.status(400).json({ error: 'user_id and terminal_id required' })
+  const existing = getActiveSession(user_id)
+  if (existing && existing.terminal_id !== terminal_id) {
+    return res.status(409).json({
+      error: 'User already signed in on another terminal',
+      terminal_id: existing.terminal_id,
+      terminal_name: existing.terminal_name
+    })
+  }
+  activeSessions.set(user_id, { user_id, terminal_id, terminal_name: terminal_name || 'Terminal', last_seen: Date.now() })
+  res.json({ ok: true })
+})
+
+app.post('/api/sessions/heartbeat', (req, res) => {
+  const { user_id, terminal_id } = req.body || {}
+  const existing = getActiveSession(user_id)
+  if (!existing || existing.terminal_id !== terminal_id) return res.status(404).json({ error: 'No active session' })
+  existing.last_seen = Date.now()
+  res.json({ ok: true })
+})
+
+app.post('/api/sessions/logout', (req, res) => {
+  const { user_id, terminal_id } = req.body || {}
+  const existing = getActiveSession(user_id)
+  if (existing && existing.terminal_id === terminal_id) activeSessions.delete(user_id)
+  res.json({ ok: true })
+})
+
 // --- Health ---
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', engine: 'postgres' })

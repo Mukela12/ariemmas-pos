@@ -39,6 +39,7 @@ export interface Product {
   stock_quantity: number
   min_stock_level: number
   unit: string
+  is_weighted: number
   active: number
   created_at: string
   updated_at: string
@@ -75,6 +76,7 @@ export interface Sale {
   void_reason: string | null
   void_by: string | null
   zra_fiscal_code: string | null
+  terminal_id: string | null
   created_at: string
 }
 

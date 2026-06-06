@@ -30,6 +30,9 @@ interface PosAPI {
   printReceipt(receipt: PrintableReceipt): Promise<boolean>
   testPrint(): Promise<{ ok: boolean; error?: string }>
   openCashDrawer(): Promise<boolean>
+
+  getSyncStatus(): Promise<{ pending: number; failed: number; lastSynced: string | null; isOnline: boolean }>
+  syncNow(): Promise<{ synced: number; failed: number }>
 }
 
 declare global {

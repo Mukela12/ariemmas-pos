@@ -294,6 +294,37 @@ function getCashAlertSettingsSQL(engine: DbAdapter['engine']): string {
   `
 }
 
+function getWeightedAndTerminalSQL(engine: DbAdapter['engine']): string {
+  if (engine === 'mssql') {
+    return `
+      IF COL_LENGTH('products', 'is_weighted') IS NULL
+        ALTER TABLE products ADD is_weighted INT NOT NULL DEFAULT 0;
+      IF COL_LENGTH('sales', 'terminal_id') IS NULL
+        ALTER TABLE sales ADD terminal_id NVARCHAR(255) NULL;
+      IF NOT EXISTS (SELECT 1 FROM settings WHERE [key] = 'terminal_id')
+        INSERT INTO settings ([key], value) VALUES ('terminal_id', '');
+      IF NOT EXISTS (SELECT 1 FROM settings WHERE [key] = 'terminal_name')
+        INSERT INTO settings ([key], value) VALUES ('terminal_name', 'Terminal');
+    `
+  }
+
+  if (engine === 'postgres') {
+    return `
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS is_weighted INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE sales ADD COLUMN IF NOT EXISTS terminal_id TEXT;
+      INSERT INTO settings (key, value) VALUES ('terminal_id', '') ON CONFLICT DO NOTHING;
+      INSERT INTO settings (key, value) VALUES ('terminal_name', 'Terminal') ON CONFLICT DO NOTHING;
+    `
+  }
+
+  return `
+    ALTER TABLE products ADD COLUMN is_weighted INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE sales ADD COLUMN terminal_id TEXT;
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('terminal_id', '');
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('terminal_name', 'Terminal');
+  `
+}
+
 export const MIGRATIONS: Migration[] = [
   {
     name: '001_initial_schema',
@@ -310,6 +341,10 @@ export const MIGRATIONS: Migration[] = [
   {
     name: '004_cash_alert_settings',
     getSql: (engine) => getCashAlertSettingsSQL(engine)
+  },
+  {
+    name: '005_weighted_and_terminal',
+    getSql: (engine) => getWeightedAndTerminalSQL(engine)
   }
 ]
 

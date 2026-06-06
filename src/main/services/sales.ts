@@ -3,6 +3,7 @@ import dayjs from 'dayjs'
 import { getDb, dateOf } from '../database/connection'
 import type { CompleteSaleInput, Sale } from '../../shared/types'
 import { queueSync } from './syncService'
+import { getTerminalId } from './terminal'
 
 async function getNextReceiptNumber(): Promise<string> {
   const db = getDb()
@@ -46,14 +47,16 @@ export async function completeSale(input: CompleteSaleInput): Promise<Sale> {
     const saleId = uuid()
     const receiptNumber = await getNextReceiptNumber()
 
+    const terminalId = getTerminalId()
     await db.run(`
       INSERT INTO sales (id, receipt_number, user_id, shift_id, subtotal, vat_total, total,
-        payment_method, amount_tendered, change_given, mobile_ref, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed')
+        payment_method, amount_tendered, change_given, mobile_ref, status, terminal_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?)
     `, [
       saleId, receiptNumber, input.user_id, input.shift_id,
       input.subtotal, input.vat_total, input.total,
-      input.payment_method, input.amount_tendered, input.change_given, input.mobile_ref
+      input.payment_method, input.amount_tendered, input.change_given, input.mobile_ref,
+      terminalId
     ])
 
     for (const item of input.items) {
