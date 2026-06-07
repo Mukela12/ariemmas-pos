@@ -14,8 +14,11 @@ import {
   sendRaw
 } from './services/printer'
 import { saveProductImage, deleteProductImage } from './services/productImages'
+import productImageMap from './database/product-images.json'
 import type { PrintableReceipt } from '../shared/types'
 import { IPC_CHANNELS } from '../shared/constants'
+
+const PRODUCT_IMAGES = productImageMap as Record<string, string>
 
 async function getSettingValue(key: string, fallback: string): Promise<string> {
   const db = getDb()
@@ -71,6 +74,7 @@ async function upsertSetting(key: string, value: string): Promise<void> {
 export async function registerIpcHandlers(): Promise<void> {
   await seedDefaultAdmin()
   await seedSampleProducts()
+  await backfillProductImages()
 
   // Auth
   ipcMain.handle(IPC_CHANNELS.AUTH_LOGIN, async (_e, username: string, pin: string) => {
@@ -316,6 +320,23 @@ export async function registerIpcHandlers(): Promise<void> {
   })
 }
 
+// Backfill real product images onto already-seeded products (existing installs
+// where seedSampleProducts is skipped because products already exist). Only
+// fills rows that have no image yet, matched by name.
+async function backfillProductImages(): Promise<void> {
+  const db = getDb()
+  for (const [name, dataUrl] of Object.entries(PRODUCT_IMAGES)) {
+    try {
+      const row = await db.queryOne<{ id: string; image_url: string | null }>(
+        'SELECT id, image_url FROM products WHERE name = ?', [name]
+      )
+      if (row && !row.image_url) {
+        await db.run('UPDATE products SET image_url = ? WHERE id = ?', [dataUrl, row.id])
+      }
+    } catch { /* ignore individual failures */ }
+  }
+}
+
 async function seedSampleProducts(): Promise<void> {
   const db = getDb()
   const existing = await db.queryOne('SELECT id FROM products LIMIT 1')
@@ -352,13 +373,14 @@ async function seedSampleProducts(): Promise<void> {
   for (const p of products) {
     const id = uuid()
     const vatRate = (p as any).vat ?? 0.16
+    const imageUrl = PRODUCT_IMAGES[p.name] || null
     await db.run(`
-      INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [id, p.barcode, p.name, p.cat, p.price, p.cost, vatRate, p.stock])
+      INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, image_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [id, p.barcode, p.name, p.cat, p.price, p.cost, vatRate, p.stock, imageUrl])
     queueSync('insert', 'product', id, {
       id, barcode: p.barcode, name: p.name, category_id: p.cat, price: p.price,
-      cost_price: p.cost, vat_rate: vatRate, stock_quantity: p.stock, min_stock_level: 5, unit: 'each'
+      cost_price: p.cost, vat_rate: vatRate, stock_quantity: p.stock, min_stock_level: 5, unit: 'each', image_url: imageUrl
     }).catch(() => {})
   }
 }
