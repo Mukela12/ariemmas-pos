@@ -87,7 +87,7 @@ export function Settings() {
     setSettings((prev) => ({ ...prev, [key]: value }))
   }
 
-  const inputClass = 'w-full h-10 px-3 rounded-md border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]'
+  const inputClass = 'w-full h-10 px-3 rounded-[4px] border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]'
   const labelClass = 'block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5'
 
   if (isLoading) {
@@ -109,7 +109,7 @@ export function Settings() {
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className={`flex items-center gap-2 h-10 px-4 rounded-md text-sm font-medium ${
+          className={`flex items-center gap-2 h-10 px-4 rounded-[4px] text-sm font-medium ${
             saved
               ? 'bg-[#16A34A] text-white'
               : 'bg-[#18181B] text-white hover:bg-[#27272A]'
@@ -133,7 +133,7 @@ export function Settings() {
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-2xl space-y-6">
           {/* Shop Info */}
-          <div className="bg-white border border-[#E4E4E7] rounded-md overflow-hidden">
+          <div className="bg-white border border-[#E4E4E7] rounded-[4px] overflow-hidden">
             <div className="flex items-center gap-3 px-5 py-4 border-b border-[#F4F4F5]">
               <Store size={18} className="text-[#71717A]" />
               <div>
@@ -186,7 +186,7 @@ export function Settings() {
           </div>
 
           {/* Receipt Settings */}
-          <div className="bg-white border border-[#E4E4E7] rounded-md overflow-hidden">
+          <div className="bg-white border border-[#E4E4E7] rounded-[4px] overflow-hidden">
             <div className="flex items-center gap-3 px-5 py-4 border-b border-[#F4F4F5]">
               <Receipt size={18} className="text-[#71717A]" />
               <div>
@@ -228,7 +228,7 @@ export function Settings() {
             </div>
           </div>
 
-          <div className="bg-white border border-[#E4E4E7] rounded-md overflow-hidden">
+          <div className="bg-white border border-[#E4E4E7] rounded-[4px] overflow-hidden">
             <div className="flex items-center gap-3 px-5 py-4 border-b border-[#F4F4F5]">
               <BellRing size={18} className="text-[#71717A]" />
               <div>
@@ -278,7 +278,7 @@ export function Settings() {
           </div>
 
           {/* Hardware Status */}
-          <div className="bg-white border border-[#E4E4E7] rounded-md overflow-hidden">
+          <div className="bg-white border border-[#E4E4E7] rounded-[4px] overflow-hidden">
             <div className="flex items-center gap-3 px-5 py-4 border-b border-[#F4F4F5]">
               <Printer size={18} className="text-[#71717A]" />
               <div>
@@ -287,7 +287,7 @@ export function Settings() {
               </div>
             </div>
             <div className="p-5 space-y-3">
-              <div className="flex items-center justify-between py-3 px-4 bg-[#FAFAFA] rounded-md border border-[#F4F4F5]">
+              <div className="flex items-center justify-between py-3 px-4 bg-[#FAFAFA] rounded-[4px] border border-[#F4F4F5]">
                 <div className="flex items-center gap-3">
                   <Printer size={16} className="text-[#71717A]" />
                   <div>
@@ -313,7 +313,7 @@ export function Settings() {
               </div>
 
               {/* Printer selection + tests */}
-              <div className="py-3 px-4 bg-[#FAFAFA] rounded-md border border-[#F4F4F5] space-y-3">
+              <div className="py-3 px-4 bg-[#FAFAFA] rounded-[4px] border border-[#F4F4F5] space-y-3">
                 <div>
                   <label className={labelClass}>Active Printer</label>
                   <select
@@ -337,21 +337,21 @@ export function Settings() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <button
                     onClick={loadPrinters}
-                    className="h-9 px-3 rounded-md border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA]"
+                    className="h-9 px-3 rounded-[4px] border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA]"
                   >
                     Refresh
                   </button>
                   <button
                     onClick={handleTestPrint}
                     disabled={hwBusy !== null}
-                    className="h-9 px-3 rounded-md border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA] disabled:opacity-60"
+                    className="h-9 px-3 rounded-[4px] border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA] disabled:opacity-60"
                   >
                     {hwBusy === 'test' ? 'Printing...' : 'Test Print'}
                   </button>
                   <button
                     onClick={handleOpenDrawer}
                     disabled={hwBusy !== null}
-                    className="h-9 px-3 rounded-md border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA] disabled:opacity-60"
+                    className="h-9 px-3 rounded-[4px] border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA] disabled:opacity-60"
                   >
                     {hwBusy === 'drawer' ? 'Opening...' : 'Open Drawer'}
                   </button>
@@ -362,7 +362,7 @@ export function Settings() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center justify-between py-3 px-4 bg-[#FAFAFA] rounded-md border border-[#F4F4F5]">
+              <div className="flex items-center justify-between py-3 px-4 bg-[#FAFAFA] rounded-[4px] border border-[#F4F4F5]">
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 flex items-center justify-center">
                     <svg viewBox="0 0 16 16" width={16} height={16} className="text-[#71717A]" fill="none" stroke="currentColor" strokeWidth={1.5}>

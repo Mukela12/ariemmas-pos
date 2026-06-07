@@ -2,6 +2,7 @@
 
 @theme {
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
 
   /* Mercury — Zinc neutrals */
   --color-surface: #FFFFFF;
@@ -12,10 +13,20 @@
   --color-border: #E4E4E7;
   --color-border-subtle: #F4F4F5;
 
-  /* Mercury — Teal accent (single accent color) */
+  /* Teal accent (primary brand) */
   --color-accent: #0D9488;
   --color-accent-hover: #0F766E;
   --color-accent-light: #F0FDFA;
+
+  /* Pay action — green, kept distinct from teal */
+  --color-pay: #16A34A;
+  --color-pay-hover: #15803D;
+
+  /* Graphite — the dark surface for the top bar, keypad keys, function buttons */
+  --color-graphite: #0B0B0D;
+  --color-graphite-2: #17171A;
+  --color-graphite-hover: #232327;
+  --color-graphite-line: #2A2A2E;
 
   /* Status — muted, professional */
   --color-success: #16A34A;
@@ -27,6 +38,10 @@
   --color-error: #DC2626;
   --color-error-bg: #FEF2F2;
   --color-error-border: #FECACA;
+
+  /* Boxy radii — the new design language is rectangular, not pill-soft */
+  --radius-btn: 4px;
+  --radius-card: 6px;
 }
 
 @layer base {
@@ -44,8 +59,10 @@
     -webkit-app-region: no-drag;
   }
 
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+
   /* Scrollbar — minimal */
-  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #D4D4D8; border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: #A1A1AA; }
@@ -56,7 +73,79 @@
     -webkit-appearance: none;
     margin: 0;
   }
-  input[type="number"] {
-    -moz-appearance: textfield;
+  input[type="number"] { -moz-appearance: textfield; }
+}
+
+@layer components {
+  /* ---------------------------------------------------------------
+     Graphite surface — deep near-black with a subtle grain texture so
+     it reads like pencil-lead (Vercel "graphite"), not flat black.
+     The noise is an inline SVG fractal-noise overlay at low opacity,
+     plus a faint top highlight for depth.
+     --------------------------------------------------------------- */
+  .graphite {
+    background-color: var(--color-graphite);
+    background-image:
+      linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 38%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+    background-blend-mode: normal, soft-light;
+    background-size: auto, 160px 160px;
   }
+
+  /* Boxy buttons -------------------------------------------------- */
+  .btn-graphite {
+    background-color: var(--color-graphite-2);
+    color: #fff;
+    border: 1px solid var(--color-graphite-line);
+    border-radius: var(--radius-btn);
+    font-weight: 600;
+    transition: background-color .12s;
+  }
+  .btn-graphite:hover { background-color: var(--color-graphite-hover); }
+  .btn-graphite:active { background-color: #0f0f12; }
+  .btn-graphite:disabled { opacity: .4; cursor: not-allowed; }
+
+  .btn-pay {
+    background-color: var(--color-pay);
+    color: #fff;
+    border-radius: var(--radius-btn);
+    font-weight: 700;
+    transition: background-color .12s;
+  }
+  .btn-pay:hover { background-color: var(--color-pay-hover); }
+  .btn-pay:disabled { opacity: .35; cursor: not-allowed; }
+
+  .btn-teal {
+    background-color: var(--color-accent);
+    color: #fff;
+    border-radius: var(--radius-btn);
+    font-weight: 600;
+    transition: background-color .12s;
+  }
+  .btn-teal:hover { background-color: var(--color-accent-hover); }
+  .btn-teal:disabled { opacity: .4; cursor: not-allowed; }
+
+  .btn-ghost {
+    background-color: #fff;
+    color: var(--color-graphite);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-btn);
+    font-weight: 500;
+    transition: background-color .12s;
+  }
+  .btn-ghost:hover { background-color: var(--color-surface-alt); }
+
+  /* Keypad keys --------------------------------------------------- */
+  .keypad-key {
+    background-color: var(--color-graphite-2);
+    color: #fff;
+    border: 1px solid var(--color-graphite-line);
+    border-radius: var(--radius-btn);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    transition: background-color .1s, transform .05s;
+    user-select: none;
+  }
+  .keypad-key:hover { background-color: var(--color-graphite-hover); }
+  .keypad-key:active { background-color: #08080a; transform: translateY(1px); }
 }

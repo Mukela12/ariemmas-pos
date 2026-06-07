@@ -1,9 +1,10 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { useShiftStore } from '../stores/shiftStore'
-import { LogOut, X, Cloud, CloudOff, RefreshCw, Clock, User } from 'lucide-react'
+import { LogOut, X, Cloud, CloudOff, RefreshCw, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { formatZMW } from '../lib/currency'
+import { NumberKeypad } from './NumberKeypad'
 import logoUrl from '../assets/logo.png'
 
 const NAV_ITEMS = [
@@ -51,12 +52,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex flex-col h-screen bg-[#F4F4F5]">
-      {/* Top navigation bar */}
-      <header className="h-14 bg-white border-b border-[#E4E4E7] flex items-center px-4 shrink-0">
+      {/* Top navigation bar — graphite with subtle texture */}
+      <header className="graphite h-14 flex items-center px-4 shrink-0 relative border-b border-black/40">
         {/* Brand mark — persistent logo so it shows post-login too */}
-        <div className="flex items-center gap-2 mr-4 pr-4 border-r border-[#E4E4E7]">
+        <div className="flex items-center gap-2.5 mr-4 pr-4 border-r border-white/10">
           <img src={logoUrl} alt="Ariemmas" className="w-7 h-7 object-contain" />
-          <span className="text-[15px] font-semibold text-[#18181B] tracking-tight">Ariemmas</span>
+          <span className="text-[16px] font-semibold text-white tracking-tight">Ariemmas</span>
         </div>
 
         {/* Nav tabs */}
@@ -67,10 +68,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                className={`px-4 py-2 text-sm font-medium rounded-[4px] transition-colors ${
                   isActive
-                    ? 'bg-[#F4F4F5] text-[#18181B]'
-                    : 'text-[#71717A] hover:text-[#18181B] hover:bg-[#FAFAFA]'
+                    ? 'bg-white/[0.12] text-white'
+                    : 'text-white/55 hover:text-white hover:bg-white/[0.06]'
                 }`}
               >
                 {item.label}
@@ -79,23 +80,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Center — Clock */}
-        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-          <Clock size={16} className="text-[#0D9488]" />
-          <span className="text-lg font-semibold text-[#18181B] tabular-nums tracking-tight">
+        {/* Center — Clock (no icon, white text) */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-baseline gap-2">
+          <span className="text-lg font-semibold text-white tabular-nums tracking-tight">
             {time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </span>
-          <span className="text-xs text-[#A1A1AA] font-medium ml-1">
+          <span className="text-xs text-white/45 font-medium">
             {time.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
           </span>
         </div>
 
         {/* Right side */}
         <div className="ml-auto flex items-center gap-2.5">
-          {/* Shift indicator — clickable */}
+          {/* Shift indicator — clickable. Colors unchanged (teal / amber). */}
           <button
             onClick={() => setShowShiftModal(true)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] text-xs font-semibold transition-colors ${
               currentShift
                 ? 'bg-[#F0FDFA] text-[#0D9488] border border-[#99F6E4] hover:bg-[#CCFBF1]'
                 : 'bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] hover:bg-[#FEF3C7]'
@@ -109,12 +109,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {syncStatus && (
             <button
               onClick={() => window.api?.syncNow?.()}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[4px] text-xs font-medium transition-colors ${
                 syncStatus.isOnline
                   ? syncStatus.pending > 0
-                    ? 'text-[#D97706] bg-[#FFFBEB] border border-[#FDE68A]'
-                    : 'text-[#0D9488] bg-[#F0FDFA] border border-[#99F6E4]'
-                  : 'text-[#A1A1AA] bg-[#F4F4F5] border border-[#E4E4E7]'
+                    ? 'text-[#FBBF24] bg-white/[0.06] border border-white/10'
+                    : 'text-[#2DD4BF] bg-white/[0.06] border border-white/10'
+                  : 'text-white/45 bg-white/[0.04] border border-white/10'
               }`}
               title={syncStatus.isOnline
                 ? syncStatus.pending > 0 ? `${syncStatus.pending} pending sync` : 'Synced'
@@ -130,12 +130,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           )}
 
           {/* Divider */}
-          <div className="w-px h-6 bg-[#E4E4E7]" />
+          <div className="w-px h-6 bg-white/15" />
 
           {/* User */}
           <div className="flex items-center gap-1.5 px-2">
-            <User size={14} className="text-[#A1A1AA]" />
-            <span className="text-[13px] text-[#52525B] font-medium">
+            <User size={14} className="text-white/45" />
+            <span className="text-[13px] text-white/85 font-medium">
               {user?.display_name}
             </span>
           </div>
@@ -143,7 +143,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {/* Logout */}
           <button
             onClick={handleLogout}
-            className="w-8 h-8 rounded-md flex items-center justify-center text-[#A1A1AA] hover:text-[#DC2626] hover:bg-[#FEF2F2] transition-colors"
+            className="w-8 h-8 rounded-[4px] flex items-center justify-center text-white/55 hover:text-white hover:bg-white/[0.1] transition-colors"
             title="Sign out"
           >
             <LogOut size={16} />
@@ -179,13 +179,14 @@ function ShiftModal({
 }) {
   const [openingCash, setOpeningCash] = useState('1000')
   const [closingCash, setClosingCash] = useState('')
-  const [notes, setNotes] = useState('')
+  const [notes] = useState('')
   const [cashierName, setCashierName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [openingLimit, setOpeningLimit] = useState(1000)
   const [error, setError] = useState<string | null>(null)
 
-  const inputClass = 'w-full h-10 px-3 rounded-md border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]'
+  const inputClass = 'w-full h-11 px-3 rounded-[4px] border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]'
+  const cashDisplayClass = 'w-full h-12 px-4 rounded-[4px] border border-[#E4E4E7] bg-[#FAFAFA] flex items-center justify-end gap-1 text-[24px] font-bold text-[#18181B] tabular-nums'
 
   useEffect(() => {
     let isActive = true
@@ -255,39 +256,31 @@ function ShiftModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-[400px] bg-white rounded-lg shadow-xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="px-5 py-4 border-b border-[#E4E4E7] flex items-center justify-between">
-          <h2 className="text-base font-semibold text-[#18181B]">
+      <div className="w-full max-w-[380px] bg-white rounded-[6px] shadow-xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="graphite px-5 py-3.5 flex items-center justify-between">
+          <h2 className="text-[15px] font-semibold text-white">
             {shift ? 'Close Shift' : 'Open Shift'}
           </h2>
-          <button onClick={onClose} className="w-7 h-7 rounded-md hover:bg-[#F4F4F5] flex items-center justify-center text-[#A1A1AA]">
+          <button onClick={onClose} className="w-7 h-7 rounded-[4px] hover:bg-white/10 flex items-center justify-center text-white/55 hover:text-white">
             <X size={16} />
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-3">
           {shift ? (
             <>
-              <div className="p-3 bg-[#F4F4F5] rounded-md space-y-2 text-[13px]">
-                <div className="flex justify-between">
-                  <span className="text-[#71717A]">Opened at</span>
-                  <span className="text-[#18181B] font-medium">{new Date(shift.opened_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
+              <div className="p-3 bg-[#F4F4F5] rounded-[4px] space-y-1.5 text-[13px]">
                 <div className="flex justify-between">
                   <span className="text-[#71717A]">Opening Cash</span>
                   <span className="text-[#18181B] font-medium tabular-nums">{formatZMW(shift.opening_cash)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#71717A]">Sales Total</span>
-                  <span className="text-[#18181B] font-medium tabular-nums">{formatZMW(shift.total_sales || 0)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#71717A]">Cash Sales</span>
                   <span className="text-[#18181B] font-medium tabular-nums">{formatZMW(shift.cash_sales || 0)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#71717A]">Cash in Drawer</span>
-                  <span className="text-[#18181B] font-medium tabular-nums">{formatZMW(shift.cash_in_drawer || shift.opening_cash || 0)}</span>
+                  <span className="text-[#71717A]">Expected in Drawer</span>
+                  <span className="text-[#18181B] font-semibold tabular-nums">{formatZMW(shift.cash_in_drawer || shift.opening_cash || 0)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#71717A]">Transactions</span>
@@ -295,39 +288,29 @@ function ShiftModal({
                 </div>
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Closing Cash (K)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={closingCash}
-                  onChange={(e) => setClosingCash(e.target.value)}
-                  className={`${inputClass} tabular-nums`}
-                  placeholder="Count the cash drawer"
-                  autoFocus
-                />
+                <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Closing Cash — count the drawer</label>
+                <div className={cashDisplayClass}>
+                  <span className="text-[15px] text-[#A1A1AA] font-semibold">K</span>
+                  {closingCash || <span className="text-[#D4D4D8]">0.00</span>}
+                </div>
               </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Notes (optional)</label>
-                <input
-                  type="text"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className={inputClass}
-                  placeholder="Any notes for this shift"
-                />
-              </div>
-              <button
-                onClick={handleClose}
-                disabled={isSubmitting}
-                className="w-full h-10 rounded-md bg-[#18181B] text-white text-sm font-medium hover:bg-[#27272A] disabled:opacity-50"
-              >
-                {isSubmitting ? 'Closing...' : 'Close Shift'}
-              </button>
+              {error && (
+                <div className="px-3 py-2 bg-[#FEF2F2] border border-[#FECACA] rounded-[4px]">
+                  <p className="text-[13px] text-[#DC2626]">{error}</p>
+                </div>
+              )}
+              <NumberKeypad
+                value={closingCash}
+                onChange={setClosingCash}
+                onEnter={handleClose}
+                enterLabel={isSubmitting ? 'Closing…' : 'Close Shift'}
+                enterDisabled={isSubmitting}
+                decimal
+                maxLength={9}
+              />
             </>
           ) : (
             <>
-              <p className="text-[13px] text-[#71717A]">Open a new shift to start recording sales. Count the cash in the drawer before you begin.</p>
               <div>
                 <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Cashier&apos;s Name</label>
                 <input
@@ -338,44 +321,29 @@ function ShiftModal({
                   placeholder="e.g. Mary Banda"
                   autoFocus
                 />
-                <p className="mt-2 text-[11px] text-[#71717A]">
-                  Type the name of the person taking the till today, so admin reports show who was on shift.
-                </p>
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Opening Cash (K)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max={openingLimit}
-                  value={openingCash}
-                  onChange={(e) => { setOpeningCash(e.target.value); setError(null) }}
-                  className={`${inputClass} tabular-nums`}
-                  placeholder={openingLimit.toFixed(2)}
-                />
-                <p className="mt-2 text-[11px] text-[#71717A]">
-                  Opening cash should be {formatZMW(openingLimit)} or less.
-                </p>
+                <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Opening Cash (K {openingLimit.toFixed(0)} or less)</label>
+                <div className={cashDisplayClass}>
+                  <span className="text-[15px] text-[#A1A1AA] font-semibold">K</span>
+                  {openingCash || <span className="text-[#D4D4D8]">0.00</span>}
+                </div>
               </div>
               {error && (
-                <div className="px-3 py-2 bg-[#FEF2F2] border border-[#FECACA] rounded-md">
+                <div className="px-3 py-2 bg-[#FEF2F2] border border-[#FECACA] rounded-[4px]">
                   <p className="text-[13px] text-[#DC2626]">{error}</p>
                 </div>
               )}
-              <button
-                onClick={handleOpen}
-                disabled={isSubmitting}
-                className="w-full h-10 rounded-md bg-[#0D9488] text-white text-sm font-medium hover:bg-[#0F766E] disabled:opacity-50"
-              >
-                {isSubmitting ? 'Opening...' : 'Open Shift'}
-              </button>
+              <NumberKeypad
+                value={openingCash}
+                onChange={(v) => { setOpeningCash(v); setError(null) }}
+                onEnter={handleOpen}
+                enterLabel={isSubmitting ? 'Opening…' : 'Open Shift'}
+                enterDisabled={isSubmitting}
+                decimal
+                maxLength={9}
+              />
             </>
-          )}
-          {shift && error && (
-            <div className="px-3 py-2 bg-[#FEF2F2] border border-[#FECACA] rounded-md">
-              <p className="text-[13px] text-[#DC2626]">{error}</p>
-            </div>
           )}
         </div>
       </div>

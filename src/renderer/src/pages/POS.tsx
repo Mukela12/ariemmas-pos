@@ -7,6 +7,7 @@ import { useScanner } from '../hooks/useScanner'
 import { formatZMW, formatStock } from '../lib/currency'
 import { buildPrintableReceipt } from '../lib/receipt'
 import { ThankYouScreen } from '../components/ThankYouScreen'
+import { NumberKeypad } from '../components/NumberKeypad'
 import type { Product } from '../../../shared/types'
 
 export function POS() {
@@ -374,8 +375,6 @@ function WeightModal({
   onCancel: () => void
 }) {
   const [value, setValue] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
-  useEffect(() => { inputRef.current?.focus() }, [])
 
   const weight = parseFloat(value) || 0
   const total = weight * Number(product.price)
@@ -384,44 +383,40 @@ function WeightModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
-      <div className="relative bg-white rounded-lg border border-[#E4E4E7] w-full max-w-md mx-4 overflow-hidden">
-        <div className="px-6 py-4 border-b border-[#E4E4E7]">
-          <h2 className="text-base font-semibold text-[#18181B]">Weigh item</h2>
-          <p className="text-[13px] text-[#71717A] mt-0.5">{product.name} &middot; {formatZMW(product.price)} per kg</p>
-        </div>
-        <form
-          onSubmit={(e) => { e.preventDefault(); if (canConfirm) onConfirm(weight) }}
-          className="p-6 space-y-4"
-        >
+      <div className="relative bg-white rounded-[6px] border border-[#E4E4E7] w-full max-w-[380px] mx-4 overflow-hidden shadow-xl">
+        <div className="graphite px-5 py-3.5 flex items-center justify-between">
           <div>
-            <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Weight (kg)</label>
-            <input
-              ref={inputRef}
-              type="number"
-              step="0.001"
-              min="0"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder="0.000"
-              className="w-full h-12 px-3 rounded-md border border-[#E4E4E7] bg-white text-2xl font-semibold tabular-nums text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
-            />
-            <p className="text-[11px] text-[#71717A] mt-1.5">Type the weight from the scale (kg). Decimals allowed (e.g. 0.450).</p>
+            <h2 className="text-[15px] font-semibold text-white">Weigh item</h2>
+            <p className="text-[12px] text-white/55 mt-0.5">{product.name} &middot; {formatZMW(product.price)} per kg</p>
           </div>
-          <div className="flex items-center justify-between p-3 rounded-md bg-[#F4F4F5] border border-[#E4E4E7]">
-            <span className="text-sm font-medium text-[#71717A]">Line total</span>
-            <span className="text-lg font-semibold text-[#18181B] tabular-nums">{formatZMW(total)}</span>
+          <button onClick={onCancel} className="w-7 h-7 rounded-[4px] flex items-center justify-center text-white/55 hover:text-white hover:bg-white/10">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="p-5 space-y-3">
+          {/* Weight display */}
+          <div>
+            <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Weight (kg) — from the scale</label>
+            <div className="w-full h-14 px-4 rounded-[4px] border border-[#E4E4E7] bg-[#FAFAFA] flex items-center justify-end text-[30px] font-bold tabular-nums text-[#18181B]">
+              {value || <span className="text-[#D4D4D8]">0.000</span>}
+            </div>
           </div>
-          <div className="flex items-center justify-end gap-3 pt-1">
-            <button type="button" onClick={onCancel}
-              className="h-10 px-4 text-sm font-medium text-[#52525B] hover:bg-[#F4F4F5] rounded-md">
-              Cancel
-            </button>
-            <button type="submit" disabled={!canConfirm}
-              className="h-10 px-5 bg-[#0D9488] text-white text-sm font-medium rounded-md hover:bg-[#0F766E] disabled:opacity-40 disabled:cursor-not-allowed">
-              Add to cart
-            </button>
+          {/* Line total */}
+          <div className="flex items-center justify-between px-4 py-2.5 rounded-[4px] bg-[#F0FDFA] border border-[#99F6E4]">
+            <span className="text-[13px] font-semibold text-[#0D9488]">Line total</span>
+            <span className="text-[20px] font-bold text-[#0D9488] tabular-nums">{formatZMW(total)}</span>
           </div>
-        </form>
+          {/* Keypad */}
+          <NumberKeypad
+            value={value}
+            onChange={setValue}
+            onEnter={() => { if (canConfirm) onConfirm(weight) }}
+            enterLabel="Add to cart"
+            enterDisabled={!canConfirm}
+            decimal
+            maxLength={7}
+          />
+        </div>
       </div>
     </div>
   )
@@ -439,9 +434,6 @@ function PaymentModal({
   const [cashAmount, setCashAmount] = useState('')
   const [mobileRef, setMobileRef] = useState('')
   const [processing, setProcessing] = useState(false)
-  const cashRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => { if (method === 'cash') cashRef.current?.focus() }, [method])
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !processing) onClose() }
@@ -470,39 +462,39 @@ function PaymentModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-[420px] bg-white rounded-lg shadow-xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className="px-5 py-4 border-b border-[#E4E4E7]">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-[#18181B]">Payment</h2>
-            <button onClick={onClose} className="w-7 h-7 rounded-md hover:bg-[#F4F4F5] flex items-center justify-center text-[#A1A1AA]">
+      <div className="w-full max-w-[420px] bg-white rounded-[6px] shadow-xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        {/* Header — graphite */}
+        <div className="graphite px-5 py-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-[15px] font-semibold text-white">Payment</h2>
+            <button onClick={onClose} className="w-7 h-7 rounded-[4px] hover:bg-white/10 flex items-center justify-center text-white/55 hover:text-white">
               <X size={16} />
             </button>
           </div>
           <div className="text-center">
-            <p className="text-[12px] text-[#71717A]">Amount Due</p>
-            <p className="text-[32px] font-semibold text-[#18181B] tabular-nums mt-0.5 tracking-tight">{formatZMW(total)}</p>
+            <p className="text-[12px] text-white/55 uppercase tracking-wide">Amount Due</p>
+            <p className="text-[34px] font-bold text-white tabular-nums mt-0.5 tracking-tight">{formatZMW(total)}</p>
           </div>
         </div>
 
         {/* Error banner */}
         {error && (
-          <div className="mx-5 mt-3 px-3 py-2 bg-[#FEF2F2] border border-[#FECACA] rounded-md">
+          <div className="mx-5 mt-3 px-3 py-2 bg-[#FEF2F2] border border-[#FECACA] rounded-[4px]">
             <p className="text-[13px] text-[#DC2626]">{error}</p>
           </div>
         )}
 
         {/* Method toggle */}
         <div className="px-5 pt-4">
-          <div className="flex gap-1 p-1 bg-[#F4F4F5] rounded-md">
+          <div className="flex gap-1 p-1 bg-[#F4F4F5] rounded-[4px]">
             <button onClick={() => setMethod('cash')}
-              className={`flex-1 h-9 rounded text-[13px] font-medium flex items-center justify-center gap-1.5 ${
+              className={`flex-1 h-9 rounded-[3px] text-[13px] font-semibold flex items-center justify-center gap-1.5 ${
                 method === 'cash' ? 'bg-white text-[#18181B] shadow-sm' : 'text-[#71717A]'
               }`}>
               <Banknote size={15} /> Cash
             </button>
             <button onClick={() => setMethod('mobile_money')}
-              className={`flex-1 h-9 rounded text-[13px] font-medium flex items-center justify-center gap-1.5 ${
+              className={`flex-1 h-9 rounded-[3px] text-[13px] font-semibold flex items-center justify-center gap-1.5 ${
                 method === 'mobile_money' ? 'bg-white text-[#18181B] shadow-sm' : 'text-[#71717A]'
               }`}>
               <CreditCard size={15} /> Mobile Money
@@ -516,59 +508,62 @@ function PaymentModal({
             <>
               <div>
                 <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Cash Received</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base font-semibold text-[#A1A1AA]">K</span>
-                  <input ref={cashRef} type="number" value={cashAmount}
-                    onChange={(e) => setCashAmount(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && canPay) handlePay() }}
-                    placeholder="0.00" step="0.01"
-                    className="w-full h-12 pl-8 pr-3 rounded-md border border-[#E4E4E7] text-xl font-semibold text-[#18181B] tabular-nums placeholder:text-[#D4D4D8] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
-                  />
+                <div className="w-full h-14 px-4 rounded-[4px] border border-[#E4E4E7] bg-[#FAFAFA] flex items-center justify-end gap-1 text-[28px] font-bold text-[#18181B] tabular-nums">
+                  <span className="text-[16px] text-[#A1A1AA] font-semibold">K</span>
+                  {cashAmount || <span className="text-[#D4D4D8]">0.00</span>}
                 </div>
               </div>
               <div className="flex gap-2">
                 {quickAmounts.map((amount) => (
                   <button key={amount} onClick={() => setCashAmount(String(amount))}
-                    className="flex-1 h-9 rounded-md bg-[#F4F4F5] border border-[#E4E4E7] text-[13px] font-medium text-[#52525B] tabular-nums hover:bg-[#E4E4E7]">
+                    className="flex-1 h-10 rounded-[4px] bg-[#F4F4F5] border border-[#E4E4E7] text-[14px] font-semibold text-[#52525B] tabular-nums hover:bg-[#E4E4E7]">
                     K {amount}
                   </button>
                 ))}
               </div>
               {tendered > 0 && (
-                <div className={`p-3 rounded-md border ${
+                <div className={`px-4 py-2.5 rounded-[4px] border ${
                   change >= 0 ? 'bg-[#F0FDF4] border-[#BBF7D0]' : 'bg-[#FEF2F2] border-[#FECACA]'
                 }`}>
                   <div className="flex justify-between items-center">
-                    <span className={`text-[13px] font-medium ${change >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+                    <span className={`text-[13px] font-semibold ${change >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
                       {change >= 0 ? 'Change' : 'Short by'}
                     </span>
-                    <span className={`text-lg font-semibold tabular-nums ${change >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+                    <span className={`text-[20px] font-bold tabular-nums ${change >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
                       {formatZMW(Math.abs(change))}
                     </span>
                   </div>
                 </div>
               )}
+              {/* Touch keypad */}
+              <NumberKeypad
+                value={cashAmount}
+                onChange={setCashAmount}
+                onEnter={handlePay}
+                enterLabel={processing ? 'Processing…' : `Pay ${formatZMW(total)}`}
+                enterDisabled={!canPay || processing}
+                decimal
+                maxLength={9}
+              />
             </>
           ) : (
-            <div>
-              <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Reference Number</label>
-              <input type="text" value={mobileRef}
-                onChange={(e) => setMobileRef(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && canPay) handlePay() }}
-                placeholder="Enter mobile money reference"
-                className="w-full h-10 px-3 rounded-md border border-[#E4E4E7] text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
-                autoFocus
-              />
-            </div>
+            <>
+              <div>
+                <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Reference Number</label>
+                <input type="text" value={mobileRef}
+                  onChange={(e) => setMobileRef(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && canPay) handlePay() }}
+                  placeholder="Enter mobile money reference"
+                  className="w-full h-11 px-3 rounded-[4px] border border-[#E4E4E7] text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
+                  autoFocus
+                />
+              </div>
+              <button onClick={handlePay} disabled={!canPay || processing}
+                className="btn-pay w-full h-12 text-[15px]">
+                {processing ? 'Processing…' : 'Confirm Payment'}
+              </button>
+            </>
           )}
-        </div>
-
-        {/* Pay button */}
-        <div className="px-5 pb-5">
-          <button onClick={handlePay} disabled={!canPay || processing}
-            className="w-full h-12 rounded-md bg-[#0D9488] text-white text-[15px] font-semibold hover:bg-[#0F766E] disabled:opacity-30 disabled:cursor-not-allowed">
-            {processing ? 'Processing...' : method === 'cash' ? `Pay ${formatZMW(total)}` : 'Confirm Payment'}
-          </button>
         </div>
       </div>
     </div>

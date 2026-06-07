@@ -130,7 +130,7 @@ export function Login() {
             <button
               type="submit"
               disabled={isLoading || !username.trim() || !pin.trim()}
-              className="w-full h-10 rounded-md bg-[#18181B] text-white text-sm font-medium hover:bg-[#27272A] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full h-11 rounded-[4px] bg-[#0B0B0D] text-white text-sm font-semibold hover:bg-[#232327] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading ? <><Loader2 size={15} className="animate-spin" />Signing in...</> : 'Sign In'}
             </button>
