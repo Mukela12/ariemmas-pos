@@ -9,6 +9,10 @@ import { setupDatabase } from './database/connection'
 import { registerIpcHandlers } from './ipc'
 import { startSyncService, stopSyncService } from './services/syncService'
 import { ensureTerminalId } from './services/terminal'
+import { registerProductImageScheme, setupProductImageProtocol } from './services/productImages'
+
+// posimg:// must be declared privileged before the app is ready.
+registerProductImageScheme()
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -54,6 +58,7 @@ app.whenReady().then(async () => {
 
   await setupDatabase()
   await ensureTerminalId()
+  await setupProductImageProtocol()
   await registerIpcHandlers()
   startSyncService()
   createWindow()

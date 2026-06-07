@@ -13,6 +13,7 @@ import {
   resolvePrinter,
   sendRaw
 } from './services/printer'
+import { saveProductImage, deleteProductImage } from './services/productImages'
 import type { PrintableReceipt } from '../shared/types'
 import { IPC_CHANNELS } from '../shared/constants'
 
@@ -110,13 +111,17 @@ export async function registerIpcHandlers(): Promise<void> {
     return { products, total: countRow?.count || 0, page, limit }
   })
 
+  ipcMain.handle(IPC_CHANNELS.IMAGE_SAVE, async (_e, dataBase64: string, originalName?: string) => {
+    return saveProductImage(dataBase64, originalName)
+  })
+
   ipcMain.handle(IPC_CHANNELS.PRODUCT_CREATE, async (_e, product: any) => {
     const db = getDb()
     const id = uuid()
     await db.run(`
-      INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit, is_weighted)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [id, product.barcode, product.name, product.category_id, product.price, product.cost_price || 0, product.vat_rate || 0.16, product.stock_quantity || 0, product.min_stock_level || 5, product.unit || 'each', product.is_weighted ? 1 : 0])
+      INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit, is_weighted, image_filename, image_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [id, product.barcode, product.name, product.category_id, product.price, product.cost_price || 0, product.vat_rate || 0.16, product.stock_quantity || 0, product.min_stock_level || 5, product.unit || 'each', product.is_weighted ? 1 : 0, product.image_filename || null, product.image_url || null])
     const created = await db.queryOne('SELECT * FROM products WHERE id = ?', [id])
     queueSync('insert', 'product', id, created!).catch(() => {})
     return created
@@ -125,13 +130,22 @@ export async function registerIpcHandlers(): Promise<void> {
   ipcMain.handle(IPC_CHANNELS.PRODUCT_UPDATE, async (_e, product: any) => {
     const db = getDb()
     const nowExpr = now(db.engine)
+    // if the image changed, remove the old cached file
+    if (product.id) {
+      const prev = await db.queryOne<{ image_filename: string | null }>('SELECT image_filename FROM products WHERE id = ?', [product.id])
+      if (prev?.image_filename && prev.image_filename !== product.image_filename) {
+        deleteProductImage(prev.image_filename).catch(() => {})
+      }
+    }
     await db.run(`
       UPDATE products SET barcode = ?, name = ?, category_id = ?, price = ?, cost_price = ?,
-        vat_rate = ?, stock_quantity = ?, min_stock_level = ?, unit = ?, is_weighted = ?, updated_at = ${nowExpr}
+        vat_rate = ?, stock_quantity = ?, min_stock_level = ?, unit = ?, is_weighted = ?,
+        image_filename = ?, image_url = ?, updated_at = ${nowExpr}
       WHERE id = ?
     `, [product.barcode, product.name, product.category_id, product.price, product.cost_price || 0,
       product.vat_rate || 0.16, product.stock_quantity || 0, product.min_stock_level || 5,
-      product.unit || 'each', product.is_weighted ? 1 : 0, product.id])
+      product.unit || 'each', product.is_weighted ? 1 : 0,
+      product.image_filename || null, product.image_url || null, product.id])
     const updated = await db.queryOne('SELECT * FROM products WHERE id = ?', [product.id])
     queueSync('update', 'product', product.id, updated!).catch(() => {})
     return updated

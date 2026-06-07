@@ -373,6 +373,30 @@ export const MIGRATIONS: Migration[] = [
       }
       return `SELECT 1;` // sqlite: no-op, column already holds reals
     }
+  },
+  {
+    // Product images. image_filename = locally cached file on the POS (served
+    // offline via the posimg:// protocol). image_url = the Cloudinary URL used
+    // online and to pull the image down on sync.
+    name: '008_product_images',
+    getSql: (engine) => {
+      if (engine === 'mssql') {
+        return `
+          IF COL_LENGTH('products', 'image_filename') IS NULL ALTER TABLE products ADD image_filename NVARCHAR(255) NULL;
+          IF COL_LENGTH('products', 'image_url') IS NULL ALTER TABLE products ADD image_url NVARCHAR(1024) NULL;
+        `
+      }
+      if (engine === 'postgres') {
+        return `
+          ALTER TABLE products ADD COLUMN IF NOT EXISTS image_filename TEXT;
+          ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url TEXT;
+        `
+      }
+      return `
+        ALTER TABLE products ADD COLUMN image_filename TEXT;
+        ALTER TABLE products ADD COLUMN image_url TEXT;
+      `
+    }
   }
 ]
 

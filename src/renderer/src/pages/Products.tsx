@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { Package, Plus, Search, Edit2, Download, RefreshCw } from 'lucide-react'
+import { Package, Plus, Search, Edit2, Download, RefreshCw, ImagePlus, X as XIcon } from 'lucide-react'
 import JsBarcode from 'jsbarcode'
 import { formatZMW, formatStock } from '../lib/currency'
+import { productImageSrc, fileToDataUrl, uploadToCloudinary, isElectron } from '../lib/productImage'
 import type { Product, Category } from '../../../shared/types'
 
 function generateBarcodeValue(): string {
@@ -94,8 +95,13 @@ export function Products() {
     vat_rate: '0.16',
     min_stock_level: '5',
     unit: 'each',
-    is_weighted: false
+    is_weighted: false,
+    image_filename: '' as string,
+    image_url: '' as string
   })
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [imageBusy, setImageBusy] = useState(false)
+  const imageInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     loadProducts()
@@ -127,8 +133,11 @@ export function Products() {
       vat_rate: '0.16',
       min_stock_level: '5',
       unit: 'each',
-      is_weighted: false
+      is_weighted: false,
+      image_filename: '',
+      image_url: ''
     })
+    setImagePreview(null)
     setShowForm(true)
   }
 
@@ -144,9 +153,41 @@ export function Products() {
       vat_rate: String(product.vat_rate),
       min_stock_level: String(product.min_stock_level),
       unit: product.unit,
-      is_weighted: !!product.is_weighted
+      is_weighted: !!product.is_weighted,
+      image_filename: product.image_filename || '',
+      image_url: product.image_url || ''
     })
+    setImagePreview(productImageSrc(product))
     setShowForm(true)
+  }
+
+  async function handleImagePick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow re-picking the same file
+    if (!file) return
+    setImageBusy(true)
+    try {
+      const dataUrl = await fileToDataUrl(file)
+      setImagePreview(dataUrl) // instant preview
+      if (isElectron) {
+        // Desktop: cache the file on disk and store its filename.
+        const filename = await window.api.saveProductImage(dataUrl, file.name)
+        setForm((f) => ({ ...f, image_filename: filename }))
+      } else {
+        // Web admin: upload to Cloudinary (if configured).
+        const url = await uploadToCloudinary(file)
+        if (url) setForm((f) => ({ ...f, image_url: url }))
+      }
+    } catch {
+      // keep the preview; the user can retry
+    } finally {
+      setImageBusy(false)
+    }
+  }
+
+  function removeImage() {
+    setImagePreview(null)
+    setForm((f) => ({ ...f, image_filename: '', image_url: '' }))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -161,7 +202,9 @@ export function Products() {
       vat_rate: parseFloat(form.vat_rate),
       min_stock_level: parseInt(form.min_stock_level) || 5,
       unit: form.is_weighted ? 'kg' : form.unit,
-      is_weighted: form.is_weighted ? 1 : 0
+      is_weighted: form.is_weighted ? 1 : 0,
+      image_filename: form.image_filename || null,
+      image_url: form.image_url || null
     }
 
     if (editingProduct) {
@@ -292,8 +335,10 @@ export function Products() {
                   >
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-[#F4F4F5] rounded-[4px] flex items-center justify-center">
-                          <Package size={14} className="text-[#A1A1AA]" />
+                        <div className="w-9 h-9 bg-[#F4F4F5] rounded-[4px] flex items-center justify-center overflow-hidden shrink-0">
+                          {productImageSrc(product)
+                            ? <img src={productImageSrc(product)!} alt="" className="w-full h-full object-cover" />
+                            : <Package size={14} className="text-[#A1A1AA]" />}
                         </div>
                         <div>
                           <p className="text-sm font-medium text-[#18181B]">{product.name}</p>
@@ -393,6 +438,35 @@ export function Products() {
               </p>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {/* Image picker */}
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 rounded-[6px] border border-[#E4E4E7] bg-[#FAFAFA] overflow-hidden flex items-center justify-center shrink-0">
+                  {imagePreview
+                    ? <img src={imagePreview} alt="" className="w-full h-full object-cover" />
+                    : <Package size={24} className="text-[#D4D4D8]" />}
+                </div>
+                <div className="flex-1">
+                  <label className={labelClass}>Product Image</label>
+                  <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImagePick} className="hidden" />
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => imageInputRef.current?.click()} disabled={imageBusy}
+                      className="h-9 px-3 rounded-[4px] border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA] flex items-center gap-1.5 disabled:opacity-50">
+                      <ImagePlus size={14} /> {imageBusy ? 'Saving…' : imagePreview ? 'Change' : 'Upload image'}
+                    </button>
+                    {imagePreview && (
+                      <button type="button" onClick={removeImage}
+                        className="h-9 px-3 rounded-[4px] border border-[#E4E4E7] bg-white text-xs font-medium text-[#DC2626] hover:bg-[#FEF2F2] flex items-center gap-1.5">
+                        <XIcon size={14} /> Remove
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[#71717A] mt-1.5">
+                    {isElectron
+                      ? 'Saved on this terminal so it shows even when offline.'
+                      : 'Uploaded to the cloud and synced to all terminals.'}
+                  </p>
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className={labelClass}>Product Name</label>

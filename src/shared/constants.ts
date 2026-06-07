@@ -62,5 +62,8 @@ export const IPC_CHANNELS = {
   HW_OPEN_DRAWER: 'hw:openCashDrawer',
   HW_PRINTER_STATUS: 'hw:printerStatus',
   HW_LIST_PRINTERS: 'hw:listPrinters',
-  HW_TEST_PRINT: 'hw:testPrint'
+  HW_TEST_PRINT: 'hw:testPrint',
+
+  // Product images
+  IMAGE_SAVE: 'img:saveProductImage'
 } as const

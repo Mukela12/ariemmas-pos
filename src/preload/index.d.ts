@@ -31,6 +31,8 @@ interface PosAPI {
   testPrint(): Promise<{ ok: boolean; error?: string }>
   openCashDrawer(): Promise<boolean>
 
+  saveProductImage(dataBase64: string, originalName?: string): Promise<string>
+
   getSyncStatus(): Promise<{ pending: number; failed: number; lastSynced: string | null; isOnline: boolean }>
   syncNow(): Promise<{ synced: number; failed: number }>
 }

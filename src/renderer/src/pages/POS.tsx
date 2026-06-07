@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useShiftStore } from '../stores/shiftStore'
 import { useScanner } from '../hooks/useScanner'
 import { formatZMW, formatStock } from '../lib/currency'
+import { productImageSrc } from '../lib/productImage'
 import { buildPrintableReceipt } from '../lib/receipt'
 import { ThankYouScreen } from '../components/ThankYouScreen'
 import { NumberKeypad } from '../components/NumberKeypad'
@@ -129,13 +130,18 @@ export function POS() {
                 <button
                   key={product.id}
                   onClick={() => handleSearchSelect(product)}
-                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#F0FDFA] text-left border-b border-[#F4F4F5] last:border-0"
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#F0FDFA] text-left border-b border-[#F4F4F5] last:border-0"
                 >
-                  <div className="min-w-0">
+                  <div className="w-9 h-9 rounded-[4px] bg-[#F4F4F5] overflow-hidden flex items-center justify-center shrink-0">
+                    {productImageSrc(product)
+                      ? <img src={productImageSrc(product)!} alt="" className="w-full h-full object-cover" />
+                      : <ShoppingBag size={15} className="text-[#D4D4D8]" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-[#18181B] truncate">{product.name}</p>
                     <p className="text-xs text-[#A1A1AA] mt-0.5">{product.barcode || 'No barcode'} &middot; {formatStock(product.stock_quantity)} in stock</p>
                   </div>
-                  <span className="text-sm font-semibold text-[#18181B] tabular-nums ml-3 shrink-0">{formatZMW(product.price)}</span>
+                  <span className="text-sm font-semibold text-[#18181B] tabular-nums ml-2 shrink-0">{formatZMW(product.price)}</span>
                 </button>
               ))}
             </div>

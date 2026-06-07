@@ -40,6 +40,8 @@ export interface Product {
   min_stock_level: number
   unit: string
   is_weighted: number
+  image_filename: string | null
+  image_url: string | null
   active: number
   created_at: string
   updated_at: string

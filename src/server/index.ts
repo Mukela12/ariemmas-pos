@@ -280,8 +280,8 @@ app.post('/api/products', async (req, res) => {
   const p = req.body
   const id = uuid()
   await db.run(
-    'INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit, is_weighted) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',
-    [id, p.barcode, p.name, p.category_id, p.price, p.cost_price || 0, p.vat_rate || 0.16, p.stock_quantity || 0, p.min_stock_level || 5, p.unit || 'each', p.is_weighted ? 1 : 0]
+    'INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit, is_weighted, image_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',
+    [id, p.barcode, p.name, p.category_id, p.price, p.cost_price || 0, p.vat_rate || 0.16, p.stock_quantity || 0, p.min_stock_level || 5, p.unit || 'each', p.is_weighted ? 1 : 0, p.image_url || null]
   )
   const product = await db.queryOne('SELECT * FROM products WHERE id = $1', [id])
   res.json(product)
@@ -290,8 +290,8 @@ app.post('/api/products', async (req, res) => {
 app.put('/api/products/:id', async (req, res) => {
   const p = req.body
   await db.run(
-    'UPDATE products SET barcode=$1, name=$2, category_id=$3, price=$4, cost_price=$5, vat_rate=$6, stock_quantity=$7, min_stock_level=$8, unit=$9, is_weighted=$10, updated_at=NOW() WHERE id=$11',
-    [p.barcode, p.name, p.category_id, p.price, p.cost_price || 0, p.vat_rate || 0.16, p.stock_quantity || 0, p.min_stock_level || 5, p.unit || 'each', p.is_weighted ? 1 : 0, req.params.id]
+    'UPDATE products SET barcode=$1, name=$2, category_id=$3, price=$4, cost_price=$5, vat_rate=$6, stock_quantity=$7, min_stock_level=$8, unit=$9, is_weighted=$10, image_url=$11, updated_at=NOW() WHERE id=$12',
+    [p.barcode, p.name, p.category_id, p.price, p.cost_price || 0, p.vat_rate || 0.16, p.stock_quantity || 0, p.min_stock_level || 5, p.unit || 'each', p.is_weighted ? 1 : 0, p.image_url || null, req.params.id]
   )
   const product = await db.queryOne('SELECT * FROM products WHERE id = $1', [req.params.id])
   res.json(product)
@@ -658,8 +658,8 @@ app.post('/api/sync/products', async (req, res) => {
     const existingById = await db.queryOne('SELECT id FROM products WHERE id = $1', [p.id])
     if (existingById) {
       await db.run(
-        'UPDATE products SET barcode=$1, name=$2, category_id=$3, price=$4, cost_price=$5, vat_rate=$6, stock_quantity=$7, min_stock_level=$8, unit=$9, updated_at=NOW() WHERE id=$10',
-        [p.barcode, p.name, p.category_id, p.price, p.cost_price, p.vat_rate, p.stock_quantity, p.min_stock_level, p.unit, p.id]
+        'UPDATE products SET barcode=$1, name=$2, category_id=$3, price=$4, cost_price=$5, vat_rate=$6, stock_quantity=$7, min_stock_level=$8, unit=$9, is_weighted=$10, image_url=$11, updated_at=NOW() WHERE id=$12',
+        [p.barcode, p.name, p.category_id, p.price, p.cost_price, p.vat_rate, p.stock_quantity, p.min_stock_level, p.unit, p.is_weighted ? 1 : 0, p.image_url || null, p.id]
       )
       return res.json({ status: 'synced' })
     }
@@ -671,8 +671,8 @@ app.post('/api/sync/products', async (req, res) => {
         await db.transaction(async () => {
           // Insert new product first with temp barcode (to satisfy FKs during reference update)
           await db.run(
-            'INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
-            [p.id, '__sync_temp_' + p.id, p.name, p.category_id, p.price, p.cost_price || 0, p.vat_rate || 0.16, p.stock_quantity || 0, p.min_stock_level || 5, p.unit || 'each']
+            'INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit, is_weighted, image_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',
+            [p.id, '__sync_temp_' + p.id, p.name, p.category_id, p.price, p.cost_price || 0, p.vat_rate || 0.16, p.stock_quantity || 0, p.min_stock_level || 5, p.unit || 'each', p.is_weighted ? 1 : 0, p.image_url || null]
           )
           await db.run('UPDATE sale_items SET product_id = $1 WHERE product_id = $2', [p.id, existingByBarcode.id])
           await db.run('DELETE FROM products WHERE id = $1', [existingByBarcode.id])
@@ -683,8 +683,8 @@ app.post('/api/sync/products', async (req, res) => {
     }
 
     await db.run(
-      'INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
-      [p.id, p.barcode, p.name, p.category_id, p.price, p.cost_price || 0, p.vat_rate || 0.16, p.stock_quantity || 0, p.min_stock_level || 5, p.unit || 'each']
+      'INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit, is_weighted, image_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',
+      [p.id, p.barcode, p.name, p.category_id, p.price, p.cost_price || 0, p.vat_rate || 0.16, p.stock_quantity || 0, p.min_stock_level || 5, p.unit || 'each', p.is_weighted ? 1 : 0, p.image_url || null]
     )
     res.json({ status: 'synced' })
   } catch (err: any) {
@@ -697,8 +697,8 @@ app.put('/api/sync/products/:id', async (req, res) => {
   try {
     const p = req.body
     await db.run(
-      'UPDATE products SET barcode=$1, name=$2, category_id=$3, price=$4, cost_price=$5, vat_rate=$6, stock_quantity=$7, min_stock_level=$8, unit=$9, updated_at=NOW() WHERE id=$10',
-      [p.barcode, p.name, p.category_id, p.price, p.cost_price, p.vat_rate, p.stock_quantity, p.min_stock_level, p.unit, req.params.id]
+      'UPDATE products SET barcode=$1, name=$2, category_id=$3, price=$4, cost_price=$5, vat_rate=$6, stock_quantity=$7, min_stock_level=$8, unit=$9, is_weighted=$10, image_url=$11, updated_at=NOW() WHERE id=$12',
+      [p.barcode, p.name, p.category_id, p.price, p.cost_price, p.vat_rate, p.stock_quantity, p.min_stock_level, p.unit, p.is_weighted ? 1 : 0, p.image_url || null, req.params.id]
     )
     res.json({ status: 'synced' })
   } catch (err: any) {

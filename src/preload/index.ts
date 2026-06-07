@@ -61,6 +61,10 @@ const api = {
   openCashDrawer: () =>
     ipcRenderer.invoke(IPC_CHANNELS.HW_OPEN_DRAWER),
 
+  // Product images
+  saveProductImage: (dataBase64: string, originalName?: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.IMAGE_SAVE, dataBase64, originalName),
+
   // Sync
   getSyncStatus: () =>
     ipcRenderer.invoke('sync:status'),
