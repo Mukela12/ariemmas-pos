@@ -151,6 +151,18 @@ export async function registerIpcHandlers(): Promise<void> {
     return updated
   })
 
+  ipcMain.handle(IPC_CHANNELS.PRODUCT_DELETE, async (_e, id: string) => {
+    const db = getDb()
+    const nowExpr = now(db.engine)
+    const prev = await db.queryOne<{ image_filename: string | null }>('SELECT image_filename FROM products WHERE id = ?', [id])
+    if (prev?.image_filename) deleteProductImage(prev.image_filename).catch(() => {})
+    // Soft delete — keep the row for sale-history integrity, hide from lists.
+    await db.run(`UPDATE products SET active = 0, updated_at = ${nowExpr} WHERE id = ?`, [id])
+    const row = await db.queryOne('SELECT * FROM products WHERE id = ?', [id])
+    if (row) queueSync('update', 'product', id, row).catch(() => {})
+    return true
+  })
+
   // Sales
   ipcMain.handle(IPC_CHANNELS.SALE_COMPLETE, async (_e, input) => {
     return completeSale(input)

@@ -22,6 +22,8 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.PRODUCT_CREATE, product),
   updateProduct: (product: any) =>
     ipcRenderer.invoke(IPC_CHANNELS.PRODUCT_UPDATE, product),
+  deleteProduct: (id: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.PRODUCT_DELETE, id),
 
   // Sales
   completeSale: (input: any) =>

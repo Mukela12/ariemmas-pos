@@ -289,12 +289,20 @@ app.post('/api/products', async (req, res) => {
 
 app.put('/api/products/:id', async (req, res) => {
   const p = req.body
+  // COALESCE keeps the existing image_url when the caller doesn't send one
+  // (e.g. editing price/stock shouldn't wipe the product image).
   await db.run(
-    'UPDATE products SET barcode=$1, name=$2, category_id=$3, price=$4, cost_price=$5, vat_rate=$6, stock_quantity=$7, min_stock_level=$8, unit=$9, is_weighted=$10, image_url=$11, updated_at=NOW() WHERE id=$12',
-    [p.barcode, p.name, p.category_id, p.price, p.cost_price || 0, p.vat_rate || 0.16, p.stock_quantity || 0, p.min_stock_level || 5, p.unit || 'each', p.is_weighted ? 1 : 0, p.image_url || null, req.params.id]
+    'UPDATE products SET barcode=$1, name=$2, category_id=$3, price=$4, cost_price=$5, vat_rate=$6, stock_quantity=$7, min_stock_level=$8, unit=$9, is_weighted=$10, image_url=COALESCE($11, image_url), updated_at=NOW() WHERE id=$12',
+    [p.barcode, p.name, p.category_id, p.price, p.cost_price || 0, p.vat_rate || 0.16, p.stock_quantity || 0, p.min_stock_level || 5, p.unit || 'each', p.is_weighted ? 1 : 0, p.image_url ?? null, req.params.id]
   )
   const product = await db.queryOne('SELECT * FROM products WHERE id = $1', [req.params.id])
   res.json(product)
+})
+
+app.delete('/api/products/:id', async (req, res) => {
+  // Soft delete so sale history stays intact; the row drops out of all lists.
+  await db.run('UPDATE products SET active = 0, updated_at = NOW() WHERE id = $1', [req.params.id])
+  res.json({ ok: true })
 })
 
 // --- Categories ---

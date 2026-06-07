@@ -70,6 +70,7 @@ const mockApi = {
   },
   createProduct: async (product: any) => ({ ...product, id: 'new-' + Date.now() }),
   updateProduct: async (product: any) => product,
+  deleteProduct: async () => true,
 
   // Sales
   completeSale: async (sale: any) => ({

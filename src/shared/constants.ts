@@ -39,6 +39,7 @@ export const IPC_CHANNELS = {
   PRODUCT_GET_ALL: 'db:product:getAll',
   PRODUCT_CREATE: 'db:product:create',
   PRODUCT_UPDATE: 'db:product:update',
+  PRODUCT_DELETE: 'db:product:delete',
 
   // Sales
   SALE_COMPLETE: 'db:sale:complete',

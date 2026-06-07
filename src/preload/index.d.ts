@@ -11,6 +11,7 @@ interface PosAPI {
   getAllProducts(page?: number, limit?: number): Promise<{ products: Product[]; total: number; page: number; limit: number }>
   createProduct(product: Partial<Product>): Promise<Product>
   updateProduct(product: Partial<Product> & { id: string }): Promise<Product>
+  deleteProduct(id: string): Promise<boolean>
 
   completeSale(input: CompleteSaleInput): Promise<Sale>
   getDailySales(date: string): Promise<any>

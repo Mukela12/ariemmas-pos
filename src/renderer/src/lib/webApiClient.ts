@@ -46,6 +46,8 @@ export const webApi = {
     json<any>('/api/products', { method: 'POST', body: JSON.stringify(product) }),
   updateProduct: async (product: any) =>
     json<any>(`/api/products/${product.id}`, { method: 'PUT', body: JSON.stringify(product) }),
+  deleteProduct: async (id: string) =>
+    json<any>(`/api/products/${id}`, { method: 'DELETE' }),
 
   // Sales
   completeSale: async (sale: any) =>

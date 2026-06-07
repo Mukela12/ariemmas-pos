@@ -16,11 +16,12 @@ export const isElectron =
 export function productImageSrc(
   product: Pick<Product, 'image_filename' | 'image_url'>
 ): string | null {
+  // posimg:// only exists in Electron — never emit it on the web, where it
+  // would render as a broken image.
   if (isElectron && product.image_filename) {
     return `posimg://${product.image_filename}`
   }
   if (product.image_url) return product.image_url
-  if (product.image_filename) return `posimg://${product.image_filename}`
   return null
 }
 
