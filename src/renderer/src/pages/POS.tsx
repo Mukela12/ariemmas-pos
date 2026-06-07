@@ -49,9 +49,9 @@ export function POS() {
   const closeSearch = () => { setSearchActive(false); setSearchQuery(''); setSearchResults([]) }
   const pickSearchResult = (product: Product) => {
     requestAddProduct(product)
-    setSearchQuery('')
-    setSearchResults([])
-    // keep the search open so the cashier can add several items in a row
+    // Keep the query + results so the result list stays put (no reset to the
+    // empty "start typing" state) and the cashier can add more; the added item
+    // appears immediately in the Current Sale panel on the right.
   }
 
   // Live search as the cashier types on the on-screen keyboard (name or barcode).
@@ -105,54 +105,14 @@ export function POS() {
           </button>
         </div>
 
-        {/* Cart line items + empty state */}
-        <div className="flex-1 overflow-y-auto min-h-0">
-          {items.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center px-6 text-[#A1A1AA]">
-              <ShoppingBag size={52} strokeWidth={1} className="opacity-25" />
-              <p className="text-[15px] mt-4 text-[#52525B] font-medium">No items in this sale yet</p>
-              <p className="text-[13px] mt-1.5 max-w-[280px]">Scan a barcode, or tap <span className="font-semibold text-[#0D9488]">Search for a product</span> to find one with the on-screen keyboard.</p>
-            </div>
-          ) : (
-            <div className="px-3 py-2">
-              {items.map((item, index) => {
-                const src = productImageSrc(item)
-                return (
-                  <div key={`${item.product_id}-${index}`}
-                    onClick={() => selectItem(index)}
-                    className={`flex gap-3 px-2.5 py-2.5 rounded-[3px] border cursor-pointer mb-1.5 ${selectedIndex === index ? 'bg-[#F0FDFA] border-[#99F6E4]' : 'bg-white border-[#E4E4E7] hover:bg-[#FAFAFA]'}`}>
-                    <div className="w-12 h-12 rounded-[2px] bg-[#F4F4F5] overflow-hidden flex items-center justify-center shrink-0">
-                      {src ? <img src={src} alt="" className="w-full h-full object-cover" /> : <ShoppingBag size={18} className="text-[#D4D4D8]" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-[14px] font-medium text-[#18181B] leading-tight">{item.name}</p>
-                        <button onClick={(e) => { e.stopPropagation(); removeItem(index) }}
-                          className="w-7 h-7 -mr-1 -mt-0.5 rounded-[2px] flex items-center justify-center text-[#A1A1AA] hover:text-white hover:bg-[#DC2626] shrink-0">
-                          <X size={15} />
-                        </button>
-                      </div>
-                      <p className="text-[12px] text-[#A1A1AA] mt-0.5 tabular-nums">{formatZMW(item.price)} each</p>
-                      <div className="flex items-center justify-between mt-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <button onClick={(e) => { e.stopPropagation(); updateQuantity(index, item.quantity - 1) }}
-                            className="w-9 h-9 rounded-[2px] border border-[#E4E4E7] bg-white flex items-center justify-center text-[#52525B] hover:bg-[#F4F4F5] active:bg-[#E4E4E7]">
-                            <Minus size={15} />
-                          </button>
-                          <span className="w-10 text-center font-bold tabular-nums text-[#18181B] text-[16px]">{item.quantity}</span>
-                          <button onClick={(e) => { e.stopPropagation(); updateQuantity(index, item.quantity + 1) }}
-                            className="w-9 h-9 rounded-[2px] border border-[#E4E4E7] bg-white flex items-center justify-center text-[#52525B] hover:bg-[#F4F4F5] active:bg-[#E4E4E7]">
-                            <Plus size={15} />
-                          </button>
-                        </div>
-                        <span className="text-[16px] font-bold text-[#18181B] tabular-nums">{formatZMW(item.line_total)}</span>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+        {/* Work area — the live cart shows in the Current Sale panel on the right */}
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-6 text-[#A1A1AA]">
+          <ShoppingBag size={56} strokeWidth={1} className="opacity-20" />
+          <p className="text-[16px] mt-4 text-[#52525B] font-semibold">Scan or search to add products</p>
+          <p className="text-[13px] mt-2 max-w-[320px] leading-relaxed">
+            Scan a barcode with the scanner, or tap <span className="font-semibold text-[#0D9488]">Search for a product</span> to find one with the on-screen keyboard.
+            Items you add appear in <span className="font-semibold text-[#52525B]">Current Sale</span> on the right.
+          </p>
         </div>
 
         {/* Search overlay — results + on-screen keyboard (covers the left area) */}
@@ -217,38 +177,88 @@ export function POS() {
         )}
       </div>
 
-      {/* RIGHT — totals + pay */}
-      <div className="w-[360px] bg-white border-l border-[#E4E4E7] flex flex-col shrink-0">
+      {/* RIGHT — Current Sale: line items (always visible) + totals + pay */}
+      <div className="w-[372px] bg-white border-l border-[#E4E4E7] flex flex-col shrink-0">
         <div className="px-4 h-12 border-b border-[#E4E4E7] flex justify-between items-center shrink-0">
           <span className="text-[15px] font-semibold text-[#18181B]">Current Sale</span>
           <span className="text-xs font-semibold text-[#52525B] bg-[#F4F4F5] px-2 py-1 rounded-[2px] tabular-nums">{itemCount} {itemCount === 1 ? 'item' : 'items'}</span>
         </div>
-        <div className="flex-1 flex flex-col justify-end p-4">
-          <div className="space-y-2">
-            <div className="flex justify-between text-[14px]">
+
+        {/* Line items */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {items.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center px-6 text-[#A1A1AA]">
+              <ShoppingBag size={34} strokeWidth={1.25} className="opacity-30" />
+              <p className="text-[13px] mt-3 text-[#71717A]">No items yet</p>
+            </div>
+          ) : (
+            <div className="p-2">
+              {items.map((item, index) => {
+                const src = productImageSrc(item)
+                return (
+                  <div key={`${item.product_id}-${index}`}
+                    onClick={() => selectItem(index)}
+                    className={`flex gap-2.5 p-2 rounded-[3px] border cursor-pointer mb-1.5 ${selectedIndex === index ? 'bg-[#F0FDFA] border-[#99F6E4]' : 'bg-white border-[#E4E4E7] hover:bg-[#FAFAFA]'}`}>
+                    <div className="w-11 h-11 rounded-[2px] bg-[#F4F4F5] overflow-hidden flex items-center justify-center shrink-0">
+                      {src ? <img src={src} alt="" className="w-full h-full object-cover" /> : <ShoppingBag size={16} className="text-[#D4D4D8]" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-1.5">
+                        <p className="text-[13px] font-medium text-[#18181B] leading-tight">{item.name}</p>
+                        <button onClick={(e) => { e.stopPropagation(); removeItem(index) }}
+                          className="w-6 h-6 -mr-0.5 -mt-0.5 rounded-[2px] flex items-center justify-center text-[#A1A1AA] hover:text-white hover:bg-[#DC2626] shrink-0">
+                          <X size={14} />
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between mt-1.5">
+                        <div className="flex items-center gap-1">
+                          <button onClick={(e) => { e.stopPropagation(); updateQuantity(index, item.quantity - 1) }}
+                            className="w-8 h-8 rounded-[2px] border border-[#E4E4E7] bg-white flex items-center justify-center text-[#52525B] hover:bg-[#F4F4F5] active:bg-[#E4E4E7]">
+                            <Minus size={13} />
+                          </button>
+                          <span className="w-8 text-center font-bold tabular-nums text-[#18181B] text-[14px]">{item.quantity}</span>
+                          <button onClick={(e) => { e.stopPropagation(); updateQuantity(index, item.quantity + 1) }}
+                            className="w-8 h-8 rounded-[2px] border border-[#E4E4E7] bg-white flex items-center justify-center text-[#52525B] hover:bg-[#F4F4F5] active:bg-[#E4E4E7]">
+                            <Plus size={13} />
+                          </button>
+                        </div>
+                        <span className="text-[14px] font-bold text-[#18181B] tabular-nums">{formatZMW(item.line_total)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Totals + pay — pinned */}
+        <div className="border-t border-[#E4E4E7] p-4 shrink-0">
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-[13px]">
               <span className="text-[#71717A]">Subtotal</span>
               <span className="text-[#52525B] font-medium tabular-nums">{formatZMW(subtotal)}</span>
             </div>
-            <div className="flex justify-between text-[14px]">
+            <div className="flex justify-between text-[13px]">
               <span className="text-[#71717A]">VAT (16%)</span>
               <span className="text-[#52525B] font-medium tabular-nums">{formatZMW(vatTotal)}</span>
             </div>
-            <div className="flex justify-between items-baseline pt-3 mt-1 border-t border-[#E4E4E7]">
-              <span className="text-[16px] font-semibold text-[#18181B]">Total</span>
-              <span className="text-[34px] font-bold text-[#18181B] tabular-nums tracking-tight leading-none">{formatZMW(total)}</span>
+            <div className="flex justify-between items-baseline pt-2 mt-1 border-t border-[#E4E4E7]">
+              <span className="text-[15px] font-semibold text-[#18181B]">Total</span>
+              <span className="text-[32px] font-bold text-[#18181B] tabular-nums tracking-tight leading-none">{formatZMW(total)}</span>
             </div>
           </div>
           <button
             onClick={() => items.length > 0 && currentShift && setShowPayment(true)}
             disabled={items.length === 0 || !currentShift}
-            className="btn-pay w-full h-[72px] mt-4 flex flex-col items-center justify-center leading-tight"
+            className="btn-pay w-full h-[68px] mt-3 flex flex-col items-center justify-center leading-tight"
           >
             {!currentShift && items.length > 0
               ? <span className="text-[16px]">Open a shift first</span>
-              : <><span className="text-[11px] uppercase tracking-wider opacity-80">F12 · Pay</span><span className="text-[24px] tabular-nums">{formatZMW(total)}</span></>}
+              : <><span className="text-[11px] uppercase tracking-wider opacity-80">F12 · Pay</span><span className="text-[23px] tabular-nums">{formatZMW(total)}</span></>}
           </button>
           {items.length > 0 && (
-            <button onClick={() => clearSale()} className="btn-ghost w-full h-10 mt-2 text-[13px]">
+            <button onClick={() => clearSale()} className="btn-ghost w-full h-9 mt-2 text-[13px]">
               Clear sale (F1)
             </button>
           )}
@@ -256,7 +266,7 @@ export function POS() {
       </div>
 
       {/* Bottom graphite function bar — real boxy buttons */}
-      <div className="graphite absolute bottom-0 left-0 right-[360px] h-16 flex items-stretch px-2 py-2 gap-2">
+      <div className="graphite absolute bottom-0 left-0 right-[372px] h-16 flex items-stretch px-2 py-2 gap-2">
         {[
           { key: 'F1', label: 'New Sale', onClick: () => clearSale(), disabled: false },
           { key: 'F2', label: 'Search', onClick: () => openSearch(), disabled: false },
