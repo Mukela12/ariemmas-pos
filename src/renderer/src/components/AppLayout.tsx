@@ -177,7 +177,7 @@ function ShiftModal({
   onClose: () => void
   onShiftChange: (shift: any) => void
 }) {
-  const [openingCash, setOpeningCash] = useState('1000')
+  const [openingCash, setOpeningCash] = useState('')
   const [closingCash, setClosingCash] = useState('')
   const [notes] = useState('')
   const [cashierName, setCashierName] = useState('')
@@ -195,15 +195,8 @@ function ShiftModal({
       if (!isActive) return
       const limit = parseFloat(settings.opening_cash_limit || '1000') || 1000
       setOpeningLimit(limit)
-      if (!shift) {
-        setOpeningCash((current) => {
-          const currentValue = parseFloat(current)
-          if (!current || Number.isNaN(currentValue) || currentValue > limit) {
-            return String(limit)
-          }
-          return current
-        })
-      }
+      // Opening cash starts empty so the on-screen keypad drives it cleanly —
+      // pre-filling a value made the keypad append to it (e.g. 1000 + 500).
     }).catch(() => {})
 
     return () => {
@@ -256,7 +249,7 @@ function ShiftModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-[380px] bg-white rounded-[6px] shadow-xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-[380px] bg-white rounded-[6px] shadow-xl overflow-y-auto max-h-[96vh]" onClick={(e) => e.stopPropagation()}>
         <div className="graphite px-5 py-3.5 flex items-center justify-between">
           <h2 className="text-[15px] font-semibold text-white">
             {shift ? 'Close Shift' : 'Open Shift'}

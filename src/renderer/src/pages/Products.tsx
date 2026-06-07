@@ -428,16 +428,17 @@ export function Products() {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowForm(false)} />
-          <div className="relative bg-white rounded-[6px] border border-[#E4E4E7] w-full max-w-lg mx-4 overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#E4E4E7]">
-              <h2 className="text-base font-semibold text-[#18181B]">
+          <div className="relative bg-white rounded-[6px] border border-[#E4E4E7] w-full max-w-lg mx-4 overflow-hidden flex flex-col max-h-[92vh]">
+            <div className="graphite px-6 py-4 shrink-0">
+              <h2 className="text-base font-semibold text-white">
                 {editingProduct ? 'Edit Product' : 'Add New Product'}
               </h2>
-              <p className="text-[13px] text-[#71717A] mt-0.5">
+              <p className="text-[13px] text-white/55 mt-0.5">
                 {editingProduct ? 'Update product details' : 'Add a new item to your inventory'}
               </p>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
+              <div className="p-6 space-y-4 overflow-y-auto">
               {/* Image picker */}
               <div className="flex items-center gap-4">
                 <div className="w-20 h-20 rounded-[6px] border border-[#E4E4E7] bg-[#FAFAFA] overflow-hidden flex items-center justify-center shrink-0">
@@ -611,7 +612,8 @@ export function Products() {
                   </label>
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-3 pt-2">
+              </div>
+              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#E4E4E7] bg-[#FAFAFA] shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}

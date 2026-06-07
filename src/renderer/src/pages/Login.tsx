@@ -36,7 +36,7 @@ export function Login() {
   return (
     <div className="h-screen w-screen flex bg-white overflow-hidden">
       {/* Left — brand panel with animated grid */}
-      <div className="hidden lg:flex w-[44%] bg-[#18181B] flex-col items-center justify-center relative overflow-hidden">
+      <div className="graphite hidden lg:flex w-[44%] flex-col items-center justify-center relative overflow-hidden">
         {/* Teal glow accents */}
         <div className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-100"
           style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.15) 0%, transparent 70%)' }} />
@@ -55,7 +55,7 @@ export function Login() {
 
         {/* Brand text */}
         <div className="relative z-10 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-white/[0.08] flex items-center justify-center border border-white/[0.06] mx-auto mb-6 overflow-hidden">
+          <div className="w-16 h-16 rounded-[8px] bg-white/[0.08] flex items-center justify-center border border-white/[0.06] mx-auto mb-6 overflow-hidden">
             <img src={logoUrl} alt="" className="w-10 h-10 object-contain" />
           </div>
           <h1 className="text-[42px] font-bold text-[#FAFAFA] tracking-tight leading-none">
@@ -72,7 +72,7 @@ export function Login() {
         <div className="w-full max-w-[340px]">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2.5 mb-8">
-            <div className="w-9 h-9 rounded-lg bg-[#18181B] flex items-center justify-center overflow-hidden">
+            <div className="w-9 h-9 rounded-[6px] bg-[#18181B] flex items-center justify-center overflow-hidden">
               <img src={logoUrl} alt="" className="w-6 h-6 object-contain" />
             </div>
             <div>
@@ -95,7 +95,7 @@ export function Login() {
                 placeholder="Enter username"
                 autoComplete="off"
                 spellCheck={false}
-                className="w-full h-10 px-3 rounded-md border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
+                className="w-full h-10 px-3 rounded-[4px] border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); pinRef.current?.focus() } }}
               />
             </div>
@@ -111,7 +111,7 @@ export function Login() {
                   placeholder="Enter PIN"
                   maxLength={6}
                   autoComplete="off"
-                  className="w-full h-10 px-3 pr-10 rounded-md border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08] tracking-[0.15em]"
+                  className="w-full h-10 px-3 pr-10 rounded-[4px] border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08] tracking-[0.15em]"
                 />
                 <button type="button" onClick={() => setShowPin(!showPin)} tabIndex={-1}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] hover:text-[#52525B]">
@@ -121,7 +121,7 @@ export function Login() {
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 px-3 py-2.5 rounded-md bg-[#FEF2F2] border border-[#FECACA]">
+              <div className="flex items-center gap-2 px-3 py-2.5 rounded-[4px] bg-[#FEF2F2] border border-[#FECACA]">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#DC2626] shrink-0" />
                 <p className="text-[13px] text-[#DC2626]">{error}</p>
               </div>
@@ -137,7 +137,7 @@ export function Login() {
           </form>
 
           {/* Cashier credentials */}
-          <div className="mt-8 p-3.5 rounded-md bg-[#F4F4F5] border border-[#E4E4E7]">
+          <div className="mt-8 p-3.5 rounded-[4px] bg-[#F4F4F5] border border-[#E4E4E7]">
             <div className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-[0.06em] mb-2">Cashier Logins</div>
             <div className="space-y-1">
               {CASHIER_CREDENTIALS.map((c) => (
