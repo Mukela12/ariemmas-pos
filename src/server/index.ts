@@ -12,7 +12,8 @@ import type { DbAdapter } from '../main/database/adapter'
 
 const app = express()
 app.use(cors())
-app.use(express.json())
+// 5mb so product image data-URLs (and admin image uploads) fit in the body
+app.use(express.json({ limit: '5mb' }))
 
 let db: DbAdapter
 let resend: Resend | null = null
