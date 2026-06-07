@@ -1,21 +1,21 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { Search, Minus, Plus, X, CreditCard, Banknote, ShoppingBag, Scale } from 'lucide-react'
+import { Search, Minus, Plus, X, CreditCard, Banknote, ShoppingBag } from 'lucide-react'
 import { useSaleStore } from '../stores/saleStore'
 import { useAuthStore } from '../stores/authStore'
 import { useShiftStore } from '../stores/shiftStore'
 import { useScanner } from '../hooks/useScanner'
-import { formatZMW, formatStock } from '../lib/currency'
+import { formatZMW } from '../lib/currency'
 import { productImageSrc } from '../lib/productImage'
 import { buildPrintableReceipt } from '../lib/receipt'
 import { ThankYouScreen } from '../components/ThankYouScreen'
 import { NumberKeypad } from '../components/NumberKeypad'
-import type { Product, Category } from '../../../shared/types'
+import { OnScreenKeyboard } from '../components/OnScreenKeyboard'
+import type { Product } from '../../../shared/types'
 
 export function POS() {
   const [searchQuery, setSearchQuery] = useState('')
-  const [categories, setCategories] = useState<Category[]>([])
-  const [allProducts, setAllProducts] = useState<Product[]>([])
-  const [activeCat, setActiveCat] = useState<string>('all')
+  const [searchActive, setSearchActive] = useState(false)
+  const [searchResults, setSearchResults] = useState<Product[]>([])
   const [showPayment, setShowPayment] = useState(false)
   const [showThankYou, setShowThankYou] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
@@ -43,30 +43,39 @@ export function POS() {
     }
   }, [requestAddProduct])
 
-  useScanner({ onScan: handleBarcodeScan, enabled: !showPayment })
+  useScanner({ onScan: handleBarcodeScan, enabled: !showPayment && !searchActive })
 
-  // Load categories + the full product catalogue for the tap-to-add grid.
-  const loadCatalogue = useCallback(() => {
-    window.api.getCategories().then(setCategories).catch(() => {})
-    window.api.getAllProducts(1, 1000).then((r) => setAllProducts(r.products)).catch(() => {})
-  }, [])
-  useEffect(() => { loadCatalogue() }, [loadCatalogue])
+  const openSearch = () => { setSearchActive(true) }
+  const closeSearch = () => { setSearchActive(false); setSearchQuery(''); setSearchResults([]) }
+  const pickSearchResult = (product: Product) => {
+    requestAddProduct(product)
+    setSearchQuery('')
+    setSearchResults([])
+    // keep the search open so the cashier can add several items in a row
+  }
 
-  // Enter on the search box: if it's an exact barcode, add it; else add a lone match.
+  // Live search as the cashier types on the on-screen keyboard (name or barcode).
+  useEffect(() => {
+    const q = searchQuery.trim()
+    if (q.length < 1) { setSearchResults([]); return }
+    let cancelled = false
+    window.api.searchProducts(q).then((r) => { if (!cancelled) setSearchResults(r) }).catch(() => {})
+    return () => { cancelled = true }
+  }, [searchQuery])
+
   const handleSearchKeyDown = async (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && searchQuery.trim().length >= 3) {
       const product = await window.api.getProductByBarcode(searchQuery.trim())
-      if (product) { requestAddProduct(product); setSearchQuery(''); return }
-      const matches = gridProducts
-      if (matches.length === 1) { requestAddProduct(matches[0]); setSearchQuery('') }
+      if (product) { pickSearchResult(product); return }
+      if (searchResults.length === 1) pickSearchResult(searchResults[0])
     }
-    if (e.key === 'Escape') setSearchQuery('')
+    if (e.key === 'Escape') closeSearch()
   }
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F12' && items.length > 0 && currentShift) { e.preventDefault(); setShowPayment(true) }
-      if (e.key === 'F2') { e.preventDefault(); searchRef.current?.focus() }
+      if (e.key === 'F2') { e.preventDefault(); openSearch() }
       if (e.key === 'F8' && selectedIndex >= 0) { e.preventDefault(); removeItem(selectedIndex) }
       if (e.key === 'F1') { e.preventDefault(); clearSale() }
     }
@@ -79,188 +88,167 @@ export function POS() {
   const vatTotal = getVatTotal()
   const itemCount = getItemCount()
 
-  // Products shown in the grid: filtered by active category + live search text.
-  const q = searchQuery.trim().toLowerCase()
-  const gridProducts = allProducts.filter((p) => {
-    const inCat = activeCat === 'all' || p.category_id === activeCat
-    const matches = !q || p.name.toLowerCase().includes(q) || (p.barcode || '').toLowerCase().includes(q)
-    return inCat && matches
-  })
-
   return (
     <div className="relative flex h-full bg-[#ECECEA]">
-      {/* LEFT — product picker: scan-first search + category tabs + tap grid */}
-      <div className="flex-1 flex flex-col min-w-0 pb-16">
-        {/* Search bar */}
-        <div className="px-3 pt-3 pb-2 bg-white border-b border-[#E4E4E7] shrink-0">
-          <div className="relative">
-            <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#71717A]" />
-            <input
-              ref={searchRef}
-              data-scanner="true"
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              placeholder="Scan barcode, or type / tap a product below"
-              className="w-full h-12 pl-11 pr-10 rounded-[3px] bg-[#FAFAFA] border border-[#E4E4E7] text-[15px] text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:bg-white focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
-            />
-            {searchQuery && (
-              <button onClick={() => { setSearchQuery(''); searchRef.current?.focus() }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-[2px] flex items-center justify-center text-[#A1A1AA] hover:text-[#52525B] hover:bg-[#F4F4F5]">
-                <X size={16} />
-              </button>
-            )}
-          </div>
+      {/* LEFT — the sale (cart) with a clean empty state + a search bar that
+          opens an on-screen keyboard (no Windows keyboard needed) */}
+      <div className="flex-1 flex flex-col min-w-0 pb-16 relative">
+        {/* Search bar — tapping it opens the on-screen keyboard */}
+        <div className="px-3 pt-3 pb-3 bg-white border-b border-[#E4E4E7] shrink-0">
+          <button
+            onClick={openSearch}
+            className="w-full h-12 px-4 rounded-[3px] bg-[#FAFAFA] border border-[#E4E4E7] flex items-center gap-3 text-[15px] text-[#A1A1AA] hover:border-[#0D9488] hover:bg-white transition-colors"
+          >
+            <Search size={18} className="text-[#71717A]" />
+            Search for a product…
+            <kbd className="ml-auto text-[11px] font-bold text-[#52525B] bg-white px-1.5 py-0.5 rounded-[2px] border border-[#E4E4E7]">F2</kbd>
+          </button>
         </div>
 
-        {/* Category tabs */}
-        <div className="flex gap-1.5 px-3 py-2 bg-white border-b border-[#E4E4E7] overflow-x-auto shrink-0">
-          {[{ id: 'all', name: 'All' }, ...categories].map((c) => (
-            <button
-              key={c.id}
-              onClick={() => setActiveCat(c.id)}
-              className={`px-3.5 h-8 rounded-[3px] text-[13px] font-semibold whitespace-nowrap transition-colors ${
-                activeCat === c.id
-                  ? 'bg-[#0D9488] text-white'
-                  : 'bg-[#F4F4F5] text-[#52525B] hover:bg-[#E4E4E7]'
-              }`}
-            >
-              {c.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Product grid */}
-        <div className="flex-1 overflow-y-auto p-3">
-          {gridProducts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-[#A1A1AA]">
-              <ShoppingBag size={40} strokeWidth={1} className="opacity-30" />
-              <p className="text-sm mt-3">{q ? 'No products match' : 'No products in this category'}</p>
+        {/* Cart line items + empty state */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {items.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center px-6 text-[#A1A1AA]">
+              <ShoppingBag size={52} strokeWidth={1} className="opacity-25" />
+              <p className="text-[15px] mt-4 text-[#52525B] font-medium">No items in this sale yet</p>
+              <p className="text-[13px] mt-1.5 max-w-[280px]">Scan a barcode, or tap <span className="font-semibold text-[#0D9488]">Search for a product</span> to find one with the on-screen keyboard.</p>
             </div>
           ) : (
-            <div className="grid gap-2.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))' }}>
-              {gridProducts.map((product) => {
-                const src = productImageSrc(product)
-                const out = !product.is_weighted && Number(product.stock_quantity) <= 0
+            <div className="px-3 py-2">
+              {items.map((item, index) => {
+                const src = productImageSrc(item)
                 return (
-                  <button
-                    key={product.id}
-                    onClick={() => requestAddProduct(product)}
-                    disabled={out}
-                    className="group flex flex-col bg-white border border-[#E4E4E7] rounded-[3px] overflow-hidden text-left hover:border-[#0D9488] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] active:translate-y-px disabled:opacity-45 transition-all"
-                  >
-                    <div className="aspect-square bg-[#F4F4F5] flex items-center justify-center overflow-hidden relative">
-                      {src
-                        ? <img src={src} alt="" className="w-full h-full object-cover" />
-                        : <ShoppingBag size={26} strokeWidth={1.25} className="text-[#D4D4D8]" />}
-                      {product.is_weighted && (
-                        <span className="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 h-5 rounded-[2px] bg-[#0D9488] text-white text-[10px] font-bold">
-                          <Scale size={10} /> /kg
-                        </span>
-                      )}
-                      {out && <span className="absolute inset-0 bg-white/60 flex items-center justify-center text-[11px] font-bold text-[#DC2626] uppercase tracking-wide">Out of stock</span>}
+                  <div key={`${item.product_id}-${index}`}
+                    onClick={() => selectItem(index)}
+                    className={`flex gap-3 px-2.5 py-2.5 rounded-[3px] border cursor-pointer mb-1.5 ${selectedIndex === index ? 'bg-[#F0FDFA] border-[#99F6E4]' : 'bg-white border-[#E4E4E7] hover:bg-[#FAFAFA]'}`}>
+                    <div className="w-12 h-12 rounded-[2px] bg-[#F4F4F5] overflow-hidden flex items-center justify-center shrink-0">
+                      {src ? <img src={src} alt="" className="w-full h-full object-cover" /> : <ShoppingBag size={18} className="text-[#D4D4D8]" />}
                     </div>
-                    <div className="p-2 flex-1 flex flex-col">
-                      <p className="text-[12.5px] font-medium text-[#18181B] leading-tight line-clamp-2 min-h-[34px]">{product.name}</p>
-                      <div className="flex items-center justify-between mt-auto pt-1">
-                        <span className="text-[14px] font-bold text-[#18181B] tabular-nums">{formatZMW(product.price)}</span>
-                        {!product.is_weighted && (
-                          <span className="text-[10.5px] text-[#A1A1AA] tabular-nums">{formatStock(product.stock_quantity)} left</span>
-                        )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-[14px] font-medium text-[#18181B] leading-tight">{item.name}</p>
+                        <button onClick={(e) => { e.stopPropagation(); removeItem(index) }}
+                          className="w-7 h-7 -mr-1 -mt-0.5 rounded-[2px] flex items-center justify-center text-[#A1A1AA] hover:text-white hover:bg-[#DC2626] shrink-0">
+                          <X size={15} />
+                        </button>
+                      </div>
+                      <p className="text-[12px] text-[#A1A1AA] mt-0.5 tabular-nums">{formatZMW(item.price)} each</p>
+                      <div className="flex items-center justify-between mt-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={(e) => { e.stopPropagation(); updateQuantity(index, item.quantity - 1) }}
+                            className="w-9 h-9 rounded-[2px] border border-[#E4E4E7] bg-white flex items-center justify-center text-[#52525B] hover:bg-[#F4F4F5] active:bg-[#E4E4E7]">
+                            <Minus size={15} />
+                          </button>
+                          <span className="w-10 text-center font-bold tabular-nums text-[#18181B] text-[16px]">{item.quantity}</span>
+                          <button onClick={(e) => { e.stopPropagation(); updateQuantity(index, item.quantity + 1) }}
+                            className="w-9 h-9 rounded-[2px] border border-[#E4E4E7] bg-white flex items-center justify-center text-[#52525B] hover:bg-[#F4F4F5] active:bg-[#E4E4E7]">
+                            <Plus size={15} />
+                          </button>
+                        </div>
+                        <span className="text-[16px] font-bold text-[#18181B] tabular-nums">{formatZMW(item.line_total)}</span>
                       </div>
                     </div>
-                  </button>
+                  </div>
                 )
               })}
             </div>
           )}
         </div>
+
+        {/* Search overlay — results + on-screen keyboard (covers the left area) */}
+        {searchActive && (
+          <div className="absolute inset-0 z-40 flex flex-col bg-white">
+            <div className="px-3 py-3 border-b border-[#E4E4E7] flex items-center gap-2 shrink-0">
+              <div className="relative flex-1">
+                <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#71717A]" />
+                <input
+                  ref={searchRef}
+                  data-scanner="true"
+                  autoFocus
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder="Type a product name or barcode"
+                  className="w-full h-12 pl-11 pr-4 rounded-[3px] bg-white border border-[#0D9488] ring-[3px] ring-[#0D9488]/[0.08] text-[15px] text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none"
+                />
+              </div>
+              <button onClick={closeSearch} className="h-12 px-4 rounded-[3px] border border-[#E4E4E7] text-[14px] font-medium text-[#52525B] hover:bg-[#F4F4F5]">Close</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto min-h-0">
+              {searchQuery.trim().length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center text-[#A1A1AA] px-6">
+                  <Search size={40} strokeWidth={1} className="opacity-25" />
+                  <p className="text-sm mt-3">Start typing to find a product</p>
+                </div>
+              ) : searchResults.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center text-[#A1A1AA] px-6">
+                  <p className="text-sm">No products match “{searchQuery}”</p>
+                </div>
+              ) : (
+                searchResults.map((product) => {
+                  const src = productImageSrc(product)
+                  const out = !product.is_weighted && Number(product.stock_quantity) <= 0
+                  return (
+                    <button key={product.id} onClick={() => !out && pickSearchResult(product)} disabled={out}
+                      className="w-full flex items-center gap-3 px-4 py-3 border-b border-[#F4F4F5] text-left hover:bg-[#F0FDFA] disabled:opacity-50">
+                      <div className="w-11 h-11 rounded-[2px] bg-[#F4F4F5] overflow-hidden flex items-center justify-center shrink-0">
+                        {src ? <img src={src} alt="" className="w-full h-full object-cover" /> : <ShoppingBag size={16} className="text-[#D4D4D8]" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[14px] font-medium text-[#18181B] truncate">{product.name}</p>
+                        <p className="text-[12px] text-[#A1A1AA] mt-0.5 font-mono">{product.barcode || 'no barcode'}{out ? ' · out of stock' : ''}</p>
+                      </div>
+                      <span className="text-[15px] font-bold text-[#18181B] tabular-nums">{formatZMW(product.price)}</span>
+                    </button>
+                  )
+                })
+              )}
+            </div>
+
+            <OnScreenKeyboard
+              value={searchQuery}
+              onChange={setSearchQuery}
+              onEnter={() => { if (searchResults.length === 1) pickSearchResult(searchResults[0]) }}
+              onClose={closeSearch}
+            />
+          </div>
+        )}
       </div>
 
-      {/* RIGHT — the single cart */}
-      <div className="w-[384px] bg-white border-l border-[#E4E4E7] flex flex-col shrink-0">
+      {/* RIGHT — totals + pay */}
+      <div className="w-[360px] bg-white border-l border-[#E4E4E7] flex flex-col shrink-0">
         <div className="px-4 h-12 border-b border-[#E4E4E7] flex justify-between items-center shrink-0">
           <span className="text-[15px] font-semibold text-[#18181B]">Current Sale</span>
           <span className="text-xs font-semibold text-[#52525B] bg-[#F4F4F5] px-2 py-1 rounded-[2px] tabular-nums">{itemCount} {itemCount === 1 ? 'item' : 'items'}</span>
         </div>
-
-        {/* Cart items */}
-        <div className="flex-1 overflow-y-auto min-h-0">
-          {items.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center px-6 text-[#A1A1AA]">
-              <ShoppingBag size={36} strokeWidth={1.25} className="opacity-30" />
-              <p className="text-sm mt-3 text-[#71717A]">Cart is empty</p>
-              <p className="text-xs mt-1">Scan a barcode or tap a product to start.</p>
-            </div>
-          ) : (
-            items.map((item, index) => (
-              <div key={`${item.product_id}-${index}`}
-                onClick={() => selectItem(index)}
-                className={`flex gap-2.5 px-3 py-2.5 border-b border-[#F4F4F5] cursor-pointer ${selectedIndex === index ? 'bg-[#F0FDFA]' : 'hover:bg-[#FAFAFA]'}`}>
-                <div className="w-10 h-10 rounded-[2px] bg-[#F4F4F5] overflow-hidden flex items-center justify-center shrink-0">
-                  {(() => {
-                    const pr = allProducts.find((p) => p.id === item.product_id)
-                    const s = pr ? productImageSrc(pr) : null
-                    return s ? <img src={s} alt="" className="w-full h-full object-cover" /> : <ShoppingBag size={16} className="text-[#D4D4D8]" />
-                  })()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-[13.5px] font-medium text-[#18181B] leading-tight">{item.name}</p>
-                    <button onClick={(e) => { e.stopPropagation(); removeItem(index) }}
-                      className="w-6 h-6 -mr-1 -mt-0.5 rounded-[2px] flex items-center justify-center text-[#A1A1AA] hover:text-white hover:bg-[#DC2626] shrink-0">
-                      <X size={14} />
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between mt-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <button onClick={(e) => { e.stopPropagation(); updateQuantity(index, item.quantity - 1) }}
-                        className="w-8 h-8 rounded-[2px] border border-[#E4E4E7] bg-white flex items-center justify-center text-[#52525B] hover:bg-[#F4F4F5] active:bg-[#E4E4E7]">
-                        <Minus size={14} />
-                      </button>
-                      <span className="w-9 text-center font-bold tabular-nums text-[#18181B] text-[15px]">{item.quantity}</span>
-                      <button onClick={(e) => { e.stopPropagation(); updateQuantity(index, item.quantity + 1) }}
-                        className="w-8 h-8 rounded-[2px] border border-[#E4E4E7] bg-white flex items-center justify-center text-[#52525B] hover:bg-[#F4F4F5] active:bg-[#E4E4E7]">
-                        <Plus size={14} />
-                      </button>
-                    </div>
-                    <span className="text-[15px] font-bold text-[#18181B] tabular-nums">{formatZMW(item.line_total)}</span>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Totals + pay — pinned */}
-        <div className="border-t border-[#E4E4E7] px-4 pt-3 pb-4 shrink-0">
-          <div className="space-y-1.5">
-            <div className="flex justify-between text-[13px]">
+        <div className="flex-1 flex flex-col justify-end p-4">
+          <div className="space-y-2">
+            <div className="flex justify-between text-[14px]">
               <span className="text-[#71717A]">Subtotal</span>
               <span className="text-[#52525B] font-medium tabular-nums">{formatZMW(subtotal)}</span>
             </div>
-            <div className="flex justify-between text-[13px]">
+            <div className="flex justify-between text-[14px]">
               <span className="text-[#71717A]">VAT (16%)</span>
               <span className="text-[#52525B] font-medium tabular-nums">{formatZMW(vatTotal)}</span>
             </div>
-            <div className="flex justify-between items-baseline pt-2 mt-1 border-t border-[#E4E4E7]">
-              <span className="text-[15px] font-semibold text-[#18181B]">Total</span>
-              <span className="text-[30px] font-bold text-[#18181B] tabular-nums tracking-tight leading-none">{formatZMW(total)}</span>
+            <div className="flex justify-between items-baseline pt-3 mt-1 border-t border-[#E4E4E7]">
+              <span className="text-[16px] font-semibold text-[#18181B]">Total</span>
+              <span className="text-[34px] font-bold text-[#18181B] tabular-nums tracking-tight leading-none">{formatZMW(total)}</span>
             </div>
           </div>
           <button
             onClick={() => items.length > 0 && currentShift && setShowPayment(true)}
             disabled={items.length === 0 || !currentShift}
-            className="btn-pay w-full h-16 mt-3 text-[18px] flex flex-col items-center justify-center leading-tight"
+            className="btn-pay w-full h-[72px] mt-4 flex flex-col items-center justify-center leading-tight"
           >
             {!currentShift && items.length > 0
-              ? <span className="text-[15px]">Open a shift first</span>
-              : <><span className="text-[11px] uppercase tracking-wider opacity-80">F12 · Pay</span><span>{formatZMW(total)}</span></>}
+              ? <span className="text-[16px]">Open a shift first</span>
+              : <><span className="text-[11px] uppercase tracking-wider opacity-80">F12 · Pay</span><span className="text-[24px] tabular-nums">{formatZMW(total)}</span></>}
           </button>
           {items.length > 0 && (
-            <button onClick={() => clearSale()}
-              className="btn-ghost w-full h-9 mt-2 text-[13px]">
+            <button onClick={() => clearSale()} className="btn-ghost w-full h-10 mt-2 text-[13px]">
               Clear sale (F1)
             </button>
           )}
@@ -268,10 +256,10 @@ export function POS() {
       </div>
 
       {/* Bottom graphite function bar — real boxy buttons */}
-      <div className="graphite absolute bottom-0 left-0 right-[384px] h-16 flex items-stretch px-2 py-2 gap-2">
+      <div className="graphite absolute bottom-0 left-0 right-[360px] h-16 flex items-stretch px-2 py-2 gap-2">
         {[
           { key: 'F1', label: 'New Sale', onClick: () => clearSale(), disabled: false },
-          { key: 'F2', label: 'Search', onClick: () => searchRef.current?.focus(), disabled: false },
+          { key: 'F2', label: 'Search', onClick: () => openSearch(), disabled: false },
           { key: 'F3', label: 'Discount', onClick: () => {}, disabled: true },
           { key: 'F5', label: 'Drawer', onClick: () => window.api?.openCashDrawer?.(), disabled: false },
           { key: 'F8', label: 'Remove', onClick: () => selectedIndex >= 0 && removeItem(selectedIndex), disabled: selectedIndex < 0 },
@@ -343,7 +331,6 @@ export function POS() {
               clearSale()
               setShowPayment(false)
               setShowThankYou(true)
-              loadCatalogue() // refresh grid stock after the sale
             } catch (err: any) {
               console.error('Payment failed:', err)
               setPaymentError(err?.message || 'Payment failed. Please try again.')

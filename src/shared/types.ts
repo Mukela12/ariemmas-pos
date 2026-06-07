@@ -138,6 +138,8 @@ export interface CartItem {
   quantity: number
   line_total: number
   vat_amount: number
+  image_url?: string | null
+  image_filename?: string | null
 }
 
 export interface CompleteSaleInput {

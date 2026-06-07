@@ -41,7 +41,9 @@ export const useSaleStore = create<SaleState>((set, get) => ({
           vat_rate: vatRate,
           quantity: qty,
           line_total: lineTotal,
-          vat_amount: calcVat(lineTotal, vatRate)
+          vat_amount: calcVat(lineTotal, vatRate),
+          image_url: product.image_url,
+          image_filename: product.image_filename
         }
         return { items: [...state.items, newItem], selectedIndex: state.items.length }
       }
@@ -69,7 +71,9 @@ export const useSaleStore = create<SaleState>((set, get) => ({
         vat_rate: vatRate,
         quantity: 1,
         line_total: lineTotal,
-        vat_amount: calcVat(lineTotal, vatRate)
+        vat_amount: calcVat(lineTotal, vatRate),
+        image_url: product.image_url,
+        image_filename: product.image_filename
       }
       return { items: [...state.items, newItem], selectedIndex: state.items.length }
     })

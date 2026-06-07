@@ -1,4 +1,3 @@
-import type { Product } from '../../../shared/types'
 
 /** True when running inside the Electron desktop app (real preload present). */
 export const isElectron =
@@ -14,7 +13,7 @@ export const isElectron =
  * Returns null when the product has no image.
  */
 export function productImageSrc(
-  product: Pick<Product, 'image_filename' | 'image_url'>
+  product: { image_filename?: string | null; image_url?: string | null }
 ): string | null {
   // posimg:// only exists in Electron — never emit it on the web, where it
   // would render as a broken image.
