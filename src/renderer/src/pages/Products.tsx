@@ -57,13 +57,13 @@ function BarcodePreview({ value }: { value: string }) {
 
   if (!value) return null
   return (
-    <div className="bg-white border border-[#E4E4E7] rounded-[4px] p-3 flex items-center gap-3">
+    <div className="bg-white border border-[#E4E4E7] rounded-[2px] p-3 flex items-center gap-3">
       <svg ref={svgRef} className="flex-1" />
       <button
         type="button"
         onClick={handleDownload}
         disabled={!!error}
-        className="shrink-0 h-9 px-3 rounded-[4px] border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA] flex items-center gap-1.5 disabled:opacity-50"
+        className="shrink-0 h-9 px-3 rounded-[2px] border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA] flex items-center gap-1.5 disabled:opacity-50"
         title="Download as PNG"
       >
         <Download size={13} /> PNG
@@ -240,7 +240,7 @@ export function Products() {
     return 'In Stock'
   }
 
-  const inputClass = 'w-full h-10 px-3 rounded-[4px] border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]'
+  const inputClass = 'w-full h-10 px-3 rounded-[2px] border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]'
   const labelClass = 'block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5'
 
   return (
@@ -253,7 +253,7 @@ export function Products() {
         </div>
         <button
           onClick={openAddForm}
-          className="flex items-center gap-2 h-10 px-4 bg-[#0D9488] text-white rounded-[4px] text-sm font-medium hover:bg-[#0F766E]"
+          className="flex items-center gap-2 h-10 px-4 bg-[#0D9488] text-white rounded-[2px] text-sm font-medium hover:bg-[#0F766E]"
         >
           <Plus size={16} />
           Add Product
@@ -269,13 +269,13 @@ export function Products() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search products or scan barcode..."
-            className="w-full h-10 pl-9 pr-4 rounded-[4px] border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
+            className="w-full h-10 pl-9 pr-4 rounded-[2px] border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
           />
         </div>
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-3 py-1.5 rounded-[4px] text-xs font-medium ${
+            className={`px-3 py-1.5 rounded-[2px] text-xs font-medium ${
               selectedCategory === 'all'
                 ? 'bg-[#18181B] text-white'
                 : 'bg-[#F4F4F5] text-[#52525B] hover:bg-[#E4E4E7]'
@@ -287,7 +287,7 @@ export function Products() {
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3 py-1.5 rounded-[4px] text-xs font-medium ${
+              className={`px-3 py-1.5 rounded-[2px] text-xs font-medium ${
                 selectedCategory === cat.id
                   ? 'bg-[#18181B] text-white'
                   : 'bg-[#F4F4F5] text-[#52525B] hover:bg-[#E4E4E7]'
@@ -335,7 +335,7 @@ export function Products() {
                   >
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-[#F4F4F5] rounded-[4px] flex items-center justify-center overflow-hidden shrink-0">
+                        <div className="w-9 h-9 bg-[#F4F4F5] rounded-[2px] flex items-center justify-center overflow-hidden shrink-0">
                           {productImageSrc(product)
                             ? <img src={productImageSrc(product)!} alt="" className="w-full h-full object-cover" />
                             : <Package size={14} className="text-[#A1A1AA]" />}
@@ -354,7 +354,7 @@ export function Products() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs px-2 py-1 bg-[#F4F4F5] text-[#52525B] rounded-[4px]">
+                      <span className="text-xs px-2 py-1 bg-[#F4F4F5] text-[#52525B] rounded-[2px]">
                         {category?.name || 'Uncategorized'}
                       </span>
                     </td>
@@ -375,7 +375,7 @@ export function Products() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span
-                        className={`text-xs px-2 py-1 rounded-[4px] font-medium ${getStockColor(product.stock_quantity, product.min_stock_level)}`}
+                        className={`text-xs px-2 py-1 rounded-[2px] font-medium ${getStockColor(product.stock_quantity, product.min_stock_level)}`}
                       >
                         {getStockLabel(product.stock_quantity, product.min_stock_level)}
                       </span>
@@ -383,7 +383,7 @@ export function Products() {
                     <td className="px-6 py-3 text-right">
                       <button
                         onClick={() => openEditForm(product)}
-                        className="p-1.5 text-[#A1A1AA] hover:text-[#52525B] hover:bg-[#F4F4F5] rounded-[4px]"
+                        className="p-1.5 text-[#A1A1AA] hover:text-[#52525B] hover:bg-[#F4F4F5] rounded-[2px]"
                       >
                         <Edit2 size={14} />
                       </button>
@@ -406,7 +406,7 @@ export function Products() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1.5 text-xs font-medium rounded-[4px] border border-[#E4E4E7] text-[#52525B] hover:bg-[#F4F4F5] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 text-xs font-medium rounded-[2px] border border-[#E4E4E7] text-[#52525B] hover:bg-[#F4F4F5] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Previous
             </button>
@@ -416,7 +416,7 @@ export function Products() {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-3 py-1.5 text-xs font-medium rounded-[4px] border border-[#E4E4E7] text-[#52525B] hover:bg-[#F4F4F5] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 text-xs font-medium rounded-[2px] border border-[#E4E4E7] text-[#52525B] hover:bg-[#F4F4F5] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Next
             </button>
@@ -428,7 +428,7 @@ export function Products() {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowForm(false)} />
-          <div className="relative bg-white rounded-[6px] border border-[#E4E4E7] w-full max-w-lg mx-4 overflow-hidden flex flex-col max-h-[92vh]">
+          <div className="relative bg-white rounded-[3px] border border-[#E4E4E7] w-full max-w-lg mx-4 overflow-hidden flex flex-col max-h-[92vh]">
             <div className="graphite px-6 py-4 shrink-0">
               <h2 className="text-base font-semibold text-white">
                 {editingProduct ? 'Edit Product' : 'Add New Product'}
@@ -441,7 +441,7 @@ export function Products() {
               <div className="p-6 space-y-4 overflow-y-auto">
               {/* Image picker */}
               <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-[6px] border border-[#E4E4E7] bg-[#FAFAFA] overflow-hidden flex items-center justify-center shrink-0">
+                <div className="w-20 h-20 rounded-[3px] border border-[#E4E4E7] bg-[#FAFAFA] overflow-hidden flex items-center justify-center shrink-0">
                   {imagePreview
                     ? <img src={imagePreview} alt="" className="w-full h-full object-cover" />
                     : <Package size={24} className="text-[#D4D4D8]" />}
@@ -451,12 +451,12 @@ export function Products() {
                   <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImagePick} className="hidden" />
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={() => imageInputRef.current?.click()} disabled={imageBusy}
-                      className="h-9 px-3 rounded-[4px] border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA] flex items-center gap-1.5 disabled:opacity-50">
+                      className="h-9 px-3 rounded-[2px] border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA] flex items-center gap-1.5 disabled:opacity-50">
                       <ImagePlus size={14} /> {imageBusy ? 'Saving…' : imagePreview ? 'Change' : 'Upload image'}
                     </button>
                     {imagePreview && (
                       <button type="button" onClick={removeImage}
-                        className="h-9 px-3 rounded-[4px] border border-[#E4E4E7] bg-white text-xs font-medium text-[#DC2626] hover:bg-[#FEF2F2] flex items-center gap-1.5">
+                        className="h-9 px-3 rounded-[2px] border border-[#E4E4E7] bg-white text-xs font-medium text-[#DC2626] hover:bg-[#FEF2F2] flex items-center gap-1.5">
                         <XIcon size={14} /> Remove
                       </button>
                     )}
@@ -493,7 +493,7 @@ export function Products() {
                     <button
                       type="button"
                       onClick={() => setForm({ ...form, barcode: generateBarcodeValue() })}
-                      className="shrink-0 h-10 px-3 rounded-[4px] border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA] flex items-center gap-1.5"
+                      className="shrink-0 h-10 px-3 rounded-[2px] border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA] flex items-center gap-1.5"
                       title="Generate a new offline barcode"
                     >
                       <RefreshCw size={13} /> Generate
@@ -598,7 +598,7 @@ export function Products() {
                   </select>
                 </div>
                 <div className="col-span-2">
-                  <label className="flex items-center gap-2.5 py-2 px-3 rounded-[4px] border border-[#E4E4E7] cursor-pointer hover:bg-[#FAFAFA]">
+                  <label className="flex items-center gap-2.5 py-2 px-3 rounded-[2px] border border-[#E4E4E7] cursor-pointer hover:bg-[#FAFAFA]">
                     <input
                       type="checkbox"
                       checked={form.is_weighted}
@@ -617,13 +617,13 @@ export function Products() {
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="h-10 px-4 text-sm font-medium text-[#52525B] hover:bg-[#F4F4F5] rounded-[4px]"
+                  className="h-10 px-4 text-sm font-medium text-[#52525B] hover:bg-[#F4F4F5] rounded-[2px]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="h-10 px-5 bg-[#0D9488] text-white text-sm font-medium rounded-[4px] hover:bg-[#0F766E]"
+                  className="h-10 px-5 bg-[#0D9488] text-white text-sm font-medium rounded-[2px] hover:bg-[#0F766E]"
                 >
                   {editingProduct ? 'Update Product' : 'Add Product'}
                 </button>

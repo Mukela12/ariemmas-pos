@@ -6,17 +6,17 @@ interface NumberKeypadProps {
   onEnter?: () => void
   enterLabel?: string
   enterDisabled?: boolean
+  /** Colour of the tall enter key: 'pay' (green) or 'teal' */
+  enterTone?: 'pay' | 'teal'
   decimal?: boolean
   maxLength?: number
-  /** 'graphite' (black keys) or 'light' (white keys) */
-  variant?: 'graphite' | 'light'
 }
 
 /**
- * On-screen numeric keypad for the touchscreen till, so cashiers never have to
- * summon the Windows keyboard. Pure number entry — digits, optional decimal,
- * backspace and clear. The parent owns the value (a string) and decides what
- * the optional Enter key does.
+ * On-screen numeric keypad for the touchscreen till, so cashiers never need the
+ * Windows keyboard. Laid out like an enterprise POS: a 4-column grid with grey
+ * backspace + CLR utility keys down the right, and a tall coloured ENTER key
+ * that performs the screen's primary action (Pay / Add / Open shift).
  */
 export function NumberKeypad({
   value,
@@ -24,70 +24,73 @@ export function NumberKeypad({
   onEnter,
   enterLabel = 'Enter',
   enterDisabled = false,
+  enterTone = 'pay',
   decimal = true,
-  maxLength = 12,
-  variant = 'graphite'
+  maxLength = 12
 }: NumberKeypadProps) {
   const press = (digit: string) => {
-    if (digit === '.' ) {
+    if (digit === '.') {
       if (!decimal || value.includes('.')) return
       onChange(value === '' ? '0.' : value + '.')
       return
     }
     if (value.length >= maxLength) return
-    // avoid leading zeros like "00"
-    if (value === '0' && digit !== '.') { onChange(digit); return }
+    if (value === '0') { onChange(digit); return } // no leading zeros
     onChange(value + digit)
   }
   const backspace = () => onChange(value.slice(0, -1))
   const clear = () => onChange('')
 
-  const keyBase = variant === 'graphite'
-    ? 'keypad-key'
-    : 'bg-white border border-[#E4E4E7] rounded-[4px] text-[#18181B] font-semibold tabular-nums hover:bg-[#F4F4F5] active:bg-[#E4E4E7] active:translate-y-px transition select-none'
-
-  const Digit = ({ d }: { d: string }) => (
-    <button type="button" onClick={() => press(d)} className={`${keyBase} h-14 text-[22px]`}>
+  const Digit = ({ d, col, row, span }: { d: string; col: number; row: number; span?: number }) => (
+    <button
+      type="button"
+      onClick={() => press(d)}
+      style={{ gridColumn: span ? `${col} / span ${span}` : col, gridRow: row }}
+      className="keypad-key h-[52px] text-[22px]"
+    >
       {d}
     </button>
   )
 
+  const enterClass = enterTone === 'teal' ? 'btn-teal' : 'btn-pay'
+
   return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-3 gap-2">
-        {['7', '8', '9', '4', '5', '6', '1', '2', '3'].map((d) => <Digit key={d} d={d} />)}
-        <button
-          type="button"
-          onClick={() => press('.')}
-          disabled={!decimal}
-          className={`${keyBase} h-14 text-[22px] disabled:opacity-30`}
-        >
-          .
+    <div className="grid grid-cols-4 gap-2" style={{ gridTemplateRows: 'repeat(4, 52px)' }}>
+      <Digit d="7" col={1} row={1} /><Digit d="8" col={2} row={1} /><Digit d="9" col={3} row={1} />
+      <button type="button" onClick={backspace} aria-label="Backspace"
+        style={{ gridColumn: 4, gridRow: 1 }}
+        className="keypad-util flex items-center justify-center">
+        <Delete size={20} />
+      </button>
+
+      <Digit d="4" col={1} row={2} /><Digit d="5" col={2} row={2} /><Digit d="6" col={3} row={2} />
+      <button type="button" onClick={clear}
+        style={{ gridColumn: 4, gridRow: 2 }}
+        className="keypad-util text-[14px] font-bold uppercase tracking-wide">
+        CLR
+      </button>
+
+      <Digit d="1" col={1} row={3} /><Digit d="2" col={2} row={3} /><Digit d="3" col={3} row={3} />
+      {onEnter ? (
+        <button type="button" onClick={onEnter} disabled={enterDisabled}
+          style={{ gridColumn: 4, gridRow: '3 / span 2' }}
+          className={`${enterClass} flex flex-col items-center justify-center text-[14px] font-bold uppercase tracking-wide leading-tight`}>
+          {enterLabel}
         </button>
-        <Digit d="0" />
-        <button type="button" onClick={backspace} className={`${keyBase} h-14 flex items-center justify-center`} aria-label="Backspace">
-          <Delete size={22} />
+      ) : (
+        <button type="button" onClick={backspace} aria-label="Backspace"
+          style={{ gridColumn: 4, gridRow: '3 / span 2' }}
+          className="keypad-util flex items-center justify-center">
+          <Delete size={20} />
         </button>
-      </div>
-      <div className={onEnter ? 'grid grid-cols-2 gap-2' : ''}>
-        <button
-          type="button"
-          onClick={clear}
-          className={`${keyBase} h-12 text-[15px] uppercase tracking-wide`}
-        >
-          Clear
-        </button>
-        {onEnter && (
-          <button
-            type="button"
-            onClick={onEnter}
-            disabled={enterDisabled}
-            className="btn-pay h-12 text-[15px] uppercase tracking-wide"
-          >
-            {enterLabel}
-          </button>
-        )}
-      </div>
+      )}
+
+      <Digit d="0" col={1} row={4} span={2} />
+      <button type="button" onClick={() => press('.')} disabled={!decimal}
+        style={{ gridColumn: 3, gridRow: 4 }}
+        className="keypad-key text-[22px] disabled:opacity-30">
+        .
+      </button>
     </div>
   )
 }

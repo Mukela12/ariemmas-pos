@@ -185,5 +185,6 @@ export interface PrintableReceipt {
   changeGiven: number | null
   mobileRef: string | null
   cashierName: string
+  cashierPerson?: string | null
   printedAt: string
 }

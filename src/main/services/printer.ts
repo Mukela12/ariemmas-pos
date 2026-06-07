@@ -63,6 +63,7 @@ export function buildReceiptBytes(r: PrintableReceipt): Buffer {
   // Meta
   parts.push(lr('Receipt:', r.receiptNumber))
   parts.push(lr('Cashier:', r.cashierName))
+  if (r.cashierPerson) parts.push(lr('Served by:', r.cashierPerson))
   parts.push(lr('Printed:', timestamp))
   parts.push(divider())
 

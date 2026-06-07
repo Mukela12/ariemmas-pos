@@ -5,12 +5,14 @@ export function buildPrintableReceipt({
   sale,
   items,
   settings,
-  cashierName
+  cashierName,
+  cashierPerson
 }: {
   sale: Pick<Sale, 'receipt_number' | 'subtotal' | 'vat_total' | 'total' | 'payment_method' | 'amount_tendered' | 'change_given' | 'mobile_ref' | 'created_at'>
   items: CartItem[]
   settings: Record<string, string>
   cashierName: string
+  cashierPerson?: string | null
 }): PrintableReceipt {
   return {
     receiptNumber: sale.receipt_number,
@@ -34,6 +36,7 @@ export function buildPrintableReceipt({
     changeGiven: sale.change_given,
     mobileRef: sale.mobile_ref,
     cashierName,
+    cashierPerson: cashierPerson || null,
     printedAt: sale.created_at || new Date().toISOString()
   }
 }
@@ -177,7 +180,7 @@ function renderReceiptHtml(receipt: PrintableReceipt): string {
       <div class="rule"></div>
       <div class="meta">
         <div><strong>Receipt:</strong> ${escapeHtml(receipt.receiptNumber)}</div>
-        <div><strong>Cashier:</strong> ${escapeHtml(receipt.cashierName)}</div>
+        <div><strong>Cashier:</strong> ${escapeHtml(receipt.cashierName)}${receipt.cashierPerson ? ` (${escapeHtml(receipt.cashierPerson)})` : ''}</div>
         <div><strong>Printed:</strong> ${escapeHtml(timestamp)}</div>
       </div>
       <div class="rule"></div>

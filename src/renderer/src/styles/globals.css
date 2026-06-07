@@ -22,11 +22,15 @@
   --color-pay: #16A34A;
   --color-pay-hover: #15803D;
 
-  /* Graphite — the dark surface for the top bar, keypad keys, function buttons */
-  --color-graphite: #0B0B0D;
-  --color-graphite-2: #17171A;
-  --color-graphite-hover: #232327;
-  --color-graphite-line: #2A2A2E;
+  /* Graphite — a true charcoal grey (pencil-lead), NOT pure black.
+     Top bar uses --color-graphite; keypad/function keys sit a shade darker
+     (--color-graphite-2) so they read against the bar like the reference POS. */
+  --color-graphite: #26262B;
+  --color-graphite-2: #1A1A1E;
+  --color-graphite-hover: #34343B;
+  --color-graphite-line: #3A3A42;
+  --color-graphite-key: #1E1E22;
+  --color-graphite-key-hover: #2C2C33;
 
   /* Status — muted, professional */
   --color-success: #16A34A;
@@ -39,9 +43,9 @@
   --color-error-bg: #FEF2F2;
   --color-error-border: #FECACA;
 
-  /* Boxy radii — the new design language is rectangular, not pill-soft */
-  --radius-btn: 4px;
-  --radius-card: 6px;
+  /* Boxy radii — sharp rectangular edges like an enterprise till */
+  --radius-btn: 2px;
+  --radius-card: 3px;
 }
 
 @layer base {
@@ -86,10 +90,10 @@
   .graphite {
     background-color: var(--color-graphite);
     background-image:
-      linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 38%),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+      linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 42%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E");
     background-blend-mode: normal, soft-light;
-    background-size: auto, 160px 160px;
+    background-size: auto, 180px 180px;
   }
 
   /* Boxy buttons -------------------------------------------------- */
@@ -135,9 +139,9 @@
   }
   .btn-ghost:hover { background-color: var(--color-surface-alt); }
 
-  /* Keypad keys --------------------------------------------------- */
+  /* Keypad keys — near-black square keys like the reference till -------- */
   .keypad-key {
-    background-color: var(--color-graphite-2);
+    background-color: var(--color-graphite-key);
     color: #fff;
     border: 1px solid var(--color-graphite-line);
     border-radius: var(--radius-btn);
@@ -146,6 +150,18 @@
     transition: background-color .1s, transform .05s;
     user-select: none;
   }
-  .keypad-key:hover { background-color: var(--color-graphite-hover); }
-  .keypad-key:active { background-color: #08080a; transform: translateY(1px); }
+  .keypad-key:hover { background-color: var(--color-graphite-key-hover); }
+  .keypad-key:active { background-color: #111114; transform: translateY(1px); }
+  /* Grey utility key (CLR / backspace) — lighter than digit keys */
+  .keypad-util {
+    background-color: #3A3A42;
+    color: #fff;
+    border: 1px solid #4A4A52;
+    border-radius: var(--radius-btn);
+    font-weight: 600;
+    transition: background-color .1s, transform .05s;
+    user-select: none;
+  }
+  .keypad-util:hover { background-color: #45454E; }
+  .keypad-util:active { background-color: #303036; transform: translateY(1px); }
 }

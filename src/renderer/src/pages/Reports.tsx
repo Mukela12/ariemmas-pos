@@ -117,12 +117,12 @@ export function Reports() {
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="h-10 px-3 border border-[#E4E4E7] rounded-[4px] text-sm text-[#18181B] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
+            className="h-10 px-3 border border-[#E4E4E7] rounded-[2px] text-sm text-[#18181B] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
           />
           <button
             onClick={handleExport}
             disabled={isExporting}
-            className="h-10 px-4 bg-[#0D9488] text-white text-sm font-medium rounded-[4px] hover:bg-[#0F766E] disabled:opacity-50 flex items-center gap-2"
+            className="h-10 px-4 bg-[#0D9488] text-white text-sm font-medium rounded-[2px] hover:bg-[#0F766E] disabled:opacity-50 flex items-center gap-2"
           >
             <Download size={15} />
             {isExporting ? 'Exporting...' : 'Export Excel'}
@@ -143,10 +143,10 @@ export function Reports() {
               {stats.map((stat) => (
                 <div
                   key={stat.label}
-                  className="bg-white border border-[#E4E4E7] rounded-[4px] p-5"
+                  className="bg-white border border-[#E4E4E7] rounded-[2px] p-5"
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <div className="w-9 h-9 bg-[#F4F4F5] rounded-[4px] flex items-center justify-center">
+                    <div className="w-9 h-9 bg-[#F4F4F5] rounded-[2px] flex items-center justify-center">
                       <stat.icon size={18} className="text-[#71717A]" />
                     </div>
                   </div>
@@ -158,7 +158,7 @@ export function Reports() {
 
             {/* Payment Breakdown */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white border border-[#E4E4E7] rounded-[4px] p-5">
+              <div className="bg-white border border-[#E4E4E7] rounded-[2px] p-5">
                 <h3 className="text-sm font-semibold text-[#18181B] mb-4">Payment Methods</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -202,7 +202,7 @@ export function Reports() {
                 </div>
               </div>
 
-              <div className="bg-white border border-[#E4E4E7] rounded-[4px] p-5">
+              <div className="bg-white border border-[#E4E4E7] rounded-[2px] p-5">
                 <h3 className="text-sm font-semibold text-[#18181B] mb-4">Tax Summary</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between py-2">
@@ -229,7 +229,7 @@ export function Reports() {
 
             {/* Per-cashier breakdown */}
             {data && data.total_sales > 0 && data.by_cashier && data.by_cashier.length > 0 && (
-              <div className="bg-white border border-[#E4E4E7] rounded-[4px] overflow-hidden">
+              <div className="bg-white border border-[#E4E4E7] rounded-[2px] overflow-hidden">
                 <div className="flex items-center gap-2 px-5 py-3 border-b border-[#E4E4E7]">
                   <Users size={16} className="text-[#71717A]" />
                   <h3 className="text-sm font-semibold text-[#18181B]">By cashier</h3>
@@ -251,7 +251,7 @@ export function Reports() {
 
             {/* Per-terminal breakdown */}
             {data && data.by_terminal && data.by_terminal.length > 1 && (
-              <div className="bg-white border border-[#E4E4E7] rounded-[4px] overflow-hidden">
+              <div className="bg-white border border-[#E4E4E7] rounded-[2px] overflow-hidden">
                 <div className="flex items-center gap-2 px-5 py-3 border-b border-[#E4E4E7]">
                   <Monitor size={16} className="text-[#71717A]" />
                   <h3 className="text-sm font-semibold text-[#18181B]">By terminal</h3>
@@ -272,7 +272,7 @@ export function Reports() {
 
             {/* Transactions list */}
             {data && data.transactions && data.transactions.length > 0 && (
-              <div className="bg-white border border-[#E4E4E7] rounded-[4px] overflow-hidden">
+              <div className="bg-white border border-[#E4E4E7] rounded-[2px] overflow-hidden">
                 <div className="flex items-center gap-2 px-5 py-3 border-b border-[#E4E4E7]">
                   <Receipt size={16} className="text-[#71717A]" />
                   <h3 className="text-sm font-semibold text-[#18181B]">Transactions</h3>
@@ -299,8 +299,8 @@ export function Reports() {
 
             {/* Empty state for no sales */}
             {data && data.total_sales === 0 && (
-              <div className="bg-white border border-[#E4E4E7] rounded-[4px] p-12 text-center">
-                <div className="w-16 h-16 bg-[#F4F4F5] rounded-[4px] flex items-center justify-center mx-auto mb-4">
+              <div className="bg-white border border-[#E4E4E7] rounded-[2px] p-12 text-center">
+                <div className="w-16 h-16 bg-[#F4F4F5] rounded-[2px] flex items-center justify-center mx-auto mb-4">
                   <BarChart3 size={28} className="text-[#A1A1AA]" />
                 </div>
                 <p className="text-sm font-medium text-[#18181B]">No sales recorded</p>

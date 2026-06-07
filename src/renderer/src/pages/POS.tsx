@@ -119,20 +119,20 @@ export function POS() {
             onKeyDown={handleSearchKeyDown}
             onFocus={() => searchQuery.length >= 2 && setShowSearch(true)}
             placeholder="Search products or scan barcode..."
-            className="w-full h-12 pl-10 pr-16 rounded-[6px] bg-white border border-[#E4E4E7] text-[15px] text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
+            className="w-full h-12 pl-10 pr-16 rounded-[3px] bg-white border border-[#E4E4E7] text-[15px] text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
           />
           <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 text-[11px] font-medium text-[#A1A1AA] bg-[#F4F4F5] rounded border border-[#E4E4E7]">F2</kbd>
 
           {/* Search dropdown */}
           {showSearch && searchResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-[6px] border border-[#E4E4E7] shadow-lg z-50 max-h-[320px] overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-[3px] border border-[#E4E4E7] shadow-lg z-50 max-h-[320px] overflow-y-auto">
               {searchResults.map((product) => (
                 <button
                   key={product.id}
                   onClick={() => handleSearchSelect(product)}
                   className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#F0FDFA] text-left border-b border-[#F4F4F5] last:border-0"
                 >
-                  <div className="w-9 h-9 rounded-[4px] bg-[#F4F4F5] overflow-hidden flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-[2px] bg-[#F4F4F5] overflow-hidden flex items-center justify-center shrink-0">
                     {productImageSrc(product)
                       ? <img src={productImageSrc(product)!} alt="" className="w-full h-full object-cover" />
                       : <ShoppingBag size={15} className="text-[#D4D4D8]" />}
@@ -149,7 +149,7 @@ export function POS() {
         </div>
 
         {/* Cart table */}
-        <div className="flex-1 bg-white border border-[#E4E4E7] rounded-[6px] overflow-hidden flex flex-col">
+        <div className="flex-1 bg-white border border-[#E4E4E7] rounded-[3px] overflow-hidden flex flex-col">
           {/* Header */}
           <div className="grid grid-cols-[36px_1fr_120px_100px_110px_40px] gap-2 px-4 h-10 items-center bg-[#FAFAFA] border-b border-[#E4E4E7] text-xs font-semibold text-[#71717A] uppercase tracking-[0.04em]">
             <span>#</span><span>Item</span><span>Qty</span><span className="text-right">Price</span><span className="text-right">Total</span><span></span>
@@ -179,19 +179,19 @@ export function POS() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <button onClick={(e) => { e.stopPropagation(); updateQuantity(index, item.quantity - 1) }}
-                      className="w-8 h-8 rounded-[4px] border border-[#E4E4E7] bg-white flex items-center justify-center text-[#52525B] hover:bg-[#F4F4F5] active:bg-[#E4E4E7]">
+                      className="w-8 h-8 rounded-[2px] border border-[#E4E4E7] bg-white flex items-center justify-center text-[#52525B] hover:bg-[#F4F4F5] active:bg-[#E4E4E7]">
                       <Minus size={14} />
                     </button>
                     <span className="w-7 text-center font-semibold tabular-nums text-[#18181B] text-[15px]">{item.quantity}</span>
                     <button onClick={(e) => { e.stopPropagation(); updateQuantity(index, item.quantity + 1) }}
-                      className="w-8 h-8 rounded-[4px] border border-[#E4E4E7] bg-white flex items-center justify-center text-[#52525B] hover:bg-[#F4F4F5] active:bg-[#E4E4E7]">
+                      className="w-8 h-8 rounded-[2px] border border-[#E4E4E7] bg-white flex items-center justify-center text-[#52525B] hover:bg-[#F4F4F5] active:bg-[#E4E4E7]">
                       <Plus size={14} />
                     </button>
                   </div>
                   <span className="text-right text-[#52525B] tabular-nums">{formatZMW(item.price)}</span>
                   <span className="text-right font-semibold text-[#18181B] tabular-nums">{formatZMW(item.line_total)}</span>
                   <button onClick={(e) => { e.stopPropagation(); removeItem(index) }}
-                    className="w-8 h-8 rounded-[4px] flex items-center justify-center text-[#A1A1AA] hover:text-[#DC2626] hover:bg-[#FEF2F2]">
+                    className="w-8 h-8 rounded-[2px] flex items-center justify-center text-[#A1A1AA] hover:text-[#DC2626] hover:bg-[#FEF2F2]">
                     <X size={15} />
                   </button>
                 </div>
@@ -262,13 +262,13 @@ export function POS() {
             <button
               onClick={() => items.length > 0 && currentShift && setShowPayment(true)}
               disabled={items.length === 0 || !currentShift}
-              className="w-full h-14 rounded-[6px] bg-[#0D9488] text-white text-base font-semibold hover:bg-[#0F766E] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
+              className="w-full h-14 rounded-[3px] bg-[#0D9488] text-white text-base font-semibold hover:bg-[#0F766E] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
             >
               {!currentShift && items.length > 0 ? 'Open a Shift First' : `Pay ${formatZMW(total)}`}
             </button>
             {items.length > 0 && (
               <button onClick={() => clearSale()}
-                className="w-full h-10 rounded-[6px] border border-[#E4E4E7] text-sm text-[#71717A] hover:bg-[#FAFAFA] hover:text-[#52525B]">
+                className="w-full h-10 rounded-[3px] border border-[#E4E4E7] text-sm text-[#71717A] hover:bg-[#FAFAFA] hover:text-[#52525B]">
                 Clear Sale
               </button>
             )}
@@ -286,7 +286,7 @@ export function POS() {
           { key: 'F8', label: 'Remove' },
           { key: 'F12', label: 'Pay' }
         ].map(f => (
-          <div key={f.key} className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[#71717A] rounded-[4px] hover:bg-[#F4F4F5] cursor-default">
+          <div key={f.key} className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[#71717A] rounded-[2px] hover:bg-[#F4F4F5] cursor-default">
             <kbd className="text-[11px] font-semibold text-[#52525B] bg-[#F4F4F5] px-2 py-0.5 rounded border border-[#E4E4E7]">{f.key}</kbd>
             {f.label}
           </div>
@@ -331,7 +331,8 @@ export function POS() {
                 sale: completedSale,
                 items: saleItems,
                 settings,
-                cashierName: user?.display_name || 'Cashier'
+                cashierName: user?.display_name || 'Cashier',
+                cashierPerson: currentShift?.cashier_name || null
               })
 
               try { await window.api.printReceipt(receipt) } catch {}
@@ -395,13 +396,13 @@ function WeightModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
-      <div className="relative bg-white rounded-[6px] border border-[#E4E4E7] w-full max-w-[380px] mx-4 overflow-y-auto max-h-[96vh] shadow-xl">
+      <div className="relative bg-white rounded-[3px] border border-[#E4E4E7] w-full max-w-[380px] mx-4 overflow-y-auto max-h-[96vh] shadow-xl">
         <div className="graphite px-5 py-3.5 flex items-center justify-between">
           <div>
             <h2 className="text-[15px] font-semibold text-white">Weigh item</h2>
             <p className="text-[12px] text-white/55 mt-0.5">{product.name} &middot; {formatZMW(product.price)} per kg</p>
           </div>
-          <button onClick={onCancel} className="w-7 h-7 rounded-[4px] flex items-center justify-center text-white/55 hover:text-white hover:bg-white/10">
+          <button onClick={onCancel} className="w-7 h-7 rounded-[2px] flex items-center justify-center text-white/55 hover:text-white hover:bg-white/10">
             <X size={16} />
           </button>
         </div>
@@ -409,12 +410,12 @@ function WeightModal({
           {/* Weight display */}
           <div>
             <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Weight (kg) — from the scale</label>
-            <div className="w-full h-14 px-4 rounded-[4px] border border-[#E4E4E7] bg-[#FAFAFA] flex items-center justify-end text-[30px] font-bold tabular-nums text-[#18181B]">
+            <div className="w-full h-14 px-4 rounded-[2px] border border-[#E4E4E7] bg-[#FAFAFA] flex items-center justify-end text-[30px] font-bold tabular-nums text-[#18181B]">
               {value || <span className="text-[#D4D4D8]">0.000</span>}
             </div>
           </div>
           {/* Line total */}
-          <div className="flex items-center justify-between px-4 py-2.5 rounded-[4px] bg-[#F0FDFA] border border-[#99F6E4]">
+          <div className="flex items-center justify-between px-4 py-2.5 rounded-[2px] bg-[#F0FDFA] border border-[#99F6E4]">
             <span className="text-[13px] font-semibold text-[#0D9488]">Line total</span>
             <span className="text-[20px] font-bold text-[#0D9488] tabular-nums">{formatZMW(total)}</span>
           </div>
@@ -423,7 +424,8 @@ function WeightModal({
             value={value}
             onChange={setValue}
             onEnter={() => { if (canConfirm) onConfirm(weight) }}
-            enterLabel="Add to cart"
+            enterLabel="ADD"
+            enterTone="teal"
             enterDisabled={!canConfirm}
             decimal
             maxLength={7}
@@ -474,12 +476,12 @@ function PaymentModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-[420px] bg-white rounded-[6px] shadow-xl overflow-y-auto max-h-[96vh]" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-[420px] bg-white rounded-[3px] shadow-xl overflow-y-auto max-h-[96vh]" onClick={(e) => e.stopPropagation()}>
         {/* Header — graphite */}
         <div className="graphite px-5 py-4">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-[15px] font-semibold text-white">Payment</h2>
-            <button onClick={onClose} className="w-7 h-7 rounded-[4px] hover:bg-white/10 flex items-center justify-center text-white/55 hover:text-white">
+            <button onClick={onClose} className="w-7 h-7 rounded-[2px] hover:bg-white/10 flex items-center justify-center text-white/55 hover:text-white">
               <X size={16} />
             </button>
           </div>
@@ -491,14 +493,14 @@ function PaymentModal({
 
         {/* Error banner */}
         {error && (
-          <div className="mx-5 mt-3 px-3 py-2 bg-[#FEF2F2] border border-[#FECACA] rounded-[4px]">
+          <div className="mx-5 mt-3 px-3 py-2 bg-[#FEF2F2] border border-[#FECACA] rounded-[2px]">
             <p className="text-[13px] text-[#DC2626]">{error}</p>
           </div>
         )}
 
         {/* Method toggle */}
         <div className="px-5 pt-4">
-          <div className="flex gap-1 p-1 bg-[#F4F4F5] rounded-[4px]">
+          <div className="flex gap-1 p-1 bg-[#F4F4F5] rounded-[2px]">
             <button onClick={() => setMethod('cash')}
               className={`flex-1 h-9 rounded-[3px] text-[13px] font-semibold flex items-center justify-center gap-1.5 ${
                 method === 'cash' ? 'bg-white text-[#18181B] shadow-sm' : 'text-[#71717A]'
@@ -520,7 +522,7 @@ function PaymentModal({
             <>
               <div>
                 <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Cash Received</label>
-                <div className="w-full h-14 px-4 rounded-[4px] border border-[#E4E4E7] bg-[#FAFAFA] flex items-center justify-end gap-1 text-[28px] font-bold text-[#18181B] tabular-nums">
+                <div className="w-full h-14 px-4 rounded-[2px] border border-[#E4E4E7] bg-[#FAFAFA] flex items-center justify-end gap-1 text-[28px] font-bold text-[#18181B] tabular-nums">
                   <span className="text-[16px] text-[#A1A1AA] font-semibold">K</span>
                   {cashAmount || <span className="text-[#D4D4D8]">0.00</span>}
                 </div>
@@ -528,13 +530,13 @@ function PaymentModal({
               <div className="flex gap-2">
                 {quickAmounts.map((amount) => (
                   <button key={amount} onClick={() => setCashAmount(String(amount))}
-                    className="flex-1 h-10 rounded-[4px] bg-[#F4F4F5] border border-[#E4E4E7] text-[14px] font-semibold text-[#52525B] tabular-nums hover:bg-[#E4E4E7]">
+                    className="flex-1 h-10 rounded-[2px] bg-[#F4F4F5] border border-[#E4E4E7] text-[14px] font-semibold text-[#52525B] tabular-nums hover:bg-[#E4E4E7]">
                     K {amount}
                   </button>
                 ))}
               </div>
               {tendered > 0 && (
-                <div className={`px-4 py-2.5 rounded-[4px] border ${
+                <div className={`px-4 py-2.5 rounded-[2px] border ${
                   change >= 0 ? 'bg-[#F0FDF4] border-[#BBF7D0]' : 'bg-[#FEF2F2] border-[#FECACA]'
                 }`}>
                   <div className="flex justify-between items-center">
@@ -552,7 +554,8 @@ function PaymentModal({
                 value={cashAmount}
                 onChange={setCashAmount}
                 onEnter={handlePay}
-                enterLabel={processing ? 'Processing…' : `Pay ${formatZMW(total)}`}
+                enterLabel={processing ? '…' : 'PAY'}
+                enterTone="pay"
                 enterDisabled={!canPay || processing}
                 decimal
                 maxLength={9}
@@ -566,7 +569,7 @@ function PaymentModal({
                   onChange={(e) => setMobileRef(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && canPay) handlePay() }}
                   placeholder="Enter mobile money reference"
-                  className="w-full h-11 px-3 rounded-[4px] border border-[#E4E4E7] text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
+                  className="w-full h-11 px-3 rounded-[2px] border border-[#E4E4E7] text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
                   autoFocus
                 />
               </div>

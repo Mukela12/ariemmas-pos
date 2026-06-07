@@ -68,7 +68,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`px-4 py-2 text-sm font-medium rounded-[4px] transition-colors ${
+                className={`px-4 py-2 text-sm font-medium rounded-[2px] transition-colors ${
                   isActive
                     ? 'bg-white/[0.12] text-white'
                     : 'text-white/55 hover:text-white hover:bg-white/[0.06]'
@@ -92,16 +92,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Right side */}
         <div className="ml-auto flex items-center gap-2.5">
-          {/* Shift indicator — clickable. Colors unchanged (teal / amber). */}
+          {/* Shift indicator — clickable. Solid boxy chip integrated into the
+              graphite bar; teal when open / amber when closed (colors unchanged). */}
           <button
             onClick={() => setShowShiftModal(true)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] text-xs font-semibold transition-colors ${
+            className={`flex items-center gap-2 px-3 h-8 rounded-[2px] text-xs font-semibold text-white transition-colors ${
               currentShift
-                ? 'bg-[#F0FDFA] text-[#0D9488] border border-[#99F6E4] hover:bg-[#CCFBF1]'
-                : 'bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] hover:bg-[#FEF3C7]'
+                ? 'bg-[#0D9488] hover:bg-[#0F766E]'
+                : 'bg-[#D97706] hover:bg-[#B45309]'
             }`}
           >
-            <div className={`w-2 h-2 rounded-full ${currentShift ? 'bg-[#0D9488]' : 'bg-[#D97706] animate-pulse'}`} />
+            <div className={`w-1.5 h-1.5 rounded-full bg-white/90 ${currentShift ? '' : 'animate-pulse'}`} />
             {currentShift ? 'Shift Open' : 'No Shift'}
           </button>
 
@@ -109,7 +110,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {syncStatus && (
             <button
               onClick={() => window.api?.syncNow?.()}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[4px] text-xs font-medium transition-colors ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[2px] text-xs font-medium transition-colors ${
                 syncStatus.isOnline
                   ? syncStatus.pending > 0
                     ? 'text-[#FBBF24] bg-white/[0.06] border border-white/10'
@@ -143,7 +144,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {/* Logout */}
           <button
             onClick={handleLogout}
-            className="w-8 h-8 rounded-[4px] flex items-center justify-center text-white/55 hover:text-white hover:bg-white/[0.1] transition-colors"
+            className="w-8 h-8 rounded-[2px] flex items-center justify-center text-white/55 hover:text-white hover:bg-white/[0.1] transition-colors"
             title="Sign out"
           >
             <LogOut size={16} />
@@ -185,8 +186,8 @@ function ShiftModal({
   const [openingLimit, setOpeningLimit] = useState(1000)
   const [error, setError] = useState<string | null>(null)
 
-  const inputClass = 'w-full h-11 px-3 rounded-[4px] border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]'
-  const cashDisplayClass = 'w-full h-12 px-4 rounded-[4px] border border-[#E4E4E7] bg-[#FAFAFA] flex items-center justify-end gap-1 text-[24px] font-bold text-[#18181B] tabular-nums'
+  const inputClass = 'w-full h-11 px-3 rounded-[2px] border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]'
+  const cashDisplayClass = 'w-full h-12 px-4 rounded-[2px] border border-[#E4E4E7] bg-[#FAFAFA] flex items-center justify-end gap-1 text-[24px] font-bold text-[#18181B] tabular-nums'
 
   useEffect(() => {
     let isActive = true
@@ -249,12 +250,12 @@ function ShiftModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-[380px] bg-white rounded-[6px] shadow-xl overflow-y-auto max-h-[96vh]" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-[380px] bg-white rounded-[3px] shadow-xl overflow-y-auto max-h-[96vh]" onClick={(e) => e.stopPropagation()}>
         <div className="graphite px-5 py-3.5 flex items-center justify-between">
           <h2 className="text-[15px] font-semibold text-white">
             {shift ? 'Close Shift' : 'Open Shift'}
           </h2>
-          <button onClick={onClose} className="w-7 h-7 rounded-[4px] hover:bg-white/10 flex items-center justify-center text-white/55 hover:text-white">
+          <button onClick={onClose} className="w-7 h-7 rounded-[2px] hover:bg-white/10 flex items-center justify-center text-white/55 hover:text-white">
             <X size={16} />
           </button>
         </div>
@@ -262,7 +263,7 @@ function ShiftModal({
         <div className="p-5 space-y-3">
           {shift ? (
             <>
-              <div className="p-3 bg-[#F4F4F5] rounded-[4px] space-y-1.5 text-[13px]">
+              <div className="p-3 bg-[#F4F4F5] rounded-[2px] space-y-1.5 text-[13px]">
                 <div className="flex justify-between">
                   <span className="text-[#71717A]">Opening Cash</span>
                   <span className="text-[#18181B] font-medium tabular-nums">{formatZMW(shift.opening_cash)}</span>
@@ -288,7 +289,7 @@ function ShiftModal({
                 </div>
               </div>
               {error && (
-                <div className="px-3 py-2 bg-[#FEF2F2] border border-[#FECACA] rounded-[4px]">
+                <div className="px-3 py-2 bg-[#FEF2F2] border border-[#FECACA] rounded-[2px]">
                   <p className="text-[13px] text-[#DC2626]">{error}</p>
                 </div>
               )}
@@ -296,7 +297,8 @@ function ShiftModal({
                 value={closingCash}
                 onChange={setClosingCash}
                 onEnter={handleClose}
-                enterLabel={isSubmitting ? 'Closing…' : 'Close Shift'}
+                enterLabel={isSubmitting ? '…' : 'CLOSE'}
+                enterTone="teal"
                 enterDisabled={isSubmitting}
                 decimal
                 maxLength={9}
@@ -323,7 +325,7 @@ function ShiftModal({
                 </div>
               </div>
               {error && (
-                <div className="px-3 py-2 bg-[#FEF2F2] border border-[#FECACA] rounded-[4px]">
+                <div className="px-3 py-2 bg-[#FEF2F2] border border-[#FECACA] rounded-[2px]">
                   <p className="text-[13px] text-[#DC2626]">{error}</p>
                 </div>
               )}
@@ -331,7 +333,8 @@ function ShiftModal({
                 value={openingCash}
                 onChange={(v) => { setOpeningCash(v); setError(null) }}
                 onEnter={handleOpen}
-                enterLabel={isSubmitting ? 'Opening…' : 'Open Shift'}
+                enterLabel={isSubmitting ? '…' : 'OPEN'}
+                enterTone="teal"
                 enterDisabled={isSubmitting}
                 decimal
                 maxLength={9}
