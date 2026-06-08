@@ -21,6 +21,10 @@ async function json<T>(path: string, opts?: RequestInit): Promise<T> {
 }
 
 let sessionUser: any = null
+// Held in memory only (a page reload forces re-login on web). Sent with each
+// cashier-management call so the SERVER re-verifies the admin's PIN — PINs are
+// never exposed on the public API without valid admin credentials.
+let adminCreds: { username: string; pin: string } | null = null
 
 export const webApi = {
   // Auth
@@ -30,10 +34,29 @@ export const webApi = {
       body: JSON.stringify({ username, pin })
     })
     sessionUser = user
+    adminCreds = user && (user.role === 'admin' || user.role === 'manager') ? { username, pin } : null
     return user
   },
-  logout: async () => { sessionUser = null },
+  logout: async () => { sessionUser = null; adminCreds = null },
   getCurrentUser: async () => sessionUser,
+
+  // Admin cashier management — every call re-authenticates the admin server-side
+  listUsers: async () => {
+    if (!adminCreds) throw new Error('Sign in as an admin to manage cashiers.')
+    return json<any[]>('/api/admin/users', { method: 'POST', body: JSON.stringify(adminCreds) })
+  },
+  setUserPin: async (userId: string, newPin: string) => {
+    if (!adminCreds) return { ok: false, error: 'Sign in as an admin to manage cashiers.' }
+    return json<any>('/api/admin/users/setpin', { method: 'POST', body: JSON.stringify({ ...adminCreds, targetId: userId, newPin }) })
+  },
+  createCashier: async (username: string, displayName: string, pin: string) => {
+    if (!adminCreds) return { ok: false, error: 'Sign in as an admin to manage cashiers.' }
+    return json<any>('/api/admin/users/create', { method: 'POST', body: JSON.stringify({ ...adminCreds, newUsername: username, displayName, newPin: pin }) })
+  },
+  renameUser: async (userId: string, displayName: string) => {
+    if (!adminCreds) return { ok: false, error: 'Sign in as an admin to manage cashiers.' }
+    return json<any>('/api/admin/users/rename', { method: 'POST', body: JSON.stringify({ ...adminCreds, targetId: userId, displayName }) })
+  },
 
   // Products
   getProductByBarcode: async (barcode: string) =>

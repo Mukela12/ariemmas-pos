@@ -9,11 +9,11 @@ import { OnScreenKeyboard } from './OnScreenKeyboard'
 import logoUrl from '../assets/logo.png'
 
 const NAV_ITEMS = [
-  { path: '/', label: 'Sale', roles: ['cashier', 'manager', 'admin'], desktopOnly: false },
-  { path: '/products', label: 'Products', roles: ['manager', 'admin'], desktopOnly: false },
-  { path: '/cashiers', label: 'Cashiers', roles: ['admin'], desktopOnly: true },
-  { path: '/reports', label: 'Reports', roles: ['manager', 'admin'], desktopOnly: false },
-  { path: '/settings', label: 'Settings', roles: ['admin'], desktopOnly: false }
+  { path: '/', label: 'Sale', roles: ['cashier', 'manager', 'admin'], needsUserMgmt: false },
+  { path: '/products', label: 'Products', roles: ['manager', 'admin'], needsUserMgmt: false },
+  { path: '/cashiers', label: 'Cashiers', roles: ['admin'], needsUserMgmt: true },
+  { path: '/reports', label: 'Reports', roles: ['manager', 'admin'], needsUserMgmt: false },
+  { path: '/settings', label: 'Settings', roles: ['admin'], needsUserMgmt: false }
 ]
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -48,11 +48,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     navigate('/login')
   }
 
-  // Cashier management is desktop-only (it reads/writes local PINs); hide it on
-  // the web build where window.api.listUsers isn't exposed.
+  // Cashier management needs the user-admin API (present on desktop via IPC and
+  // on web via webApiClient); hide the tab if it's somehow unavailable.
   const canManageUsers = typeof window.api?.listUsers === 'function'
   const visibleNav = NAV_ITEMS.filter((item) =>
-    item.roles.includes(user?.role || 'cashier') && (!item.desktopOnly || canManageUsers)
+    item.roles.includes(user?.role || 'cashier') && (!item.needsUserMgmt || canManageUsers)
   )
 
   return (
@@ -66,7 +66,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Nav tabs */}
-        <nav className="flex items-center gap-1">
+        <nav className="flex items-center gap-1 shrink-0">
           {visibleNav.map((item) => {
             const isActive = location.pathname === item.path
             return (
@@ -85,18 +85,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Center — Clock (no icon, white text) */}
-        <div className="absolute left-1/2 -translate-x-1/2 flex items-baseline gap-2">
-          <span className="text-lg font-semibold text-white tabular-nums tracking-tight">
+        {/* Center — Clock (in normal flow so it can't overlap the nav). It fills
+            the gap between the nav and the controls and stays centered there;
+            on a narrow / minimized window it hides instead of colliding. */}
+        <div className="flex-1 flex justify-center items-baseline gap-2 min-w-0 overflow-hidden px-2">
+          <span className="hidden lg:inline text-lg font-semibold text-white tabular-nums tracking-tight whitespace-nowrap">
             {time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </span>
-          <span className="text-xs text-white/45 font-medium">
+          <span className="hidden lg:inline text-xs text-white/45 font-medium whitespace-nowrap">
             {time.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
           </span>
         </div>
 
         {/* Right side */}
-        <div className="ml-auto flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 shrink-0">
           {/* Shift indicator — clickable. Solid boxy chip integrated into the
               graphite bar; teal when open / amber when closed (colors unchanged). */}
           <button

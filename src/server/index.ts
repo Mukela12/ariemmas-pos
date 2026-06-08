@@ -266,6 +266,53 @@ app.post('/api/auth/login', async (req, res) => {
   res.json({ id: user.id, username: user.username, display_name: user.display_name, role: user.role, active: user.active })
 })
 
+// --- Admin cashier management (web) ---
+// Every endpoint re-verifies the caller's admin PIN, so cashier PINs are never
+// readable or changeable over the public API without valid admin credentials.
+async function verifyAdminCreds(username: string, pin: string): Promise<boolean> {
+  if (!username || !pin) return false
+  const u = await db.queryOne<any>('SELECT * FROM users WHERE username = $1 AND active = 1', [username])
+  if (!u || (u.role !== 'admin' && u.role !== 'manager')) return false
+  return bcrypt.compareSync(pin, u.pin_hash)
+}
+
+app.post('/api/admin/users', async (req, res) => {
+  const { username, pin } = req.body || {}
+  if (!(await verifyAdminCreds(username, pin))) return res.status(403).json({ error: 'Admin authentication failed.' })
+  const rows = await db.query<any>('SELECT id, username, display_name, pin_plain, role FROM users WHERE active = 1 ORDER BY role DESC, username')
+  res.json(rows.map((r) => ({ id: r.id, username: r.username, display_name: r.display_name, pin: r.pin_plain, role: r.role })))
+})
+
+app.post('/api/admin/users/setpin', async (req, res) => {
+  const { username, pin, targetId, newPin } = req.body || {}
+  if (!(await verifyAdminCreds(username, pin))) return res.status(403).json({ error: 'Admin authentication failed.' })
+  if (!/^\d{4,6}$/.test(newPin || '')) return res.json({ ok: false, error: 'PIN must be 4 to 6 digits.' })
+  const hash = bcrypt.hashSync(newPin, 10)
+  await db.run('UPDATE users SET pin_hash = $1, pin_plain = $2, failed_attempts = 0, locked_until = NULL WHERE id = $3', [hash, newPin, targetId])
+  res.json({ ok: true })
+})
+
+app.post('/api/admin/users/create', async (req, res) => {
+  const { username, pin, newUsername, displayName, newPin } = req.body || {}
+  if (!(await verifyAdminCreds(username, pin))) return res.status(403).json({ error: 'Admin authentication failed.' })
+  const uname = String(newUsername || '').trim().toLowerCase()
+  if (!/^[a-z0-9]{3,20}$/.test(uname)) return res.json({ ok: false, error: 'Username must be 3–20 letters/numbers.' })
+  if (!String(displayName || '').trim()) return res.json({ ok: false, error: 'Name cannot be empty.' })
+  if (!/^\d{4,6}$/.test(newPin || '')) return res.json({ ok: false, error: 'PIN must be 4 to 6 digits.' })
+  if (await db.queryOne('SELECT id FROM users WHERE username = $1', [uname])) return res.json({ ok: false, error: 'That username is already taken.' })
+  const hash = bcrypt.hashSync(newPin, 10)
+  await db.run("INSERT INTO users (id, username, display_name, pin_hash, pin_plain, role, active) VALUES ($1,$2,$3,$4,$5,'cashier',1)", [uuid(), uname, String(displayName).trim(), hash, newPin])
+  res.json({ ok: true })
+})
+
+app.post('/api/admin/users/rename', async (req, res) => {
+  const { username, pin, targetId, displayName } = req.body || {}
+  if (!(await verifyAdminCreds(username, pin))) return res.status(403).json({ error: 'Admin authentication failed.' })
+  if (!String(displayName || '').trim()) return res.json({ ok: false, error: 'Name cannot be empty.' })
+  await db.run('UPDATE users SET display_name = $1 WHERE id = $2', [String(displayName).trim(), targetId])
+  res.json({ ok: true })
+})
+
 // --- Products ---
 app.get('/api/products', async (req, res) => {
   const page = parseInt(req.query.page as string) || 1
