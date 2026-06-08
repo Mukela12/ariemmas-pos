@@ -3,6 +3,7 @@ import { Package, Plus, Search, Edit2, Download, RefreshCw, ImagePlus, X as XIco
 import JsBarcode from 'jsbarcode'
 import { formatZMW, formatStock } from '../lib/currency'
 import { productImageSrc, fileToDataUrl, uploadToCloudinary, isElectron } from '../lib/productImage'
+import { TouchInput } from '../components/TouchInput'
 import type { Product, Category } from '../../../shared/types'
 
 function generateBarcodeValue(): string {
@@ -101,6 +102,7 @@ export function Products() {
   })
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [imageBusy, setImageBusy] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -138,6 +140,7 @@ export function Products() {
       image_url: ''
     })
     setImagePreview(null)
+    setFormError(null)
     setShowForm(true)
   }
 
@@ -158,6 +161,7 @@ export function Products() {
       image_url: product.image_url || ''
     })
     setImagePreview(productImageSrc(product))
+    setFormError(null)
     setShowForm(true)
   }
 
@@ -192,6 +196,11 @@ export function Products() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    // Validate here since the touch fields are buttons (no HTML `required`).
+    const priceNum = parseFloat(form.price)
+    if (!form.name.trim()) { setFormError('Please enter a product name.'); return }
+    if (!form.price || isNaN(priceNum) || priceNum < 0) { setFormError('Please enter a valid selling price.'); return }
+    setFormError(null)
     const data: Partial<Product> = {
       name: form.name,
       barcode: form.barcode || undefined,
@@ -263,13 +272,12 @@ export function Products() {
       {/* Filters */}
       <div className="px-6 py-3 flex items-center gap-3 border-b border-[#F4F4F5]">
         <div className="relative flex-1 max-w-md">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA]" />
-          <input
-            type="text"
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] z-10 pointer-events-none" />
+          <TouchInput
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={setSearch}
             placeholder="Search products or scan barcode..."
-            className="w-full h-10 pl-9 pr-4 rounded-[2px] border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
+            className="w-full h-10 pl-9 pr-4 rounded-[2px] border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA]"
           />
         </div>
         <div className="flex items-center gap-1.5">
@@ -439,6 +447,9 @@ export function Products() {
             </div>
             <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
               <div className="p-6 space-y-4 overflow-y-auto">
+              {formError && (
+                <div className="px-3 py-2 bg-[#FEF2F2] border border-[#FECACA] rounded-[2px] text-[13px] text-[#DC2626]">{formError}</div>
+              )}
               {/* Image picker */}
               <div className="flex items-center gap-4">
                 <div className="w-20 h-20 rounded-[3px] border border-[#E4E4E7] bg-[#FAFAFA] overflow-hidden flex items-center justify-center shrink-0">
@@ -471,11 +482,9 @@ export function Products() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className={labelClass}>Product Name</label>
-                  <input
-                    type="text"
-                    required
+                  <TouchInput
                     value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    onChange={(v) => setForm({ ...form, name: v })}
                     className={inputClass}
                     placeholder="e.g. Mealie Meal 25kg"
                   />
@@ -483,11 +492,14 @@ export function Products() {
                 <div className="col-span-2">
                   <label className={labelClass}>Barcode</label>
                   <div className="flex gap-2">
-                    <input
-                      type="text"
+                    <TouchInput
                       value={form.barcode}
-                      onChange={(e) => setForm({ ...form, barcode: e.target.value })}
-                      className={`${inputClass} font-mono`}
+                      onChange={(v) => setForm({ ...form, barcode: v })}
+                      mode="numeric"
+                      maxLength={14}
+                      mono
+                      title="Barcode"
+                      className={`${inputClass} flex-1`}
                       placeholder="Scan, type, or generate"
                     />
                     <button
@@ -525,47 +537,48 @@ export function Products() {
                 </div>
                 <div>
                   <label className={labelClass}>Selling Price (K)</label>
-                  <input
-                    type="number"
-                    required
-                    step="0.01"
-                    min="0"
+                  <TouchInput
                     value={form.price}
-                    onChange={(e) => setForm({ ...form, price: e.target.value })}
+                    onChange={(v) => setForm({ ...form, price: v })}
+                    mode="decimal"
+                    maxLength={9}
+                    title="Selling price (K)"
                     className={`${inputClass} tabular-nums`}
                     placeholder="0.00"
                   />
                 </div>
                 <div>
                   <label className={labelClass}>Cost Price (K)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
+                  <TouchInput
                     value={form.cost_price}
-                    onChange={(e) => setForm({ ...form, cost_price: e.target.value })}
+                    onChange={(v) => setForm({ ...form, cost_price: v })}
+                    mode="decimal"
+                    maxLength={9}
+                    title="Cost price (K)"
                     className={`${inputClass} tabular-nums`}
                     placeholder="0.00"
                   />
                 </div>
                 <div>
                   <label className={labelClass}>Stock Qty</label>
-                  <input
-                    type="number"
-                    min="0"
+                  <TouchInput
                     value={form.stock_quantity}
-                    onChange={(e) => setForm({ ...form, stock_quantity: e.target.value })}
+                    onChange={(v) => setForm({ ...form, stock_quantity: v })}
+                    mode="decimal"
+                    maxLength={9}
+                    title="Stock quantity"
                     className={`${inputClass} tabular-nums`}
                     placeholder="0"
                   />
                 </div>
                 <div>
                   <label className={labelClass}>Min Stock Alert</label>
-                  <input
-                    type="number"
-                    min="0"
+                  <TouchInput
                     value={form.min_stock_level}
-                    onChange={(e) => setForm({ ...form, min_stock_level: e.target.value })}
+                    onChange={(v) => setForm({ ...form, min_stock_level: v })}
+                    mode="numeric"
+                    maxLength={6}
+                    title="Min stock alert level"
                     className={`${inputClass} tabular-nums`}
                     placeholder="5"
                   />

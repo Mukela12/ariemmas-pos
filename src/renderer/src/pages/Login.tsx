@@ -49,7 +49,7 @@ export function Login() {
 
       {/* Right — form */}
       <div className="flex-1 flex items-center justify-center px-8 bg-white">
-        <div className="w-full max-w-[360px] pb-[320px]">
+        <div className="w-full max-w-[360px]">
           <div className="lg:hidden flex items-center gap-2.5 mb-8">
             <div className="w-9 h-9 rounded-[3px] bg-[#18181B] flex items-center justify-center overflow-hidden">
               <img src={logoUrl} alt="" className="w-6 h-6 object-contain" />

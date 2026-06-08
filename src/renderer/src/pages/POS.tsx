@@ -10,6 +10,7 @@ import { buildPrintableReceipt } from '../lib/receipt'
 import { ThankYouScreen } from '../components/ThankYouScreen'
 import { NumberKeypad } from '../components/NumberKeypad'
 import { OnScreenKeyboard } from '../components/OnScreenKeyboard'
+import { TouchInput } from '../components/TouchInput'
 import type { Product } from '../../../shared/types'
 
 export function POS() {
@@ -628,12 +629,9 @@ function PaymentModal({
             <>
               <div>
                 <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Reference Number</label>
-                <input type="text" value={mobileRef}
-                  onChange={(e) => setMobileRef(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && canPay) handlePay() }}
+                <TouchInput value={mobileRef} onChange={setMobileRef} mono
                   placeholder="Enter mobile money reference"
-                  className="w-full h-11 px-3 rounded-[2px] border border-[#E4E4E7] text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
-                  autoFocus
+                  className="w-full h-11 px-3 rounded-[2px] border border-[#E4E4E7] text-sm text-[#18181B] placeholder:text-[#A1A1AA]"
                 />
               </div>
               <button onClick={handlePay} disabled={!canPay || processing}

@@ -51,7 +51,9 @@ export function OnScreenKeyboard({ value, onChange, onEnter, onClose }: Props) {
         ))}
         <div className="flex justify-center gap-1.5">
           <button onClick={() => onChange('')} className="keypad-util h-11 px-4 text-[13px] font-bold uppercase tracking-wide">Clear</button>
-          <button onClick={() => tap(' ')} className="keypad-key h-11 flex-1 max-w-[320px] text-[13px]">space</button>
+          <button onClick={() => onChange(value + '@')} className="keypad-key h-11 px-3.5 text-[17px]">@</button>
+          <button onClick={() => onChange(value + '.')} className="keypad-key h-11 px-3.5 text-[17px]">.</button>
+          <button onClick={() => tap(' ')} className="keypad-key h-11 flex-1 max-w-[280px] text-[13px]">space</button>
           <button onClick={() => (onEnter ? onEnter() : onClose?.())} className="btn-teal h-11 px-5 text-[13px] font-bold uppercase tracking-wide">Done</button>
         </div>
       </div>

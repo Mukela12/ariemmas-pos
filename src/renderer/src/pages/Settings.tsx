@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Store, Receipt, Printer, Save, Check, Wifi, WifiOff, BellRing } from 'lucide-react'
 import { setVatEnabled } from '../lib/taxConfig'
+import { TouchInput } from '../components/TouchInput'
 
 export function Settings() {
   const [settings, setSettings] = useState<Record<string, string>>({})
@@ -145,42 +146,20 @@ export function Settings() {
             <div className="p-5 space-y-4">
               <div>
                 <label className={labelClass}>Shop Name</label>
-                <input
-                  type="text"
-                  value={settings.shop_name || ''}
-                  onChange={(e) => updateField('shop_name', e.target.value)}
-                  className={inputClass}
-                />
+                <TouchInput value={settings.shop_name || ''} onChange={(v) => updateField('shop_name', v)} className={inputClass} placeholder="Ariemmas" />
               </div>
               <div>
                 <label className={labelClass}>Address</label>
-                <input
-                  type="text"
-                  value={settings.shop_address || ''}
-                  onChange={(e) => updateField('shop_address', e.target.value)}
-                  className={inputClass}
-                />
+                <TouchInput value={settings.shop_address || ''} onChange={(v) => updateField('shop_address', v)} className={inputClass} placeholder="Independence Ave, Mongu" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>Phone</label>
-                  <input
-                    type="text"
-                    value={settings.shop_phone || ''}
-                    onChange={(e) => updateField('shop_phone', e.target.value)}
-                    className={inputClass}
-                    placeholder="+260 XXX XXX XXX"
-                  />
+                  <TouchInput value={settings.shop_phone || ''} onChange={(v) => updateField('shop_phone', v)} className={inputClass} placeholder="+260 XXX XXX XXX" />
                 </div>
                 <div>
                   <label className={labelClass}>TPIN</label>
-                  <input
-                    type="text"
-                    value={settings.shop_tpin || ''}
-                    onChange={(e) => updateField('shop_tpin', e.target.value)}
-                    className={inputClass}
-                    placeholder="ZRA Tax Payer ID"
-                  />
+                  <TouchInput value={settings.shop_tpin || ''} onChange={(v) => updateField('shop_tpin', v)} mode="numeric" maxLength={10} title="ZRA TPIN" className={inputClass} placeholder="ZRA Tax Payer ID" />
                 </div>
               </div>
             </div>
@@ -198,23 +177,11 @@ export function Settings() {
             <div className="p-5 space-y-4">
               <div>
                 <label className={labelClass}>Receipt Header Message</label>
-                <input
-                  type="text"
-                  value={settings.receipt_header || ''}
-                  onChange={(e) => updateField('receipt_header', e.target.value)}
-                  className={inputClass}
-                  placeholder="Welcome to Ariemmas!"
-                />
+                <TouchInput value={settings.receipt_header || ''} onChange={(v) => updateField('receipt_header', v)} className={inputClass} placeholder="Welcome to Ariemmas!" />
               </div>
               <div>
                 <label className={labelClass}>Receipt Footer Message</label>
-                <input
-                  type="text"
-                  value={settings.receipt_footer || ''}
-                  onChange={(e) => updateField('receipt_footer', e.target.value)}
-                  className={inputClass}
-                  placeholder="Thank you for shopping with us!"
-                />
+                <TouchInput value={settings.receipt_footer || ''} onChange={(v) => updateField('receipt_footer', v)} className={inputClass} placeholder="Thank you for shopping with us!" />
               </div>
               {/* VAT on/off toggle */}
               <div className="flex items-center justify-between gap-4 py-2 px-3 rounded-[2px] border border-[#E4E4E7] bg-[#FAFAFA]">
@@ -238,13 +205,14 @@ export function Settings() {
               </div>
               <div>
                 <label className={labelClass}>VAT Rate (%)</label>
-                <input
-                  type="number"
-                  step="0.01"
+                <TouchInput
                   value={settings.vat_rate || '16'}
-                  onChange={(e) => updateField('vat_rate', e.target.value)}
+                  onChange={(v) => updateField('vat_rate', v)}
+                  mode="decimal"
+                  maxLength={5}
+                  title="VAT rate (%)"
                   disabled={settings.vat_enabled !== 'true'}
-                  className={`${inputClass} max-w-[120px] tabular-nums disabled:opacity-50 disabled:bg-[#F4F4F5]`}
+                  className={`${inputClass} max-w-[120px] tabular-nums`}
                 />
               </div>
             </div>
@@ -262,36 +230,16 @@ export function Settings() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>Opening Cash Limit (K)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={settings.opening_cash_limit || '1000'}
-                    onChange={(e) => updateField('opening_cash_limit', e.target.value)}
-                    className={`${inputClass} tabular-nums`}
-                  />
+                  <TouchInput value={settings.opening_cash_limit || '1000'} onChange={(v) => updateField('opening_cash_limit', v)} mode="decimal" maxLength={9} title="Opening cash limit (K)" className={`${inputClass} tabular-nums`} />
                 </div>
                 <div>
                   <label className={labelClass}>Cash Alert Threshold (K)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={settings.cash_alert_threshold || '2000'}
-                    onChange={(e) => updateField('cash_alert_threshold', e.target.value)}
-                    className={`${inputClass} tabular-nums`}
-                  />
+                  <TouchInput value={settings.cash_alert_threshold || '2000'} onChange={(v) => updateField('cash_alert_threshold', v)} mode="decimal" maxLength={9} title="Cash alert threshold (K)" className={`${inputClass} tabular-nums`} />
                 </div>
               </div>
               <div>
                 <label className={labelClass}>Alert Email Recipient</label>
-                <input
-                  type="email"
-                  value={settings.cash_alert_email || ''}
-                  onChange={(e) => updateField('cash_alert_email', e.target.value)}
-                  className={inputClass}
-                  placeholder="owner@example.com"
-                />
+                <TouchInput value={settings.cash_alert_email || ''} onChange={(v) => updateField('cash_alert_email', v)} className={inputClass} placeholder="owner@example.com" />
                 <p className="text-[11px] text-[#71717A] mt-2">
                   The app sends an alert when opening cash plus cash sales reaches the threshold above.
                 </p>
