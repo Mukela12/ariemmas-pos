@@ -412,6 +412,34 @@ export const MIGRATIONS: Migration[] = [
       }
       return `ALTER TABLE users ADD COLUMN pin_plain TEXT;`
     }
+  },
+  {
+    // Inventory audit trail: one row per stock change (a sale line, a restock,
+    // or a manual correction) so the admin can see how stock moved over time.
+    name: '010_stock_movements',
+    getSql: (engine) => {
+      const num = engine === 'mssql' ? 'DECIMAL(12,3)' : engine === 'postgres' ? 'NUMERIC(12,3)' : 'REAL'
+      const txt = engine === 'mssql' ? 'NVARCHAR(255)' : 'TEXT'
+      const pk = engine === 'mssql' ? 'NVARCHAR(50)' : 'TEXT'
+      const created = engine === 'sqlite' ? "TEXT DEFAULT (datetime('now'))"
+        : engine === 'mssql' ? 'DATETIME2 DEFAULT GETDATE()'
+        : 'TIMESTAMPTZ DEFAULT NOW()'
+      const cols = `(
+        id ${pk} PRIMARY KEY,
+        product_id ${pk},
+        type ${txt},
+        quantity_change ${num},
+        balance_after ${num},
+        reason ${txt},
+        user_id ${pk},
+        terminal_id ${txt},
+        created_at ${created}
+      )`
+      if (engine === 'mssql') {
+        return `IF OBJECT_ID('stock_movements','U') IS NULL CREATE TABLE stock_movements ${cols};`
+      }
+      return `CREATE TABLE IF NOT EXISTS stock_movements ${cols};`
+    }
   }
 ]
 

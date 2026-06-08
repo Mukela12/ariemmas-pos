@@ -1,5 +1,5 @@
 import type { ElectronAPI } from '@electron-toolkit/preload'
-import type { Product, UserPublic, Sale, Shift, Category, CompleteSaleInput, PrintableReceipt, ManagedUser } from '../shared/types'
+import type { Product, UserPublic, Sale, Shift, Category, CompleteSaleInput, PrintableReceipt, ManagedUser, StockMovement, InventorySummary } from '../shared/types'
 
 interface PosAPI {
   login(username: string, pin: string): Promise<UserPublic | null>
@@ -32,6 +32,11 @@ interface PosAPI {
   createCashier?(username: string, displayName: string, pin: string): Promise<{ ok: boolean; error?: string }>
   renameUser?(userId: string, displayName: string): Promise<{ ok: boolean; error?: string }>
 
+  // Inventory management
+  adjustStock(productId: string, newQuantity: number, reason: string, type?: string): Promise<{ ok: boolean; error?: string; product?: Product }>
+  getStockMovements(productId?: string, limit?: number): Promise<StockMovement[]>
+  getInventorySummary(): Promise<InventorySummary>
+
   printerStatus(): Promise<{ connected: boolean; name: string }>
   listPrinters(): Promise<{ name: string; displayName: string; isDefault: boolean }[]>
   printReceipt(receipt: PrintableReceipt): Promise<boolean>
@@ -41,7 +46,9 @@ interface PosAPI {
   saveProductImage(dataBase64: string, originalName?: string): Promise<string>
 
   getSyncStatus(): Promise<{ pending: number; failed: number; lastSynced: string | null; isOnline: boolean }>
-  syncNow(): Promise<{ synced: number; failed: number }>
+  syncNow(): Promise<{ synced: number; failed: number; pulled?: number }>
+  // Desktop only: subscribe to catalog-pull updates; returns an unsubscribe fn.
+  onCatalogUpdated?(cb: () => void): () => void
 }
 
 declare global {

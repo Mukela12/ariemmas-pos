@@ -103,6 +103,13 @@ export const webApi = {
   getCurrentShift: async (userId: string) =>
     json<any>(`/api/shifts/current/${encodeURIComponent(userId)}`),
 
+  // Inventory management
+  adjustStock: async (productId: string, newQuantity: number, reason: string, type?: string) =>
+    json<any>(`/api/products/${productId}/adjust`, { method: 'POST', body: JSON.stringify({ newQuantity, reason, type, user_id: sessionUser?.id }) }),
+  getStockMovements: async (productId?: string, limit = 100) =>
+    productId ? json<any[]>(`/api/products/${productId}/movements?limit=${limit}`) : [],
+  getInventorySummary: async () => json<any>('/api/inventory/summary'),
+
   // Settings
   getSettings: async () => json<any>('/api/settings'),
   updateSetting: async (key: string, value: string) =>

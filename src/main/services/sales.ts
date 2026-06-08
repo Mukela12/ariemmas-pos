@@ -72,6 +72,12 @@ export async function completeSale(input: CompleteSaleInput): Promise<Sale> {
         'UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?',
         [item.quantity, item.product_id]
       )
+      // Inventory audit: log the stock movement for this sale line.
+      const afterRow = await db.queryOne<{ stock_quantity: number }>('SELECT stock_quantity FROM products WHERE id = ?', [item.product_id])
+      await db.run(
+        'INSERT INTO stock_movements (id, product_id, type, quantity_change, balance_after, reason, user_id, terminal_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [uuid(), item.product_id, 'sale', -item.quantity, Number(afterRow?.stock_quantity ?? 0), `Sale ${receiptNumber}`, input.user_id, terminalId]
+      )
     }
 
     if (input.shift_id) {

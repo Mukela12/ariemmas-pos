@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef } from 'react'
-import { Package, Plus, Search, Edit2, Download, RefreshCw, ImagePlus, X as XIcon } from 'lucide-react'
+import { useState, useEffect, useRef, type ReactNode } from 'react'
+import { Package, Plus, Search, Edit2, Download, RefreshCw, ImagePlus, X as XIcon, Boxes, History, AlertTriangle, SlidersHorizontal } from 'lucide-react'
 import JsBarcode from 'jsbarcode'
 import { formatZMW, formatStock } from '../lib/currency'
 import { productImageSrc, fileToDataUrl, uploadToCloudinary, isElectron } from '../lib/productImage'
 import { TouchInput } from '../components/TouchInput'
-import type { Product, Category } from '../../../shared/types'
+import { NumberKeypad } from '../components/NumberKeypad'
+import { OnScreenKeyboard } from '../components/OnScreenKeyboard'
+import type { Product, Category, InventorySummary, StockMovement } from '../../../shared/types'
 
 function generateBarcodeValue(): string {
   // 12-digit numeric, prefixed with 2 (internal-use convention), to encode safely as Code128.
@@ -78,6 +80,10 @@ export function Products() {
   const [categories, setCategories] = useState<Category[]>([])
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [lowOnly, setLowOnly] = useState(false)
+  const [summary, setSummary] = useState<InventorySummary | null>(null)
+  const [adjustFor, setAdjustFor] = useState<Product | null>(null)
+  const [historyFor, setHistoryFor] = useState<Product | null>(null)
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [showForm, setShowForm] = useState(false)
@@ -108,7 +114,18 @@ export function Products() {
   useEffect(() => {
     loadProducts()
     loadCategories()
+    loadSummary()
   }, [page])
+
+  // Auto-refresh when the background sync pulls catalog changes from the cloud.
+  useEffect(() => {
+    const off = window.api.onCatalogUpdated?.(() => { loadProducts(); loadCategories(); loadSummary() })
+    return off
+  }, [])
+
+  async function loadSummary() {
+    try { setSummary(await window.api.getInventorySummary()) } catch { /* ignore */ }
+  }
 
   async function loadProducts() {
     setIsLoading(true)
@@ -174,9 +191,11 @@ export function Products() {
       const dataUrl = await fileToDataUrl(file)
       setImagePreview(dataUrl) // instant preview
       if (isElectron) {
-        // Desktop: cache the file on disk and store its filename.
+        // Desktop: cache the file on disk for fast offline render, AND keep the
+        // data URL as image_url so the image syncs to the cloud and reaches the
+        // web + other terminals.
         const filename = await window.api.saveProductImage(dataUrl, file.name)
-        setForm((f) => ({ ...f, image_filename: filename }))
+        setForm((f) => ({ ...f, image_filename: filename, image_url: dataUrl }))
       } else {
         // Web admin: upload to Cloudinary (if configured).
         const url = await uploadToCloudinary(file)
@@ -232,7 +251,8 @@ export function Products() {
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       (p.barcode && p.barcode.includes(search))
     const matchesCategory = selectedCategory === 'all' || p.category_id === selectedCategory
-    return matchesSearch && matchesCategory
+    const matchesLow = !lowOnly || Number(p.stock_quantity) <= Number(p.min_stock_level)
+    return matchesSearch && matchesCategory && matchesLow
   })
 
   const totalPages = Math.ceil(total / LIMIT)
@@ -269,6 +289,19 @@ export function Products() {
         </button>
       </div>
 
+      {/* Inventory summary */}
+      {summary && (
+        <div className="grid grid-cols-4 gap-px bg-[#E4E4E7] border-b border-[#E4E4E7]">
+          <SummaryCell icon={<Boxes size={15} className="text-[#0D9488]" />} label="Products" value={String(summary.items)} sub={`${formatStock(summary.units)} units in stock`} />
+          <SummaryCell icon={<AlertTriangle size={15} className="text-[#D97706] " />} label="Low / Out of stock"
+            value={`${summary.lowStock} / ${summary.outOfStock}`}
+            sub={summary.lowStock + summary.outOfStock > 0 ? 'needs restocking' : 'all good'}
+            onClick={() => setLowOnly((v) => !v)} active={lowOnly} />
+          <SummaryCell icon={<Package size={15} className="text-[#52525B]" />} label="Stock value (cost)" value={formatZMW(summary.stockValue)} sub="total cost of stock on hand" />
+          <SummaryCell icon={<History size={15} className="text-[#52525B]" />} label="Inventory" value="Manage" sub="adjust stock & view history" />
+        </div>
+      )}
+
       {/* Filters */}
       <div className="px-6 py-3 flex items-center gap-3 border-b border-[#F4F4F5]">
         <div className="relative flex-1 max-w-md">
@@ -304,6 +337,12 @@ export function Products() {
               {cat.name}
             </button>
           ))}
+          <button
+            onClick={() => setLowOnly((v) => !v)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[2px] text-xs font-medium ${lowOnly ? 'bg-[#D97706] text-white' : 'bg-[#F4F4F5] text-[#52525B] hover:bg-[#E4E4E7]'}`}
+          >
+            <SlidersHorizontal size={12} /> Low stock
+          </button>
         </div>
       </div>
 
@@ -389,12 +428,29 @@ export function Products() {
                       </span>
                     </td>
                     <td className="px-6 py-3 text-right">
-                      <button
-                        onClick={() => openEditForm(product)}
-                        className="p-1.5 text-[#A1A1AA] hover:text-[#52525B] hover:bg-[#F4F4F5] rounded-[2px]"
-                      >
-                        <Edit2 size={14} />
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => setAdjustFor(product)}
+                          title="Adjust stock"
+                          className="flex items-center gap-1 px-2 py-1.5 text-[12px] font-medium text-[#0D9488] hover:bg-[#F0FDFA] rounded-[2px]"
+                        >
+                          <Boxes size={13} /> Stock
+                        </button>
+                        <button
+                          onClick={() => setHistoryFor(product)}
+                          title="Stock history"
+                          className="p-1.5 text-[#A1A1AA] hover:text-[#52525B] hover:bg-[#F4F4F5] rounded-[2px]"
+                        >
+                          <History size={14} />
+                        </button>
+                        <button
+                          onClick={() => openEditForm(product)}
+                          title="Edit product"
+                          className="p-1.5 text-[#A1A1AA] hover:text-[#52525B] hover:bg-[#F4F4F5] rounded-[2px]"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -645,6 +701,134 @@ export function Products() {
           </div>
         </div>
       )}
+
+      {adjustFor && (
+        <AdjustStockModal
+          product={adjustFor}
+          onClose={() => setAdjustFor(null)}
+          onSaved={() => { setAdjustFor(null); loadProducts(); loadSummary() }}
+        />
+      )}
+      {historyFor && (
+        <HistoryModal product={historyFor} onClose={() => setHistoryFor(null)} />
+      )}
+    </div>
+  )
+}
+
+function SummaryCell({ icon, label, value, sub, onClick, active }: { icon: ReactNode; label: string; value: string; sub: string; onClick?: () => void; active?: boolean }) {
+  return (
+    <button type="button" onClick={onClick} disabled={!onClick}
+      className={`text-left px-5 py-3 bg-white ${onClick ? 'hover:bg-[#FAFAFA] cursor-pointer' : 'cursor-default'} ${active ? 'ring-2 ring-inset ring-[#D97706]' : ''}`}>
+      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em]">{icon}{label}</div>
+      <div className="text-[19px] font-bold text-[#18181B] tabular-nums mt-1 leading-none">{value}</div>
+      <div className="text-[11px] text-[#A1A1AA] mt-1">{sub}</div>
+    </button>
+  )
+}
+
+function AdjustStockModal({ product, onClose, onSaved }: { product: Product; onClose: () => void; onSaved: () => void }) {
+  const current = Number(product.stock_quantity) || 0
+  const [mode, setMode] = useState<'receive' | 'set'>('receive')
+  const [amount, setAmount] = useState('')
+  const [reason, setReason] = useState('')
+  const [reasonKb, setReasonKb] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const amt = parseFloat(amount) || 0
+  const target = mode === 'receive' ? current + amt : amt
+  const canSave = amount !== '' && target >= 0 && !saving
+
+  const save = async () => {
+    if (!canSave) return
+    setSaving(true); setError(null)
+    try {
+      const type = mode === 'receive' ? 'restock' : 'correction'
+      const r = await window.api.adjustStock(product.id, target, reason.trim() || (mode === 'receive' ? 'Stock received' : 'Stock corrected'), type)
+      if (r?.ok) onSaved(); else setError(r?.error || 'Could not adjust stock.')
+    } catch (e: any) { setError(e?.message || 'Could not adjust stock.') } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="w-full max-w-[400px] bg-white rounded-[3px] shadow-xl overflow-y-auto max-h-[96vh]" onClick={(e) => e.stopPropagation()}>
+        <div className="graphite px-5 py-3.5 flex items-center justify-between">
+          <div>
+            <h2 className="text-[15px] font-semibold text-white">Adjust stock</h2>
+            <p className="text-[12px] text-white/55 mt-0.5">{product.name} · now {formatStock(current)}{product.is_weighted ? ' kg' : ''}</p>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-[2px] flex items-center justify-center text-white/55 hover:text-white hover:bg-white/10"><XIcon size={16} /></button>
+        </div>
+        <div className="p-5 space-y-3">
+          <div className="flex gap-1 p-1 bg-[#F4F4F5] rounded-[2px]">
+            <button onClick={() => setMode('receive')} className={`flex-1 h-9 rounded-[3px] text-[13px] font-semibold ${mode === 'receive' ? 'bg-white text-[#18181B] shadow-sm' : 'text-[#71717A]'}`}>Receive stock (+)</button>
+            <button onClick={() => setMode('set')} className={`flex-1 h-9 rounded-[3px] text-[13px] font-semibold ${mode === 'set' ? 'bg-white text-[#18181B] shadow-sm' : 'text-[#71717A]'}`}>Set / correct</button>
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">{mode === 'receive' ? 'Quantity received' : 'New stock count'}</label>
+            <div className="w-full h-14 px-4 rounded-[2px] border border-[#E4E4E7] bg-[#FAFAFA] flex items-center justify-end text-[28px] font-bold tabular-nums text-[#18181B]">
+              {amount || <span className="text-[#D4D4D8]">0</span>}
+            </div>
+          </div>
+          <div className="flex items-center justify-between px-4 py-2.5 rounded-[2px] bg-[#F0FDFA] border border-[#99F6E4]">
+            <span className="text-[13px] font-semibold text-[#0D9488]">New balance</span>
+            <span className="text-[20px] font-bold text-[#0D9488] tabular-nums">{formatStock(target)}{product.is_weighted ? ' kg' : ''}</span>
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Reason (optional)</label>
+            <button type="button" onClick={() => setReasonKb(true)} className="w-full min-h-10 px-3 py-2 rounded-[2px] border border-[#E4E4E7] bg-white text-[14px] text-left flex items-center">
+              {reason ? <span className="text-[#18181B]">{reason}</span> : <span className="text-[#A1A1AA]">e.g. delivery from supplier, stock-take</span>}
+            </button>
+          </div>
+          {error && <div className="px-3 py-2 bg-[#FEF2F2] border border-[#FECACA] rounded-[2px] text-[13px] text-[#DC2626]">{error}</div>}
+          <NumberKeypad value={amount} onChange={setAmount} onEnter={save} enterLabel={saving ? '…' : 'SAVE'} enterTone="teal" enterDisabled={!canSave} decimal={!!product.is_weighted} maxLength={9} />
+        </div>
+      </div>
+      {reasonKb && (
+        <div className="fixed inset-x-0 bottom-0 z-[60]">
+          <OnScreenKeyboard value={reason} onChange={setReason} onEnter={() => setReasonKb(false)} onClose={() => setReasonKb(false)} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function HistoryModal({ product, onClose }: { product: Product; onClose: () => void }) {
+  const [rows, setRows] = useState<StockMovement[] | null>(null)
+  useEffect(() => {
+    window.api.getStockMovements(product.id, 100).then(setRows).catch(() => setRows([]))
+  }, [product.id])
+  const typeLabel: Record<string, string> = { sale: 'Sale', restock: 'Received', adjustment: 'Adjusted', correction: 'Corrected' }
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="w-full max-w-[460px] bg-white rounded-[3px] shadow-xl overflow-hidden max-h-[88vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="graphite px-5 py-3.5 flex items-center justify-between shrink-0">
+          <div>
+            <h2 className="text-[15px] font-semibold text-white">Stock history</h2>
+            <p className="text-[12px] text-white/55 mt-0.5">{product.name} · now {formatStock(product.stock_quantity)}{product.is_weighted ? ' kg' : ''}</p>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-[2px] flex items-center justify-center text-white/55 hover:text-white hover:bg-white/10"><XIcon size={16} /></button>
+        </div>
+        <div className="overflow-y-auto">
+          {rows === null ? (
+            <div className="py-12 text-center text-[#A1A1AA] text-sm">Loading…</div>
+          ) : rows.length === 0 ? (
+            <div className="py-12 text-center text-[#A1A1AA] text-sm">No stock movements yet.</div>
+          ) : rows.map((m) => (
+            <div key={m.id} className="flex items-center gap-3 px-5 py-2.5 border-b border-[#F4F4F5]">
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-medium text-[#18181B]">{typeLabel[m.type] || m.type}{m.reason ? <span className="text-[#A1A1AA] font-normal"> · {m.reason}</span> : ''}</div>
+                <div className="text-[11px] text-[#A1A1AA] tabular-nums">{new Date((m.created_at || '').replace(' ', 'T') + (/[zZ+]/.test(m.created_at || '') ? '' : 'Z')).toLocaleString('en-GB', { timeZone: 'Africa/Maputo' })}</div>
+              </div>
+              <div className={`text-[14px] font-bold tabular-nums shrink-0 ${Number(m.quantity_change) < 0 ? 'text-[#DC2626]' : 'text-[#16A34A]'}`}>
+                {Number(m.quantity_change) > 0 ? '+' : ''}{formatStock(m.quantity_change)}
+              </div>
+              <div className="text-[12px] text-[#71717A] tabular-nums w-16 text-right shrink-0">→ {formatStock(m.balance_after)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

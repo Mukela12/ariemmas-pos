@@ -4,7 +4,8 @@ import { getDb, now } from './database/connection'
 import { login, logout, getCurrentUser, seedDefaultAdmin, listUsersForAdmin, adminSetUserPin, adminRenameUser, adminCreateCashier } from './services/auth'
 import { completeSale, getDailySales } from './services/sales'
 import { exportDailySalesToExcel } from './services/exportExcel'
-import { queueSync, getSyncStatus, processSyncQueue } from './services/syncService'
+import { queueSync, getSyncStatus, processSyncQueue, pullCatalog } from './services/syncService'
+import { adjustStock, getStockMovements, getInventorySummary } from './services/inventory'
 import {
   buildReceiptBytes,
   buildTestBytes,
@@ -275,13 +276,27 @@ export async function registerIpcHandlers(): Promise<void> {
     return adminRenameUser(userId, displayName)
   })
 
+  // Inventory — adjust is admin-only; reads are open to any signed-in user.
+  ipcMain.handle(IPC_CHANNELS.INVENTORY_ADJUST, async (_e, productId: string, newQuantity: number, reason: string, type?: 'restock' | 'adjustment' | 'correction') => {
+    requireAdmin()
+    return adjustStock(productId, newQuantity, reason, type)
+  })
+  ipcMain.handle(IPC_CHANNELS.INVENTORY_MOVEMENTS, async (_e, productId?: string, limit?: number) => {
+    return getStockMovements(productId, limit)
+  })
+  ipcMain.handle(IPC_CHANNELS.INVENTORY_SUMMARY, async () => {
+    return getInventorySummary()
+  })
+
   // Sync
   ipcMain.handle('sync:status', async () => {
     return getSyncStatus()
   })
 
   ipcMain.handle('sync:now', async () => {
-    return processSyncQueue()
+    const pushed = await processSyncQueue()
+    const pulled = await pullCatalog().catch(() => ({ changed: 0 }))
+    return { ...pushed, pulled: pulled.changed }
   })
 
   // Hardware
@@ -402,9 +417,8 @@ async function seedSampleProducts(): Promise<void> {
       INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, unit, is_weighted, image_url)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [id, p.barcode, p.name, p.cat, p.price, p.cost, vatRate, p.stock, unit, isWeighted, imageUrl])
-    queueSync('insert', 'product', id, {
-      id, barcode: p.barcode, name: p.name, category_id: p.cat, price: p.price,
-      cost_price: p.cost, vat_rate: vatRate, stock_quantity: p.stock, min_stock_level: 5, unit, is_weighted: isWeighted, image_url: imageUrl
-    }).catch(() => {})
+    // NB: do NOT queue seed products for sync. The cloud seeds its own catalog
+    // and is the source of truth; pushing local seed rows would overwrite newer
+    // cloud edits. The terminal receives the catalog via pullCatalog() instead.
   }
 }

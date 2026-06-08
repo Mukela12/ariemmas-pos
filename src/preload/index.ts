@@ -61,6 +61,14 @@ const api = {
   renameUser: (userId: string, displayName: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.USERS_RENAME, userId, displayName),
 
+  // Inventory management
+  adjustStock: (productId: string, newQuantity: number, reason: string, type?: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.INVENTORY_ADJUST, productId, newQuantity, reason, type),
+  getStockMovements: (productId?: string, limit?: number) =>
+    ipcRenderer.invoke(IPC_CHANNELS.INVENTORY_MOVEMENTS, productId, limit),
+  getInventorySummary: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.INVENTORY_SUMMARY),
+
   // Hardware
   printerStatus: () =>
     ipcRenderer.invoke(IPC_CHANNELS.HW_PRINTER_STATUS),
@@ -82,6 +90,12 @@ const api = {
     ipcRenderer.invoke('sync:status'),
   syncNow: () =>
     ipcRenderer.invoke('sync:now'),
+  // Fired after a catalog pull changes local data, so screens can refresh.
+  onCatalogUpdated: (cb: () => void) => {
+    const handler = (): void => cb()
+    ipcRenderer.on('catalog:updated', handler)
+    return () => ipcRenderer.removeListener('catalog:updated', handler)
+  },
 }
 
 if (process.contextIsolated) {

@@ -337,6 +337,96 @@ app.get('/api/products/barcode/:barcode', async (req, res) => {
   res.json(product)
 })
 
+// Catalog pull for offline terminals: products (incl. deactivated, so deletes
+// propagate) + categories + the shared settings, changed since `since`. The
+// terminal sends back the serverTime it last received, so deltas are immune to
+// clock skew. Terminal-local settings (printer, terminal id) are never shared.
+const SHARED_SETTING_KEYS = [
+  'shop_name', 'shop_address', 'shop_phone', 'shop_tpin',
+  'receipt_header', 'receipt_footer', 'vat_enabled', 'vat_rate',
+  'opening_cash_limit', 'cash_alert_threshold', 'cash_alert_email'
+]
+app.get('/api/sync/catalog', async (req, res) => {
+  try {
+    const since = (req.query.since as string) || ''
+    const serverTime = new Date().toISOString()
+    // updated_at is stored as text, so compare as timestamps (the space-vs-T
+    // separator would otherwise make a plain string comparison always false).
+    const products = since
+      ? await db.query("SELECT * FROM products WHERE NULLIF(updated_at,'')::timestamptz > $1::timestamptz ORDER BY updated_at", [since])
+      : await db.query('SELECT * FROM products ORDER BY updated_at')
+    const categories = await db.query('SELECT * FROM categories')
+    const rows = await db.query<{ key: string; value: string }>('SELECT key, value FROM settings')
+    const settings: Record<string, string> = {}
+    for (const r of rows) if (SHARED_SETTING_KEYS.includes(r.key)) settings[r.key] = r.value
+    res.json({ serverTime, products, categories, settings })
+  } catch (err: any) {
+    console.error('[Sync] Catalog pull error:', err.message)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// --- Inventory management ---
+// Set a product's stock to an absolute count and log the movement (web admin).
+app.post('/api/products/:id/adjust', async (req, res) => {
+  try {
+    const { newQuantity, reason, type, user_id } = req.body || {}
+    const product = await db.queryOne<any>('SELECT * FROM products WHERE id = $1', [req.params.id])
+    if (!product) return res.status(404).json({ ok: false, error: 'Product not found.' })
+    const target = Number(newQuantity)
+    if (!Number.isFinite(target) || target < 0) return res.json({ ok: false, error: 'Enter a valid stock quantity (0 or more).' })
+    const change = target - (Number(product.stock_quantity) || 0)
+    await db.run('UPDATE products SET stock_quantity = $1, updated_at = NOW() WHERE id = $2', [target, req.params.id])
+    await db.run(
+      'INSERT INTO stock_movements (id, product_id, type, quantity_change, balance_after, reason, user_id) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+      [uuid(), req.params.id, type || 'adjustment', change, target, reason || null, user_id || null]
+    )
+    const updated = await db.queryOne('SELECT * FROM products WHERE id = $1', [req.params.id])
+    res.json({ ok: true, product: updated })
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err.message })
+  }
+})
+
+// Movement sync from a terminal (a desktop adjustment).
+app.post('/api/sync/stock-movements', async (req, res) => {
+  try {
+    const m = req.body
+    if (!m?.id) return res.status(400).json({ error: 'Missing movement' })
+    const ex = await db.queryOne('SELECT id FROM stock_movements WHERE id = $1', [m.id])
+    if (ex) return res.json({ status: 'already_synced' })
+    await db.run(
+      'INSERT INTO stock_movements (id, product_id, type, quantity_change, balance_after, reason, user_id, terminal_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+      [m.id, m.product_id, m.type, m.quantity_change, m.balance_after, m.reason || null, m.user_id || null, m.terminal_id || null]
+    )
+    res.json({ status: 'synced' })
+  } catch (err: any) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+app.get('/api/products/:id/movements', async (req, res) => {
+  const limit = parseInt(req.query.limit as string) || 100
+  const rows = await db.query(
+    'SELECT m.*, p.name as product_name FROM stock_movements m LEFT JOIN products p ON p.id = m.product_id WHERE m.product_id = $1 ORDER BY m.created_at DESC LIMIT $2',
+    [req.params.id, limit]
+  )
+  res.json(rows)
+})
+
+app.get('/api/inventory/summary', async (_req, res) => {
+  const row = await db.queryOne<any>(`
+    SELECT COUNT(*) as items, COALESCE(SUM(stock_quantity),0) as units,
+      COALESCE(SUM(CASE WHEN stock_quantity <= min_stock_level AND stock_quantity > 0 THEN 1 ELSE 0 END),0) as low,
+      COALESCE(SUM(CASE WHEN stock_quantity <= 0 THEN 1 ELSE 0 END),0) as out,
+      COALESCE(SUM(stock_quantity * cost_price),0) as value
+    FROM products WHERE active = 1`)
+  res.json({
+    items: Number(row?.items) || 0, units: Number(row?.units) || 0,
+    lowStock: Number(row?.low) || 0, outOfStock: Number(row?.out) || 0, stockValue: Number(row?.value) || 0
+  })
+})
+
 app.post('/api/products', async (req, res) => {
   const p = req.body
   const id = uuid()
@@ -402,6 +492,11 @@ app.post('/api/sales', async (req, res) => {
         [uuid(), saleId, item.product_id, item.name, item.barcode, item.quantity, item.price, item.vat_rate, item.vat_amount, item.line_total]
       )
       await db.run('UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2', [item.quantity, item.product_id])
+      const af = await db.queryOne<any>('SELECT stock_quantity FROM products WHERE id = $1', [item.product_id])
+      await db.run(
+        'INSERT INTO stock_movements (id, product_id, type, quantity_change, balance_after, reason, user_id) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+        [uuid(), item.product_id, 'sale', -item.quantity, Number(af?.stock_quantity ?? 0), 'Sale (web)', input.user_id || null]
+      )
     }
 
     if (input.shift_id) {
@@ -697,15 +792,28 @@ app.post('/api/sync/sales', async (req, res) => {
       for (const item of items || []) {
         const itemExists = await db.queryOne('SELECT id FROM sale_items WHERE id = $1', [item.id])
         if (!itemExists) {
+          // Resolve the product to a server id (a terminal that sold before its
+          // first catalog pull may carry its own id) so the FK + stock land.
+          let pid = item.product_id
+          const exists = await db.queryOne('SELECT id FROM products WHERE id = $1', [pid])
+          if (!exists && item.barcode) {
+            const byBc = await db.queryOne<any>('SELECT id FROM products WHERE barcode = $1', [item.barcode])
+            if (byBc) pid = byBc.id
+          }
           await db.run(
             `INSERT INTO sale_items (id, sale_id, product_id, product_name, barcode,
               quantity, unit_price, vat_rate, vat_amount, line_total)
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-            [item.id, item.sale_id, item.product_id, item.product_name, item.barcode,
+            [item.id, item.sale_id, pid, item.product_name, item.barcode,
              item.quantity, item.unit_price, item.vat_rate, item.vat_amount, item.line_total]
           )
           await db.run('UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2',
-            [item.quantity, item.product_id])
+            [item.quantity, pid])
+          const af = await db.queryOne<any>('SELECT stock_quantity FROM products WHERE id = $1', [pid])
+          await db.run(
+            'INSERT INTO stock_movements (id, product_id, type, quantity_change, balance_after, reason, user_id, terminal_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+            [uuid(), pid, 'sale', -item.quantity, Number(af?.stock_quantity ?? 0), `Sale ${sale.receipt_number || ''}`.trim(), sale.user_id || null, sale.terminal_id || null]
+          )
         }
       }
     })

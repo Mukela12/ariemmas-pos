@@ -129,6 +129,28 @@ export interface AppSettings {
   cash_alert_email: string
 }
 
+// One entry in a product's stock history (inventory audit trail).
+export interface StockMovement {
+  id: string
+  product_id: string
+  type: 'sale' | 'restock' | 'adjustment' | 'correction'
+  quantity_change: number
+  balance_after: number
+  reason: string | null
+  user_id: string | null
+  terminal_id: string | null
+  created_at: string
+  product_name?: string
+}
+
+export interface InventorySummary {
+  items: number
+  units: number
+  lowStock: number
+  outOfStock: number
+  stockValue: number
+}
+
 // Admin view of a login (Cashiers screen). `pin` is the readable PIN, shown to
 // the admin only; it's never sent over the public web API.
 export interface ManagedUser {

@@ -64,6 +64,11 @@ export const IPC_CHANNELS = {
   USERS_CREATE: 'db:users:create',
   USERS_RENAME: 'db:users:rename',
 
+  // Inventory management
+  INVENTORY_ADJUST: 'db:inventory:adjust',
+  INVENTORY_MOVEMENTS: 'db:inventory:movements',
+  INVENTORY_SUMMARY: 'db:inventory:summary',
+
   // Hardware
   HW_PRINT_RECEIPT: 'hw:printReceipt',
   HW_OPEN_DRAWER: 'hw:openCashDrawer',
