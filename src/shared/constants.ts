@@ -58,6 +58,12 @@ export const IPC_CHANNELS = {
   SETTINGS_GET_ALL: 'db:settings:getAll',
   SETTINGS_UPDATE: 'db:settings:update',
 
+  // Users (admin cashier management)
+  USERS_LIST: 'db:users:list',
+  USERS_SET_PIN: 'db:users:setPin',
+  USERS_CREATE: 'db:users:create',
+  USERS_RENAME: 'db:users:rename',
+
   // Hardware
   HW_PRINT_RECEIPT: 'hw:printReceipt',
   HW_OPEN_DRAWER: 'hw:openCashDrawer',

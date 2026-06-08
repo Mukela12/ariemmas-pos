@@ -397,6 +397,21 @@ export const MIGRATIONS: Migration[] = [
         ALTER TABLE products ADD COLUMN image_url TEXT;
       `
     }
+  },
+  {
+    // Readable copy of each PIN so an admin can view current cashier logins in
+    // the Cashiers screen (PINs are otherwise one-way bcrypt-hashed). Admin-only;
+    // never returned by the public web API.
+    name: '009_user_pin_plain',
+    getSql: (engine) => {
+      if (engine === 'mssql') {
+        return `IF COL_LENGTH('users', 'pin_plain') IS NULL ALTER TABLE users ADD pin_plain NVARCHAR(255) NULL;`
+      }
+      if (engine === 'postgres') {
+        return `ALTER TABLE users ADD COLUMN IF NOT EXISTS pin_plain TEXT;`
+      }
+      return `ALTER TABLE users ADD COLUMN pin_plain TEXT;`
+    }
   }
 ]
 

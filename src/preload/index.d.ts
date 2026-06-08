@@ -1,5 +1,5 @@
 import type { ElectronAPI } from '@electron-toolkit/preload'
-import type { Product, UserPublic, Sale, Shift, Category, CompleteSaleInput, PrintableReceipt } from '../shared/types'
+import type { Product, UserPublic, Sale, Shift, Category, CompleteSaleInput, PrintableReceipt, ManagedUser } from '../shared/types'
 
 interface PosAPI {
   login(username: string, pin: string): Promise<UserPublic | null>
@@ -25,6 +25,12 @@ interface PosAPI {
 
   getSettings(): Promise<Record<string, string>>
   updateSetting(key: string, value: string): Promise<boolean>
+
+  // Admin cashier management — desktop only (absent on the web build).
+  listUsers?(): Promise<ManagedUser[]>
+  setUserPin?(userId: string, newPin: string): Promise<{ ok: boolean; error?: string }>
+  createCashier?(username: string, displayName: string, pin: string): Promise<{ ok: boolean; error?: string }>
+  renameUser?(userId: string, displayName: string): Promise<{ ok: boolean; error?: string }>
 
   printerStatus(): Promise<{ connected: boolean; name: string }>
   listPrinters(): Promise<{ name: string; displayName: string; isDefault: boolean }[]>

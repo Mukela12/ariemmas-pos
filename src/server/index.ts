@@ -190,21 +190,31 @@ async function initDb(): Promise<void> {
     { username: 'cashier4', display_name: 'Cashier 4',     pin: '2687', role: 'cashier' as const, resetPin: true },
     { username: 'cashier5', display_name: 'Cashier 5',     pin: '6351', role: 'cashier' as const, resetPin: true }
   ]
+  // Version-gated: apply the credential set once (so existing rows get the new
+  // PINs), then leave logins alone on later restarts so admin PIN changes (from
+  // the desktop Cashiers screen, synced here) survive. Bump CRED_SEED_VERSION to
+  // force a one-time reset back to SEED.
+  const CRED_SEED_VERSION = '1'
+  const verRow = await db.queryOne<{ value: string }>("SELECT value FROM settings WHERE key = 'cred_seed_version'")
+  const forceReset = (verRow?.value ?? '0') !== CRED_SEED_VERSION
   for (const u of SEED) {
     const existing = await db.queryOne<{ id: string }>('SELECT id FROM users WHERE username = $1', [u.username])
     const pinHash = bcrypt.hashSync(u.pin, 10)
     if (!existing) {
       await db.run(
-        'INSERT INTO users (id, username, display_name, pin_hash, role, active) VALUES ($1,$2,$3,$4,$5,1)',
-        [uuid(), u.username, u.display_name, pinHash, u.role]
+        'INSERT INTO users (id, username, display_name, pin_hash, pin_plain, role, active) VALUES ($1,$2,$3,$4,$5,$6,1)',
+        [uuid(), u.username, u.display_name, pinHash, u.pin, u.role]
       )
-    } else if (u.resetPin) {
-      // Reset PIN + display_name so server matches the install's known credentials.
+    } else if (forceReset) {
       await db.run(
-        'UPDATE users SET display_name = $1, pin_hash = $2, role = $3, active = 1, failed_attempts = 0, locked_until = NULL WHERE id = $4',
-        [u.display_name, pinHash, u.role, existing.id]
+        'UPDATE users SET display_name = $1, pin_hash = $2, pin_plain = $3, role = $4, active = 1, failed_attempts = 0, locked_until = NULL WHERE id = $5',
+        [u.display_name, pinHash, u.pin, u.role, existing.id]
       )
     }
+  }
+  if (forceReset) {
+    if (verRow) await db.run("UPDATE settings SET value = $1 WHERE key = 'cred_seed_version'", [CRED_SEED_VERSION])
+    else await db.run("INSERT INTO settings (key, value) VALUES ('cred_seed_version', $1)", [CRED_SEED_VERSION])
   }
 
   // Seed products if none exist
@@ -798,8 +808,8 @@ app.post('/api/sync/users', async (req, res) => {
       await db.transaction(async () => {
         // Insert new user first (temporarily allow duplicate username by using temp username)
         await db.run(
-          'INSERT INTO users (id, username, display_name, pin_hash, role, active) VALUES ($1,$2,$3,$4,$5,$6)',
-          [u.id, '__sync_temp_' + u.id, u.display_name, u.pin_hash, u.role, u.active]
+          'INSERT INTO users (id, username, display_name, pin_hash, pin_plain, role, active) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+          [u.id, '__sync_temp_' + u.id, u.display_name, u.pin_hash, u.pin_plain ?? null, u.role, u.active]
         )
         // Update all references from old ID to new ID
         await db.run('UPDATE sales SET user_id = $1 WHERE user_id = $2', [u.id, existingByName.id])
@@ -813,13 +823,28 @@ app.post('/api/sync/users', async (req, res) => {
       })
     } else {
       await db.run(
-        'INSERT INTO users (id, username, display_name, pin_hash, role, active) VALUES ($1,$2,$3,$4,$5,$6)',
-        [u.id, u.username, u.display_name, u.pin_hash, u.role, u.active]
+        'INSERT INTO users (id, username, display_name, pin_hash, pin_plain, role, active) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+        [u.id, u.username, u.display_name, u.pin_hash, u.pin_plain ?? null, u.role, u.active]
       )
     }
     res.json({ status: 'synced' })
   } catch (err: any) {
     console.error('[Sync] User error:', err.message)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Sync a user update (e.g. an admin reset a cashier's PIN on the terminal).
+app.put('/api/sync/users/:id', async (req, res) => {
+  try {
+    const u = req.body
+    await db.run(
+      'UPDATE users SET display_name=$1, pin_hash=$2, pin_plain=$3, role=$4, active=$5, failed_attempts=0, locked_until=NULL WHERE id=$6',
+      [u.display_name, u.pin_hash, u.pin_plain ?? null, u.role, u.active ?? 1, req.params.id]
+    )
+    res.json({ status: 'synced' })
+  } catch (err: any) {
+    console.error('[Sync] User update error:', err.message)
     res.status(500).json({ error: err.message })
   }
 })

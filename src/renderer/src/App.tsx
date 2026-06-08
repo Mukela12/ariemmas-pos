@@ -5,6 +5,7 @@ import { setVatEnabled } from './lib/taxConfig'
 import { Login } from './pages/Login'
 import { POS } from './pages/POS'
 import { Products } from './pages/Products'
+import { Cashiers } from './pages/Cashiers'
 import { Reports } from './pages/Reports'
 import { Settings } from './pages/Settings'
 import { AppLayout } from './components/AppLayout'
@@ -36,6 +37,7 @@ export function App() {
                 <Routes>
                   <Route path="/" element={<POS />} />
                   <Route path="/products" element={<Products />} />
+                  <Route path="/cashiers" element={<Cashiers />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>

@@ -9,10 +9,11 @@ import { OnScreenKeyboard } from './OnScreenKeyboard'
 import logoUrl from '../assets/logo.png'
 
 const NAV_ITEMS = [
-  { path: '/', label: 'Sale', roles: ['cashier', 'manager', 'admin'] },
-  { path: '/products', label: 'Products', roles: ['manager', 'admin'] },
-  { path: '/reports', label: 'Reports', roles: ['manager', 'admin'] },
-  { path: '/settings', label: 'Settings', roles: ['admin'] }
+  { path: '/', label: 'Sale', roles: ['cashier', 'manager', 'admin'], desktopOnly: false },
+  { path: '/products', label: 'Products', roles: ['manager', 'admin'], desktopOnly: false },
+  { path: '/cashiers', label: 'Cashiers', roles: ['admin'], desktopOnly: true },
+  { path: '/reports', label: 'Reports', roles: ['manager', 'admin'], desktopOnly: false },
+  { path: '/settings', label: 'Settings', roles: ['admin'], desktopOnly: false }
 ]
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -47,8 +48,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     navigate('/login')
   }
 
+  // Cashier management is desktop-only (it reads/writes local PINs); hide it on
+  // the web build where window.api.listUsers isn't exposed.
+  const canManageUsers = typeof window.api?.listUsers === 'function'
   const visibleNav = NAV_ITEMS.filter((item) =>
-    item.roles.includes(user?.role || 'cashier')
+    item.roles.includes(user?.role || 'cashier') && (!item.desktopOnly || canManageUsers)
   )
 
   return (

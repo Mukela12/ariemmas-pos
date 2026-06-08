@@ -51,6 +51,16 @@ const api = {
   updateSetting: (key: string, value: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_UPDATE, key, value),
 
+  // Users (admin cashier management — desktop only)
+  listUsers: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.USERS_LIST),
+  setUserPin: (userId: string, newPin: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.USERS_SET_PIN, userId, newPin),
+  createCashier: (username: string, displayName: string, pin: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.USERS_CREATE, username, displayName, pin),
+  renameUser: (userId: string, displayName: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.USERS_RENAME, userId, displayName),
+
   // Hardware
   printerStatus: () =>
     ipcRenderer.invoke(IPC_CHANNELS.HW_PRINTER_STATUS),

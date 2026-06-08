@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
 import { v4 as uuid } from 'uuid'
 import { getDb, now } from './database/connection'
-import { login, logout, getCurrentUser, seedDefaultAdmin } from './services/auth'
+import { login, logout, getCurrentUser, seedDefaultAdmin, listUsersForAdmin, adminSetUserPin, adminRenameUser, adminCreateCashier } from './services/auth'
 import { completeSale, getDailySales } from './services/sales'
 import { exportDailySalesToExcel } from './services/exportExcel'
 import { queueSync, getSyncStatus, processSyncQueue } from './services/syncService'
@@ -252,6 +252,27 @@ export async function registerIpcHandlers(): Promise<void> {
     await upsertSetting(key, value)
     queueSync('update', 'setting', key, { key, value }).catch(() => {})
     return true
+  })
+
+  // Users — admin-only cashier management (view current PINs, reset, add, rename)
+  const requireAdmin = (): void => {
+    if (getCurrentUser()?.role !== 'admin') throw new Error('Admin access required.')
+  }
+  ipcMain.handle(IPC_CHANNELS.USERS_LIST, async () => {
+    requireAdmin()
+    return listUsersForAdmin()
+  })
+  ipcMain.handle(IPC_CHANNELS.USERS_SET_PIN, async (_e, userId: string, newPin: string) => {
+    requireAdmin()
+    return adminSetUserPin(userId, newPin)
+  })
+  ipcMain.handle(IPC_CHANNELS.USERS_CREATE, async (_e, username: string, displayName: string, pin: string) => {
+    requireAdmin()
+    return adminCreateCashier(username, displayName, pin)
+  })
+  ipcMain.handle(IPC_CHANNELS.USERS_RENAME, async (_e, userId: string, displayName: string) => {
+    requireAdmin()
+    return adminRenameUser(userId, displayName)
   })
 
   // Sync

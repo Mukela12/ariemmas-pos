@@ -129,6 +129,16 @@ export interface AppSettings {
   cash_alert_email: string
 }
 
+// Admin view of a login (Cashiers screen). `pin` is the readable PIN, shown to
+// the admin only; it's never sent over the public web API.
+export interface ManagedUser {
+  id: string
+  username: string
+  display_name: string
+  pin: string | null
+  role: 'admin' | 'cashier' | 'manager'
+}
+
 export interface CartItem {
   product_id: string
   barcode: string | null
