@@ -21,7 +21,15 @@ export function POS() {
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [lastPayment, setLastPayment] = useState<{ method: 'cash' | 'mobile_money'; total: number; tendered: number | null; change: number | null } | null>(null)
   const [weighingProduct, setWeighingProduct] = useState<Product | null>(null)
+  const [toast, setToast] = useState<{ msg: string; tone: 'ok' | 'err' } | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const showToast = useCallback((msg: string, tone: 'ok' | 'err' = 'ok') => {
+    setToast({ msg, tone })
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    toastTimer.current = setTimeout(() => setToast(null), 2600)
+  }, [])
 
   const { items, addItem, removeItem, updateQuantity, selectedIndex, selectItem, clearSale, getSubtotal, getVatTotal, getTotal, getItemCount } = useSaleStore()
   const { user } = useAuthStore()
@@ -45,13 +53,36 @@ export function POS() {
 
   useScanner({ onScan: handleBarcodeScan, enabled: !showPayment && !searchActive })
 
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current) }, [])
+
   const openSearch = () => { setSearchActive(true) }
   const closeSearch = () => { setSearchActive(false); setSearchQuery(''); setSearchResults([]) }
   const pickSearchResult = (product: Product) => {
     requestAddProduct(product)
     // Keep the query + results so the result list stays put (no reset to the
     // empty "start typing" state) and the cashier can add more; the added item
-    // appears immediately in the Current Sale panel on the right.
+    // appears immediately in the sale (main area + Current Sale panel).
+  }
+
+  // F1 — clear the cart and start fresh (with a confirmation toast so the
+  // cashier can see the button did something even when the cart was empty).
+  const handleNewSale = () => {
+    const hadItems = items.length > 0
+    clearSale()
+    closeSearch()
+    showToast(hadItems ? 'New sale started' : 'Ready for a new sale', 'ok')
+  }
+
+  // F5 — kick the cash drawer. The drawer is wired to the receipt printer's DK
+  // port, so this needs a printer configured. Report success/failure so the
+  // cashier isn't left guessing when nothing happens.
+  const handleOpenDrawer = async () => {
+    try {
+      const ok = await window.api?.openCashDrawer?.()
+      showToast(ok ? 'Cash drawer opened' : 'No printer set — choose one in Settings → Hardware', ok ? 'ok' : 'err')
+    } catch {
+      showToast('Could not open the cash drawer', 'err')
+    }
   }
 
   // Live search as the cashier types on the on-screen keyboard (name or barcode).
@@ -77,10 +108,12 @@ export function POS() {
       if (e.key === 'F12' && items.length > 0 && currentShift) { e.preventDefault(); setShowPayment(true) }
       if (e.key === 'F2') { e.preventDefault(); openSearch() }
       if (e.key === 'F8' && selectedIndex >= 0) { e.preventDefault(); removeItem(selectedIndex) }
-      if (e.key === 'F1') { e.preventDefault(); clearSale() }
+      if (e.key === 'F1') { e.preventDefault(); handleNewSale() }
+      if (e.key === 'F5') { e.preventDefault(); handleOpenDrawer() }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.length, selectedIndex, removeItem, clearSale])
 
   const total = getTotal()
@@ -105,15 +138,62 @@ export function POS() {
           </button>
         </div>
 
-        {/* Work area — the live cart shows in the Current Sale panel on the right */}
-        <div className="flex-1 flex flex-col items-center justify-center text-center px-6 text-[#A1A1AA]">
-          <ShoppingBag size={56} strokeWidth={1} className="opacity-20" />
-          <p className="text-[16px] mt-4 text-[#52525B] font-semibold">Scan or search to add products</p>
-          <p className="text-[13px] mt-2 max-w-[320px] leading-relaxed">
-            Scan a barcode with the scanner, or tap <span className="font-semibold text-[#0D9488]">Search for a product</span> to find one with the on-screen keyboard.
-            Items you add appear in <span className="font-semibold text-[#52525B]">Current Sale</span> on the right.
-          </p>
-        </div>
+        {/* Work area — the live sale. Empty state until the first item is added,
+            then the scanned/added items appear here on the main display (and in
+            the Current Sale summary on the right). */}
+        {items.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-6 text-[#A1A1AA]">
+            <ShoppingBag size={56} strokeWidth={1} className="opacity-20" />
+            <p className="text-[16px] mt-4 text-[#52525B] font-semibold">Scan or search to add products</p>
+            <p className="text-[13px] mt-2 max-w-[320px] leading-relaxed">
+              Scan a barcode with the scanner, or tap <span className="font-semibold text-[#0D9488]">Search for a product</span> to find one with the on-screen keyboard.
+            </p>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto min-h-0 bg-[#F7F7F6]">
+            {items.map((item, index) => {
+              const src = productImageSrc(item)
+              const unit = Number(item.price)
+              return (
+                <div key={`${item.product_id}-${index}`}
+                  onClick={() => selectItem(index)}
+                  className={`flex items-center gap-3 px-3 py-2.5 border-b border-[#E4E4E7] cursor-pointer ${selectedIndex === index ? 'bg-[#F0FDFA] shadow-[inset_3px_0_0_#0D9488]' : 'bg-white hover:bg-[#FAFAFA]'}`}>
+                  <div className="w-14 h-14 rounded-[2px] bg-[#F4F4F5] overflow-hidden flex items-center justify-center shrink-0">
+                    {src ? <img src={src} alt="" className="w-full h-full object-cover" /> : <ShoppingBag size={20} className="text-[#D4D4D8]" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[15px] font-semibold text-[#18181B] leading-tight truncate">{item.name}</p>
+                    <p className="text-[12.5px] text-[#71717A] mt-0.5 tabular-nums">
+                      {formatZMW(unit)} {item.is_weighted ? '/ kg' : 'each'}
+                    </p>
+                  </div>
+                  {/* Quantity — steppers for unit items; weighed items show their
+                      kg amount (set on the scale, so no ±1 stepper). */}
+                  {item.is_weighted ? (
+                    <span className="px-3 text-center font-bold tabular-nums text-[#18181B] text-[16px] shrink-0">{Number(item.quantity).toFixed(3)} kg</span>
+                  ) : (
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button onClick={(e) => { e.stopPropagation(); updateQuantity(index, item.quantity - 1) }}
+                        className="w-10 h-10 rounded-[2px] border border-[#E4E4E7] bg-white flex items-center justify-center text-[#52525B] hover:bg-[#F4F4F5] active:bg-[#E4E4E7]">
+                        <Minus size={16} />
+                      </button>
+                      <span className="w-12 text-center font-bold tabular-nums text-[#18181B] text-[17px]">{item.quantity}</span>
+                      <button onClick={(e) => { e.stopPropagation(); updateQuantity(index, item.quantity + 1) }}
+                        className="w-10 h-10 rounded-[2px] border border-[#E4E4E7] bg-white flex items-center justify-center text-[#52525B] hover:bg-[#F4F4F5] active:bg-[#E4E4E7]">
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                  )}
+                  <span className="w-24 text-right text-[16px] font-bold text-[#18181B] tabular-nums shrink-0">{formatZMW(item.line_total)}</span>
+                  <button onClick={(e) => { e.stopPropagation(); removeItem(index) }}
+                    className="w-9 h-9 rounded-[2px] flex items-center justify-center text-[#A1A1AA] hover:text-white hover:bg-[#DC2626] shrink-0">
+                    <X size={16} />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         {/* Search overlay — results + on-screen keyboard (covers the left area) */}
         {searchActive && (
@@ -184,7 +264,7 @@ export function POS() {
           <span className="text-xs font-semibold text-[#52525B] bg-[#F4F4F5] px-2 py-1 rounded-[2px] tabular-nums">{itemCount} {itemCount === 1 ? 'item' : 'items'}</span>
         </div>
 
-        {/* Line items */}
+        {/* Receipt summary — read-only; edit quantities on the main list at left */}
         <div className="flex-1 overflow-y-auto min-h-0">
           {items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-6 text-[#A1A1AA]">
@@ -192,42 +272,18 @@ export function POS() {
               <p className="text-[13px] mt-3 text-[#71717A]">No items yet</p>
             </div>
           ) : (
-            <div className="p-2">
-              {items.map((item, index) => {
-                const src = productImageSrc(item)
-                return (
-                  <div key={`${item.product_id}-${index}`}
-                    onClick={() => selectItem(index)}
-                    className={`flex gap-2.5 p-2 rounded-[3px] border cursor-pointer mb-1.5 ${selectedIndex === index ? 'bg-[#F0FDFA] border-[#99F6E4]' : 'bg-white border-[#E4E4E7] hover:bg-[#FAFAFA]'}`}>
-                    <div className="w-11 h-11 rounded-[2px] bg-[#F4F4F5] overflow-hidden flex items-center justify-center shrink-0">
-                      {src ? <img src={src} alt="" className="w-full h-full object-cover" /> : <ShoppingBag size={16} className="text-[#D4D4D8]" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-1.5">
-                        <p className="text-[13px] font-medium text-[#18181B] leading-tight">{item.name}</p>
-                        <button onClick={(e) => { e.stopPropagation(); removeItem(index) }}
-                          className="w-6 h-6 -mr-0.5 -mt-0.5 rounded-[2px] flex items-center justify-center text-[#A1A1AA] hover:text-white hover:bg-[#DC2626] shrink-0">
-                          <X size={14} />
-                        </button>
-                      </div>
-                      <div className="flex items-center justify-between mt-1.5">
-                        <div className="flex items-center gap-1">
-                          <button onClick={(e) => { e.stopPropagation(); updateQuantity(index, item.quantity - 1) }}
-                            className="w-8 h-8 rounded-[2px] border border-[#E4E4E7] bg-white flex items-center justify-center text-[#52525B] hover:bg-[#F4F4F5] active:bg-[#E4E4E7]">
-                            <Minus size={13} />
-                          </button>
-                          <span className="w-8 text-center font-bold tabular-nums text-[#18181B] text-[14px]">{item.quantity}</span>
-                          <button onClick={(e) => { e.stopPropagation(); updateQuantity(index, item.quantity + 1) }}
-                            className="w-8 h-8 rounded-[2px] border border-[#E4E4E7] bg-white flex items-center justify-center text-[#52525B] hover:bg-[#F4F4F5] active:bg-[#E4E4E7]">
-                            <Plus size={13} />
-                          </button>
-                        </div>
-                        <span className="text-[14px] font-bold text-[#18181B] tabular-nums">{formatZMW(item.line_total)}</span>
-                      </div>
-                    </div>
+            <div className="divide-y divide-[#F4F4F5]">
+              {items.map((item, index) => (
+                <div key={`${item.product_id}-${index}`}
+                  onClick={() => selectItem(index)}
+                  className={`flex items-center gap-2.5 px-4 py-2.5 cursor-pointer ${selectedIndex === index ? 'bg-[#F0FDFA]' : 'hover:bg-[#FAFAFA]'}`}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13.5px] font-medium text-[#18181B] leading-tight truncate">{item.name}</p>
+                    <p className="text-[12px] text-[#A1A1AA] mt-0.5 tabular-nums">{item.is_weighted ? `${Number(item.quantity).toFixed(3)} kg ×` : `${item.quantity} ×`} {formatZMW(Number(item.price))}</p>
                   </div>
-                )
-              })}
+                  <span className="text-[14px] font-bold text-[#18181B] tabular-nums shrink-0">{formatZMW(item.line_total)}</span>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -235,14 +291,18 @@ export function POS() {
         {/* Totals + pay — pinned */}
         <div className="border-t border-[#E4E4E7] p-4 shrink-0">
           <div className="space-y-1.5">
-            <div className="flex justify-between text-[13px]">
-              <span className="text-[#71717A]">Subtotal</span>
-              <span className="text-[#52525B] font-medium tabular-nums">{formatZMW(subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-[13px]">
-              <span className="text-[#71717A]">VAT (16%)</span>
-              <span className="text-[#52525B] font-medium tabular-nums">{formatZMW(vatTotal)}</span>
-            </div>
+            {vatTotal > 0 && (
+              <>
+                <div className="flex justify-between text-[13px]">
+                  <span className="text-[#71717A]">Subtotal</span>
+                  <span className="text-[#52525B] font-medium tabular-nums">{formatZMW(subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-[13px]">
+                  <span className="text-[#71717A]">VAT</span>
+                  <span className="text-[#52525B] font-medium tabular-nums">{formatZMW(vatTotal)}</span>
+                </div>
+              </>
+            )}
             <div className="flex justify-between items-baseline pt-2 mt-1 border-t border-[#E4E4E7]">
               <span className="text-[15px] font-semibold text-[#18181B]">Total</span>
               <span className="text-[32px] font-bold text-[#18181B] tabular-nums tracking-tight leading-none">{formatZMW(total)}</span>
@@ -258,7 +318,7 @@ export function POS() {
               : <><span className="text-[11px] uppercase tracking-wider opacity-80">F12 · Pay</span><span className="text-[23px] tabular-nums">{formatZMW(total)}</span></>}
           </button>
           {items.length > 0 && (
-            <button onClick={() => clearSale()} className="btn-ghost w-full h-9 mt-2 text-[13px]">
+            <button onClick={handleNewSale} className="btn-ghost w-full h-9 mt-2 text-[13px]">
               Clear sale (F1)
             </button>
           )}
@@ -268,10 +328,10 @@ export function POS() {
       {/* Bottom graphite function bar — real boxy buttons */}
       <div className="graphite absolute bottom-0 left-0 right-[372px] h-16 flex items-stretch px-2 py-2 gap-2">
         {[
-          { key: 'F1', label: 'New Sale', onClick: () => clearSale(), disabled: false },
-          { key: 'F2', label: 'Search', onClick: () => openSearch(), disabled: false },
+          { key: 'F1', label: 'New Sale', onClick: handleNewSale, disabled: false },
+          { key: 'F2', label: 'Search', onClick: openSearch, disabled: false },
           { key: 'F3', label: 'Discount', onClick: () => {}, disabled: true },
-          { key: 'F5', label: 'Drawer', onClick: () => window.api?.openCashDrawer?.(), disabled: false },
+          { key: 'F5', label: 'Drawer', onClick: handleOpenDrawer, disabled: false },
           { key: 'F8', label: 'Remove', onClick: () => selectedIndex >= 0 && removeItem(selectedIndex), disabled: selectedIndex < 0 },
           { key: 'F12', label: 'Pay', onClick: () => items.length > 0 && currentShift && setShowPayment(true), disabled: items.length === 0 || !currentShift }
         ].map(f => (
@@ -282,6 +342,15 @@ export function POS() {
           </button>
         ))}
       </div>
+
+      {/* Transient toast — feedback for drawer / new-sale and other actions */}
+      {toast && (
+        <div className="absolute bottom-[76px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+          <div className={`px-4 py-2.5 rounded-[3px] shadow-lg text-[13.5px] font-semibold text-white ${toast.tone === 'ok' ? 'bg-[#0D9488]' : 'bg-[#DC2626]'}`}>
+            {toast.msg}
+          </div>
+        </div>
+      )}
 
       {/* Thank you screen */}
       {showThankYou && (

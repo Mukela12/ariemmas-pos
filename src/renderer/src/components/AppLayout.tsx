@@ -5,6 +5,7 @@ import { LogOut, X, Cloud, CloudOff, RefreshCw, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { formatZMW } from '../lib/currency'
 import { NumberKeypad } from './NumberKeypad'
+import { OnScreenKeyboard } from './OnScreenKeyboard'
 import logoUrl from '../assets/logo.png'
 
 const NAV_ITEMS = [
@@ -182,6 +183,7 @@ function ShiftModal({
   const [closingCash, setClosingCash] = useState('')
   const [notes] = useState('')
   const [cashierName, setCashierName] = useState('')
+  const [nameKbOpen, setNameKbOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [openingLimit, setOpeningLimit] = useState(1000)
   const [error, setError] = useState<string | null>(null)
@@ -308,14 +310,17 @@ function ShiftModal({
             <>
               <div>
                 <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Cashier&apos;s Name</label>
-                <input
-                  type="text"
-                  value={cashierName}
-                  onChange={(e) => { setCashierName(e.target.value); setError(null) }}
-                  className={inputClass}
-                  placeholder="e.g. Mary Banda"
-                  autoFocus
-                />
+                {/* Tapping opens the on-screen letters keyboard — the number
+                    keypad below can't type a name. */}
+                <button
+                  type="button"
+                  onClick={() => setNameKbOpen(true)}
+                  className={`${inputClass} flex items-center text-left ${nameKbOpen ? 'border-[#0D9488] ring-[3px] ring-[#0D9488]/[0.08]' : ''}`}
+                >
+                  {cashierName
+                    ? <span className="text-[#18181B]">{cashierName}</span>
+                    : <span className="text-[#A1A1AA]">Tap to type the cashier&apos;s name</span>}
+                </button>
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Opening Cash (K {openingLimit.toFixed(0)} or less)</label>
@@ -343,6 +348,19 @@ function ShiftModal({
           )}
         </div>
       </div>
+
+      {/* On-screen letters keyboard for the cashier's name (the keypad above is
+          numbers-only). Slides up over the modal; tap Done to dismiss. */}
+      {nameKbOpen && !shift && (
+        <div className="fixed inset-x-0 bottom-0 z-[60]" onClick={(e) => e.stopPropagation()}>
+          <OnScreenKeyboard
+            value={cashierName}
+            onChange={(v) => { setCashierName(v); setError(null) }}
+            onEnter={() => setNameKbOpen(false)}
+            onClose={() => setNameKbOpen(false)}
+          />
+        </div>
+      )}
     </div>
   )
 }

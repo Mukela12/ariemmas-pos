@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
+import { setVatEnabled } from './lib/taxConfig'
 import { Login } from './pages/Login'
 import { POS } from './pages/POS'
 import { Products } from './pages/Products'
@@ -19,6 +20,8 @@ export function App() {
 
   useEffect(() => {
     checkSession()
+    // Load the VAT on/off switch (defaults off for unregistered businesses)
+    window.api?.getSettings?.().then((s) => setVatEnabled(s?.vat_enabled === 'true')).catch(() => {})
   }, [checkSession])
 
   return (

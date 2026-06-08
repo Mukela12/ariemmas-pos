@@ -344,7 +344,8 @@ async function seedSampleProducts(): Promise<void> {
 
   const products = [
     { barcode: '2324345', name: 'Apples (1kg)', cat: 'cat-groceries', price: 55.89, cost: 40.00, stock: 120 },
-    { barcode: '3121338', name: 'T-Bone Steak', cat: 'cat-meat', price: 289.99, cost: 210.00, stock: 25 },
+    // Sold by weight (butchery) — price is per kg; cashier enters the weight.
+    { barcode: '3121338', name: 'T-Bone Steak', cat: 'cat-meat', price: 289.99, cost: 210.00, stock: 25, weighted: true, unit: 'kg' },
     { barcode: '4810234', name: 'Mealie Meal 25kg', cat: 'cat-groceries', price: 85.00, cost: 65.00, stock: 48, vat: 0 },
     { barcode: '5918273', name: 'Cooking Oil 2L', cat: 'cat-groceries', price: 65.00, cost: 48.00, stock: 3, vat: 0 },
     { barcode: '6723891', name: 'Sugar 2kg', cat: 'cat-groceries', price: 45.00, cost: 32.00, stock: 67 },
@@ -373,14 +374,16 @@ async function seedSampleProducts(): Promise<void> {
   for (const p of products) {
     const id = uuid()
     const vatRate = (p as any).vat ?? 0.16
+    const isWeighted = (p as any).weighted ? 1 : 0
+    const unit = (p as any).unit ?? 'each'
     const imageUrl = PRODUCT_IMAGES[p.name] || null
     await db.run(`
-      INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, image_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [id, p.barcode, p.name, p.cat, p.price, p.cost, vatRate, p.stock, imageUrl])
+      INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, unit, is_weighted, image_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [id, p.barcode, p.name, p.cat, p.price, p.cost, vatRate, p.stock, unit, isWeighted, imageUrl])
     queueSync('insert', 'product', id, {
       id, barcode: p.barcode, name: p.name, category_id: p.cat, price: p.price,
-      cost_price: p.cost, vat_rate: vatRate, stock_quantity: p.stock, min_stock_level: 5, unit: 'each', image_url: imageUrl
+      cost_price: p.cost, vat_rate: vatRate, stock_quantity: p.stock, min_stock_level: 5, unit, is_weighted: isWeighted, image_url: imageUrl
     }).catch(() => {})
   }
 }

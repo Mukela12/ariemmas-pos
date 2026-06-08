@@ -5,6 +5,7 @@ import { writeFile, unlink } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import type { PrintableReceipt } from '../../shared/types'
+import { formatMonguDateTime } from '../../shared/datetime'
 
 // 80mm thermal printers (e.g. PD-POS806UE) fit 48 chars per line in Font A.
 const LINE_WIDTH = 48
@@ -47,8 +48,7 @@ function divider(): Buffer {
 export function buildReceiptBytes(r: PrintableReceipt): Buffer {
   const paymentLabel =
     r.paymentMethod === 'mobile_money' ? 'Mobile Money' : r.paymentMethod === 'cash' ? 'Cash' : 'Split'
-  const printed = new Date(r.printedAt)
-  const timestamp = Number.isNaN(printed.getTime()) ? r.printedAt : printed.toLocaleString('en-GB')
+  const timestamp = formatMonguDateTime(r.printedAt)
 
   const parts: Buffer[] = [INIT]
 
@@ -74,9 +74,11 @@ export function buildReceiptBytes(r: PrintableReceipt): Buffer {
   }
   parts.push(divider())
 
-  // Totals
-  parts.push(lr('Subtotal', money(r.subtotal)))
-  parts.push(lr('VAT', money(r.vatTotal)))
+  // Totals (hide Subtotal/VAT when VAT is switched off)
+  if (r.vatTotal > 0) {
+    parts.push(lr('Subtotal', money(r.subtotal)))
+    parts.push(lr('VAT', money(r.vatTotal)))
+  }
   parts.push(BOLD_ON, SIZE_DOUBLE, lr('TOTAL', money(r.total)), SIZE_NORMAL, BOLD_OFF)
   parts.push(divider())
 
@@ -118,7 +120,7 @@ export function buildTestBytes(): Buffer {
     line('If you can read this, the printer'),
     line('is connected and working.'),
     divider(),
-    line(new Date().toLocaleString('en-GB')),
+    line(formatMonguDateTime(new Date().toISOString())),
     line(),
     line(),
     FEED_AND_CUT

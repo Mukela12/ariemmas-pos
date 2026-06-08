@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Store, Receipt, Printer, Save, Check, Wifi, WifiOff, BellRing } from 'lucide-react'
+import { setVatEnabled } from '../lib/taxConfig'
 
 export function Settings() {
   const [settings, setSettings] = useState<Record<string, string>>({})
@@ -215,6 +216,26 @@ export function Settings() {
                   placeholder="Thank you for shopping with us!"
                 />
               </div>
+              {/* VAT on/off toggle */}
+              <div className="flex items-center justify-between gap-4 py-2 px-3 rounded-[2px] border border-[#E4E4E7] bg-[#FAFAFA]">
+                <div>
+                  <div className="text-sm font-medium text-[#18181B]">Charge VAT</div>
+                  <div className="text-[11px] text-[#71717A] mt-0.5">Turn on only once the business is VAT-registered with ZRA. When off, no VAT is added or shown on receipts.</div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={settings.vat_enabled === 'true'}
+                  onClick={() => {
+                    const next = settings.vat_enabled === 'true' ? 'false' : 'true'
+                    updateField('vat_enabled', next)
+                    setVatEnabled(next === 'true')
+                  }}
+                  className={`relative w-12 h-7 rounded-full transition-colors shrink-0 ${settings.vat_enabled === 'true' ? 'bg-[#0D9488]' : 'bg-[#D4D4D8]'}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${settings.vat_enabled === 'true' ? 'translate-x-5' : ''}`} />
+                </button>
+              </div>
               <div>
                 <label className={labelClass}>VAT Rate (%)</label>
                 <input
@@ -222,7 +243,8 @@ export function Settings() {
                   step="0.01"
                   value={settings.vat_rate || '16'}
                   onChange={(e) => updateField('vat_rate', e.target.value)}
-                  className={`${inputClass} max-w-[120px] tabular-nums`}
+                  disabled={settings.vat_enabled !== 'true'}
+                  className={`${inputClass} max-w-[120px] tabular-nums disabled:opacity-50 disabled:bg-[#F4F4F5]`}
                 />
               </div>
             </div>

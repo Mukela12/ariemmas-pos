@@ -30,7 +30,7 @@ export function OnScreenKeyboard({ value, onChange, onEnter, onClose }: Props) {
         {ROWS.map((row, ri) => (
           <div key={ri} className="flex justify-center gap-1.5">
             {ri === 3 && (
-              <button onClick={() => setCaps((c) => !c)}
+              <button onClick={() => setCaps((c) => !c)} aria-label="Shift"
                 className={`keypad-util h-11 px-3 flex items-center justify-center ${caps ? 'ring-2 ring-[#2DD4BF]' : ''}`}>
                 <ArrowBigUp size={18} />
               </button>

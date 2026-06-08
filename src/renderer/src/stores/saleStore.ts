@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { CartItem, Product } from '../../../shared/types'
+import { isVatEnabled } from '../lib/taxConfig'
 
 interface SaleState {
   items: CartItem[]
@@ -42,6 +43,7 @@ export const useSaleStore = create<SaleState>((set, get) => ({
           quantity: qty,
           line_total: lineTotal,
           vat_amount: calcVat(lineTotal, vatRate),
+          is_weighted: isWeighted,
           image_url: product.image_url,
           image_filename: product.image_filename
         }
@@ -72,6 +74,7 @@ export const useSaleStore = create<SaleState>((set, get) => ({
         quantity: 1,
         line_total: lineTotal,
         vat_amount: calcVat(lineTotal, vatRate),
+        is_weighted: false,
         image_url: product.image_url,
         image_filename: product.image_filename
       }
@@ -109,11 +112,16 @@ export const useSaleStore = create<SaleState>((set, get) => ({
 
   selectItem: (index: number) => set({ selectedIndex: index }),
 
+  // When VAT is off, the full price is the subtotal and VAT is zero. The
+  // getters gate on isVatEnabled() so toggling VAT updates the breakdown live.
   getSubtotal: () => {
-    return get().items.reduce((sum, item) => sum + (item.line_total - item.vat_amount), 0)
+    const items = get().items
+    if (!isVatEnabled()) return items.reduce((sum, item) => sum + item.line_total, 0)
+    return items.reduce((sum, item) => sum + (item.line_total - item.vat_amount), 0)
   },
 
   getVatTotal: () => {
+    if (!isVatEnabled()) return 0
     return get().items.reduce((sum, item) => sum + item.vat_amount, 0)
   },
 

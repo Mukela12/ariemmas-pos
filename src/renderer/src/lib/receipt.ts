@@ -1,5 +1,6 @@
 import type { CartItem, PrintableReceipt, Sale } from '../../../shared/types'
 import { formatZMW } from './currency'
+import { formatMonguDateTime } from '../../../shared/datetime'
 
 export function buildPrintableReceipt({
   sale,
@@ -98,8 +99,7 @@ export async function printReceiptInBrowser(receipt: PrintableReceipt): Promise<
 
 function renderReceiptHtml(receipt: PrintableReceipt): string {
   const paymentLabel = receipt.paymentMethod === 'mobile_money' ? 'Mobile Money' : receipt.paymentMethod === 'cash' ? 'Cash' : 'Split'
-  const printedAt = new Date(receipt.printedAt)
-  const timestamp = Number.isNaN(printedAt.getTime()) ? receipt.printedAt : printedAt.toLocaleString('en-GB')
+  const timestamp = formatMonguDateTime(receipt.printedAt)
 
   return `<!doctype html>
 <html>
@@ -198,8 +198,9 @@ function renderReceiptHtml(receipt: PrintableReceipt): string {
       `).join('')}
       <div class="rule"></div>
       <div class="summary">
+        ${receipt.vatTotal > 0 ? `
         <div class="summary-line"><span>Subtotal</span><span>${escapeHtml(formatZMW(receipt.subtotal))}</span></div>
-        <div class="summary-line"><span>VAT</span><span>${escapeHtml(formatZMW(receipt.vatTotal))}</span></div>
+        <div class="summary-line"><span>VAT</span><span>${escapeHtml(formatZMW(receipt.vatTotal))}</span></div>` : ''}
         <div class="summary-line total"><span>Total</span><span>${escapeHtml(formatZMW(receipt.total))}</span></div>
       </div>
       <div class="rule"></div>

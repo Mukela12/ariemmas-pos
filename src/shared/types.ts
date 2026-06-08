@@ -138,6 +138,7 @@ export interface CartItem {
   quantity: number
   line_total: number
   vat_amount: number
+  is_weighted?: boolean
   image_url?: string | null
   image_filename?: string | null
 }
