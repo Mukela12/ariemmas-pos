@@ -205,7 +205,8 @@
   </div>
 
   <h3><span class="num">1.3</span>A note on prices and VAT</h3>
-  <p>All prices are entered <strong>VAT-inclusive</strong> (the price on the shelf is the price the customer pays). The system works out the 16% VAT portion automatically and shows it on the receipt and in reports. You never calculate VAT by hand.</p>
+  <p>The price on the shelf is the price the customer pays. <strong>VAT is switched off by default</strong>, because the business is new and not yet VAT-registered. With VAT off, receipts simply show the <strong>Total</strong> — there is no VAT line, and you never calculate anything by hand.</p>
+  <p>Once the business registers for VAT with ZRA, the owner turns it on with a single switch in <strong>Settings → Charge VAT</strong> (see section 3.6). From then on prices are treated as VAT-inclusive and the system shows the VAT portion on every receipt automatically. <strong>Cashiers don’t need to do anything different either way.</strong></p>
 
   <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 1 · The basics</span></div>
 </section>
@@ -248,10 +249,13 @@
   </figure>
   <ol class="steps">
     <li>If you see <strong>“No Shift”</strong> at the top right, tap it to open this window.</li>
-    <li>In <strong>“Cashier’s Name”</strong>, type the name of the real person on the till today — for example <em>Mary Banda</em>. (The login may be “Cashier 1”, but the owner wants the real name.)</li>
-    <li>In <strong>“Opening Cash (K)”</strong>, type the amount of cash counted in the drawer.</li>
-    <li>Tap <strong>“Open Shift”</strong>. The badge at the top changes to <strong>“Shift Open”</strong>.</li>
+    <li>Tap the <strong>“Cashier’s Name”</strong> box. An <strong>on-screen letters keyboard</strong> slides up — type the name of the real person on the till today, for example <em>Mary Banda</em>, then tap <strong>“Done”</strong>. (The login may be “Cashier 1”, but the owner wants the real name.)</li>
+    <li>Type the cash counted in the drawer using the <strong>number keypad</strong>, then tap <strong>“OPEN”</strong>. The badge at the top changes to <strong>“Shift Open”</strong>.</li>
   </ol>
+  <div class="note">
+    <b>No Windows keyboard needed</b>
+    The till is a touch screen. Letters come from the on-screen keyboard that appears when you tap the name box; numbers come from the keypad. You never need the Windows keyboard.
+  </div>
   <div class="warn">
     <b>Why the name matters</b>
     Five cashiers share three terminals and swap during the day. The name you type here is how the owner’s report tells <em>who</em> actually rang each sale. Always type your own name.
@@ -260,29 +264,29 @@
   <h3><span class="num">2.3</span>The sale screen</h3>
   <figure>
     <img src="img/04-pos-empty.png" alt="Empty POS screen" />
-    <figcaption><b>The sale screen.</b> Search bar at the top, the cart in the middle, and the running <strong>Receipt</strong> with the total on the right.</figcaption>
+    <figcaption><b>The sale screen.</b> Search bar across the top, the items you add fill the large area in the middle, and the <strong>Current Sale</strong> panel on the right keeps the running total.</figcaption>
   </figure>
   <ul>
-    <li><strong>Search bar (top):</strong> scan a barcode or type a product name here.</li>
-    <li><strong>Cart (middle):</strong> the items in the current sale, with quantity and price.</li>
-    <li><strong>Receipt panel (right):</strong> the running subtotal, VAT, and the big <strong>Total</strong>.</li>
-    <li><strong>Pay button (bottom right):</strong> shows the amount due — tap it to take payment.</li>
+    <li><strong>Search bar (top):</strong> tap it to bring up the on-screen keyboard, or scan a barcode.</li>
+    <li><strong>Main area (middle):</strong> every item you scan or add appears here, with its price and quantity. Use <strong>–</strong> / <strong>+</strong> to change quantity and <strong>✕</strong> to remove a line.</li>
+    <li><strong>Current Sale (right):</strong> a tidy summary of the same items, the <strong>Total</strong>, and the green <strong>Pay</strong> button.</li>
+    <li><strong>Function bar (bottom):</strong> the grey buttons — <span class="kbd">F1</span> New Sale, <span class="kbd">F2</span> Search, <span class="kbd">F5</span> Drawer, <span class="kbd">F8</span> Remove, <span class="kbd">F12</span> Pay.</li>
   </ul>
   <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 2 · Cashier Guide</span></div>
 </section>
 
 <section class="page page-break">
   <h3><span class="num">2.4</span>Adding products to the sale</h3>
-  <p>There are two ways to add an item — whichever is faster for you.</p>
-  <p><strong>A. Scan the barcode.</strong> Point the barcode scanner at the product. It’s added to the cart instantly.</p>
-  <p><strong>B. Search by name.</strong> Tap the search bar (or press <span class="kbd">F2</span>) and start typing. A list appears — tap the item you want.</p>
+  <p>There are two ways to add an item — whichever is faster for you. Either way, the item shows up <strong>both</strong> in the large main area and in the Current Sale summary on the right.</p>
+  <p><strong>A. Scan the barcode.</strong> Point the barcode scanner at the product. It’s added instantly.</p>
+  <p><strong>B. Search by name.</strong> Tap <strong>“Search for a product”</strong> (or press <span class="kbd">F2</span>). An on-screen keyboard appears — type a few letters and the matching products list below. Tap the one you want to add it.</p>
   <figure>
-    <img src="img/05-search.png" alt="Search results" />
-    <figcaption>Typing in the search bar shows matching products with their price and stock.</figcaption>
+    <img src="img/05-search.png" alt="Search overlay with on-screen keyboard" />
+    <figcaption><b>The search keyboard.</b> Type with the on-screen keys; matches show with price and stock. Tap a product to add it, then tap <strong>Close</strong> when you’re done searching.</figcaption>
   </figure>
   <figure>
     <img src="img/06-cart-items.png" alt="Cart with items" />
-    <figcaption><b>Items in the cart.</b> Use the <strong>–</strong> and <strong>+</strong> buttons to change quantity, or the <strong>✕</strong> to remove a line. The total updates on the right.</figcaption>
+    <figcaption><b>Items added to the sale.</b> Change quantity with <strong>–</strong> / <strong>+</strong> in the main area, or remove a line with <strong>✕</strong>. The Current Sale total on the right updates automatically.</figcaption>
   </figure>
   <div class="tip">
     <b>Handy keys</b>
@@ -354,10 +358,18 @@
   <h3><span class="num">2.7</span>Receipt &amp; cash drawer</h3>
   <p>As soon as the sale is finished:</p>
   <ul>
-    <li>The <strong>receipt prints</strong> automatically — hand it to the customer.</li>
+    <li>The <strong>receipt prints</strong> automatically — hand it to the customer. It shows the cashier, the date and time in <strong>Mongu time</strong>, and the items.</li>
     <li>On a <strong>cash</strong> sale, the <strong>cash drawer opens</strong> automatically so you can put the money in and take out change.</li>
     <li>A <strong>“Thank You”</strong> screen confirms the sale, showing the total, amount paid, and change.</li>
   </ul>
+  <div class="tip">
+    <b>Opening the drawer on its own</b>
+    Need the drawer without a sale (for example to give change)? Tap <span class="kbd">F5</span> <strong>Drawer</strong> on the bottom bar. A small message confirms <em>“Cash drawer opened”</em>. If it says <em>“No printer set”</em>, the drawer can’t open until a printer is chosen in <strong>Settings → Hardware</strong> (the drawer is wired to the printer).
+  </div>
+  <figure>
+    <img src="img/qa-drawer-toast.png" alt="Cash drawer opened confirmation" />
+    <figcaption><b>The bottom function bar.</b> Tapping <span class="kbd">F5</span> Drawer shows a “Cash drawer opened” confirmation. The same bar has New Sale, Search, Remove and Pay.</figcaption>
+  </figure>
   <figure>
     <img src="img/12-thankyou.png" alt="Thank you screen" />
     <figcaption><b>Sale complete.</b> The screen confirms total, paid, and change, then returns to a fresh sale.</figcaption>
@@ -477,6 +489,20 @@
     <img src="img/40-settings.png" alt="Settings" />
     <figcaption><b>Settings.</b> Shop name, address and details printed on receipts, plus cash-alert options.</figcaption>
   </figure>
+
+  <h3><span class="num">3.6.1</span>Turning VAT on or off</h3>
+  <p>VAT ships <strong>switched off</strong>, which is correct while the business is not yet VAT-registered. With VAT off there is no VAT line on receipts — customers just see the Total.</p>
+  <figure>
+    <img src="img/42-settings-vat.png" alt="VAT toggle in settings" />
+    <figcaption><b>The “Charge VAT” switch.</b> In Settings → Receipt Settings. Off (grey) = no VAT. On (teal) = VAT is calculated at the rate below and shown on receipts.</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>Leave <strong>“Charge VAT”</strong> <strong>off</strong> until the business is registered for VAT with ZRA.</li>
+    <li>When you register, switch it <strong>on</strong>, check the <strong>VAT Rate</strong> (16% in Zambia), and tap <strong>Save</strong>.</li>
+    <li>From then on every receipt shows the VAT portion automatically. Shelf prices don’t change — they’re treated as VAT-inclusive.</li>
+  </ol>
+
+  <h3><span class="num">3.6.2</span>Printer &amp; drawer</h3>
   <figure>
     <img src="img/41-settings-hardware.png" alt="Settings hardware" />
     <figcaption><b>Hardware section.</b> Choose the receipt printer, then use <strong>Test Print</strong> and <strong>Open Drawer</strong> to confirm the hardware works.</figcaption>
@@ -539,6 +565,7 @@
   <p><strong>Do I need internet to sell?</strong> No. The till works fully offline and catches up later.</p>
   <p><strong>Can two cashiers use the same login?</strong> No — one login works on one terminal at a time, on purpose, so sales are tracked to the right person.</p>
   <p><strong>What if I make a mistake on a line?</strong> Tap the <strong>✕</strong> on that line to remove it, or <span class="kbd">F1</span> to clear the whole sale and start again.</p>
+  <p><strong>Why is there no VAT on the receipt?</strong> VAT is switched off until the business is registered for VAT. The owner can turn it on any time in <strong>Settings → Charge VAT</strong>. Cashiers don’t need to do anything differently.</p>
   <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 5 · Troubleshooting</span></div>
 </section>
 
@@ -554,6 +581,7 @@
       <table style="margin:6px 0 0;">
         <tr><td><span class="kbd">F1</span></td><td>Clear / new sale</td></tr>
         <tr><td><span class="kbd">F2</span></td><td>Jump to search</td></tr>
+        <tr><td><span class="kbd">F5</span></td><td>Open cash drawer</td></tr>
         <tr><td><span class="kbd">F8</span></td><td>Remove selected line</td></tr>
         <tr><td><span class="kbd">F12</span></td><td>Take payment</td></tr>
       </table>
