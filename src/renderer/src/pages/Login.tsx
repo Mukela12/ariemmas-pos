@@ -1,76 +1,55 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Loader2, User as UserIcon, KeyRound } from 'lucide-react'
 import { AnimatedGridPattern } from '../components/ui/AnimatedGridPattern'
+import { OnScreenKeyboard } from '../components/OnScreenKeyboard'
+import { NumberKeypad } from '../components/NumberKeypad'
 import logoUrl from '../assets/logo.png'
-
-const CASHIER_CREDENTIALS = [
-  { name: 'Cashier 1', username: 'cashier1', pin: '1111' },
-  { name: 'Cashier 2', username: 'cashier2', pin: '2222' },
-  { name: 'Cashier 3', username: 'cashier3', pin: '3333' },
-  { name: 'Cashier 4', username: 'cashier4', pin: '4444' },
-  { name: 'Cashier 5', username: 'cashier5', pin: '5555' }
-]
 
 export function Login() {
   const [username, setUsername] = useState('')
   const [pin, setPin] = useState('')
   const [showPin, setShowPin] = useState(false)
-  const usernameRef = useRef<HTMLInputElement>(null)
-  const pinRef = useRef<HTMLInputElement>(null)
+  const [activeField, setActiveField] = useState<'username' | 'pin' | null>(null)
   const navigate = useNavigate()
   const { login, isLoading, error } = useAuthStore()
 
-  useEffect(() => {
-    usernameRef.current?.focus()
-  }, [])
+  const canSubmit = username.trim().length > 0 && pin.trim().length > 0
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!username.trim() || !pin.trim()) return
+  const doLogin = async () => {
+    if (!canSubmit || isLoading) return
+    setActiveField(null)
     const success = await login(username.trim().toLowerCase(), pin)
     if (success) navigate('/')
   }
+
+  const fieldBase =
+    'w-full h-12 px-3 rounded-[2px] border bg-white text-[15px] text-left flex items-center gap-2.5 transition-colors'
+  const fieldActive = 'border-[#0D9488] ring-[3px] ring-[#0D9488]/[0.08]'
+  const fieldIdle = 'border-[#E4E4E7] hover:border-[#A1A1AA]'
 
   return (
     <div className="h-screen w-screen flex bg-white overflow-hidden">
       {/* Left — brand panel with animated grid */}
       <div className="graphite hidden lg:flex w-[44%] flex-col items-center justify-center relative overflow-hidden">
-        {/* Teal glow accents */}
-        <div className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-100"
+        <div className="absolute top-0 right-0 w-96 h-96 rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.15) 0%, transparent 70%)' }} />
-        <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full opacity-100"
+        <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.08) 0%, transparent 70%)' }} />
-
-        {/* Animated grid pattern */}
-        <AnimatedGridPattern
-          numSquares={30}
-          maxOpacity={0.15}
-          duration={3}
-          width={50}
-          height={50}
-          className="text-teal-500/40"
-        />
-
-        {/* Brand text */}
+        <AnimatedGridPattern numSquares={30} maxOpacity={0.15} duration={3} width={50} height={50} className="text-teal-500/40" />
         <div className="relative z-10 text-center">
           <div className="w-16 h-16 rounded-[3px] bg-white/[0.08] flex items-center justify-center border border-white/[0.06] mx-auto mb-6 overflow-hidden">
             <img src={logoUrl} alt="" className="w-10 h-10 object-contain" />
           </div>
-          <h1 className="text-[42px] font-bold text-[#FAFAFA] tracking-tight leading-none">
-            Ariemmas
-          </h1>
-          <div className="text-sm font-medium text-[#2DD4BF] mt-2 tracking-[0.2em] uppercase">
-            Point of Sale
-          </div>
+          <h1 className="text-[42px] font-bold text-[#FAFAFA] tracking-tight leading-none">Ariemmas</h1>
+          <div className="text-sm font-medium text-[#2DD4BF] mt-2 tracking-[0.2em] uppercase">Point of Sale</div>
         </div>
       </div>
 
       {/* Right — form */}
       <div className="flex-1 flex items-center justify-center px-8 bg-white">
-        <div className="w-full max-w-[340px]">
-          {/* Mobile logo */}
+        <div className="w-full max-w-[360px] pb-[320px]">
           <div className="lg:hidden flex items-center gap-2.5 mb-8">
             <div className="w-9 h-9 rounded-[3px] bg-[#18181B] flex items-center justify-center overflow-hidden">
               <img src={logoUrl} alt="" className="w-6 h-6 object-contain" />
@@ -84,39 +63,34 @@ export function Login() {
           <h2 className="text-[22px] font-semibold text-[#18181B] tracking-tight">Welcome back</h2>
           <p className="text-[13px] text-[#71717A] mt-1">Sign in to start your shift</p>
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+          <div className="mt-8 space-y-5">
+            {/* Username — tap to type on the on-screen keyboard */}
             <div>
               <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Username</label>
-              <input
-                ref={usernameRef}
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
-                autoComplete="off"
-                spellCheck={false}
-                className="w-full h-10 px-3 rounded-[2px] border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); pinRef.current?.focus() } }}
-              />
+              <button type="button" onClick={() => setActiveField('username')}
+                className={`${fieldBase} ${activeField === 'username' ? fieldActive : fieldIdle}`}>
+                <UserIcon size={16} className="text-[#A1A1AA] shrink-0" />
+                {username ? <span className="text-[#18181B]">{username}</span> : <span className="text-[#A1A1AA]">Tap to enter your username</span>}
+              </button>
             </div>
 
+            {/* PIN — tap to type on the keypad */}
             <div>
               <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">PIN</label>
               <div className="relative">
-                <input
-                  ref={pinRef}
-                  type={showPin ? 'text' : 'password'}
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value)}
-                  placeholder="Enter PIN"
-                  maxLength={6}
-                  autoComplete="off"
-                  className="w-full h-10 px-3 pr-10 rounded-[2px] border border-[#E4E4E7] bg-white text-sm text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08] tracking-[0.15em]"
-                />
-                <button type="button" onClick={() => setShowPin(!showPin)} tabIndex={-1}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] hover:text-[#52525B]">
-                  {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
+                <button type="button" onClick={() => setActiveField('pin')}
+                  className={`${fieldBase} pr-10 ${activeField === 'pin' ? fieldActive : fieldIdle}`}>
+                  <KeyRound size={16} className="text-[#A1A1AA] shrink-0" />
+                  {pin
+                    ? <span className="text-[#18181B] tracking-[0.3em]">{showPin ? pin : '•'.repeat(pin.length)}</span>
+                    : <span className="text-[#A1A1AA]">Tap to enter your PIN</span>}
                 </button>
+                {pin.length > 0 && (
+                  <button type="button" onClick={() => setShowPin(!showPin)} tabIndex={-1}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] hover:text-[#52525B]">
+                    {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -127,35 +101,46 @@ export function Login() {
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={isLoading || !username.trim() || !pin.trim()}
-              className="w-full h-11 rounded-[2px] bg-[#0B0B0D] text-white text-sm font-semibold hover:bg-[#232327] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
+            <button type="button" onClick={doLogin} disabled={isLoading || !canSubmit}
+              className="w-full h-11 rounded-[2px] bg-[#18181B] text-white text-sm font-semibold hover:bg-[#27272A] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
               {isLoading ? <><Loader2 size={15} className="animate-spin" />Signing in...</> : 'Sign In'}
             </button>
-          </form>
 
-          {/* Cashier credentials */}
-          <div className="mt-8 p-3.5 rounded-[2px] bg-[#F4F4F5] border border-[#E4E4E7]">
-            <div className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-[0.06em] mb-2">Cashier Logins</div>
-            <div className="space-y-1">
-              {CASHIER_CREDENTIALS.map((c) => (
-                <button
-                  key={c.username}
-                  type="button"
-                  onClick={() => { setUsername(c.username); setPin(c.pin); pinRef.current?.focus() }}
-                  className="w-full flex justify-between items-center hover:bg-white rounded px-1 py-0.5 transition-colors"
-                  title="Click to fill"
-                >
-                  <span className="text-[12px] text-[#71717A]">{c.name}</span>
-                  <code className="text-[12px] font-mono text-[#3F3F46] bg-white px-2 py-0.5 rounded border border-[#E4E4E7]">{c.username} / {c.pin}</code>
-                </button>
-              ))}
-            </div>
+            <p className="text-[12px] text-[#A1A1AA] text-center">Forgot your login? Ask your supervisor.</p>
           </div>
         </div>
       </div>
+
+      {/* On-screen keyboards — username (letters) / PIN (keypad). No Windows keyboard needed. */}
+      {activeField === 'username' && (
+        <div className="fixed inset-x-0 bottom-0 z-50">
+          <OnScreenKeyboard
+            value={username}
+            onChange={(v) => setUsername(v)}
+            onEnter={() => setActiveField('pin')}
+            onClose={() => setActiveField(null)}
+          />
+        </div>
+      )}
+      {activeField === 'pin' && (
+        <div className="fixed inset-x-0 bottom-0 z-50 graphite border-t border-[var(--color-graphite-line)] px-3 py-3">
+          <div className="max-w-[300px] mx-auto">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[12px] font-semibold text-white/65 uppercase tracking-wide">Enter your PIN</span>
+              <button onClick={() => setActiveField(null)} className="text-[13px] font-semibold text-white/70 hover:text-white px-2">Done</button>
+            </div>
+            <NumberKeypad
+              value={pin}
+              onChange={(v) => setPin(v)}
+              onEnter={doLogin}
+              enterLabel={isLoading ? '…' : 'SIGN IN'}
+              enterTone="teal"
+              enterDisabled={!canSubmit || isLoading}
+              maxLength={6}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

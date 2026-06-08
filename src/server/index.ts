@@ -179,13 +179,16 @@ async function initDb(): Promise<void> {
 
   // Idempotent per-username seeding so cashier1..5 + admin always exist
   // on the Railway database (the web/Netlify build talks to this server).
+  // Two admins (one is the owner's aunt, Mary) + five cashiers with non-obvious
+  // PINs. Kept in sync with the desktop seed (src/main/services/auth.ts).
   const SEED = [
     { username: 'admin',    display_name: 'Administrator', pin: '9012', role: 'admin'   as const, resetPin: true },
-    { username: 'cashier1', display_name: 'Cashier 1',     pin: '1111', role: 'cashier' as const, resetPin: true },
-    { username: 'cashier2', display_name: 'Cashier 2',     pin: '2222', role: 'cashier' as const, resetPin: true },
-    { username: 'cashier3', display_name: 'Cashier 3',     pin: '3333', role: 'cashier' as const, resetPin: true },
-    { username: 'cashier4', display_name: 'Cashier 4',     pin: '4444', role: 'cashier' as const, resetPin: true },
-    { username: 'cashier5', display_name: 'Cashier 5',     pin: '5555', role: 'cashier' as const, resetPin: true }
+    { username: 'mary',     display_name: 'Mary',          pin: '4815', role: 'admin'   as const, resetPin: true },
+    { username: 'cashier1', display_name: 'Cashier 1',     pin: '3174', role: 'cashier' as const, resetPin: true },
+    { username: 'cashier2', display_name: 'Cashier 2',     pin: '5926', role: 'cashier' as const, resetPin: true },
+    { username: 'cashier3', display_name: 'Cashier 3',     pin: '8043', role: 'cashier' as const, resetPin: true },
+    { username: 'cashier4', display_name: 'Cashier 4',     pin: '2687', role: 'cashier' as const, resetPin: true },
+    { username: 'cashier5', display_name: 'Cashier 5',     pin: '6351', role: 'cashier' as const, resetPin: true }
   ]
   for (const u of SEED) {
     const existing = await db.queryOne<{ id: string }>('SELECT id FROM users WHERE username = $1', [u.username])

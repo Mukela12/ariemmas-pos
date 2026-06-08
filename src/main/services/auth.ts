@@ -89,68 +89,81 @@ export async function logout(): Promise<void> {
   currentUser = null
 }
 
-// Fixed credentials for Ariemmas install. Admin PIN is written to a credentials
-// file in the user's Downloads folder on first run; cashier PINs are shown on
-// the login screen so the cashier on shift can sign in directly.
+// Fixed credentials for the Ariemmas install. Two admins (one is the owner's
+// aunt, Mary) and five cashiers with non-obvious PINs. Nothing is shown on the
+// login screen — the full list is written to a credentials file in the user's
+// Downloads folder so the owner can keep it safe and hand out logins privately.
 export const ADMIN_PIN = '9012'
-const CASHIER_SEED: Array<{ username: string; display_name: string; pin: string }> = [
-  { username: 'cashier1', display_name: 'Cashier 1', pin: '1111' },
-  { username: 'cashier2', display_name: 'Cashier 2', pin: '2222' },
-  { username: 'cashier3', display_name: 'Cashier 3', pin: '3333' },
-  { username: 'cashier4', display_name: 'Cashier 4', pin: '4444' },
-  { username: 'cashier5', display_name: 'Cashier 5', pin: '5555' }
+
+type SeedUser = { username: string; display_name: string; pin: string; role: 'admin' | 'cashier' }
+const SEED_USERS: SeedUser[] = [
+  { username: 'admin',    display_name: 'Administrator', pin: ADMIN_PIN, role: 'admin' },
+  { username: 'mary',     display_name: 'Mary',          pin: '4815',    role: 'admin' },
+  { username: 'cashier1', display_name: 'Cashier 1',     pin: '3174',    role: 'cashier' },
+  { username: 'cashier2', display_name: 'Cashier 2',     pin: '5926',    role: 'cashier' },
+  { username: 'cashier3', display_name: 'Cashier 3',     pin: '8043',    role: 'cashier' },
+  { username: 'cashier4', display_name: 'Cashier 4',     pin: '2687',    role: 'cashier' },
+  { username: 'cashier5', display_name: 'Cashier 5',     pin: '6351',    role: 'cashier' }
 ]
 
-async function upsertUserByUsername(username: string, display_name: string, pin: string, role: 'admin' | 'cashier'): Promise<void> {
+// Insert the user if new, or reset their PIN/name/role to match this list.
+// PINs are only set here (there is no in-app PIN editor), so re-asserting them
+// on startup keeps every install on the same known credentials.
+async function upsertSeedUser(u: SeedUser): Promise<void> {
   const db = getDb()
-  const existing = await db.queryOne<{ id: string }>('SELECT id FROM users WHERE username = ?', [username])
-  if (existing) return
-
-  const id = uuid()
-  const pinHash = bcrypt.hashSync(pin, 10)
-  await db.run(
-    'INSERT INTO users (id, username, display_name, pin_hash, role) VALUES (?, ?, ?, ?, ?)',
-    [id, username, display_name, pinHash, role]
-  )
-  queueSync('insert', 'user', id, {
-    id, username, display_name, pin_hash: pinHash, role, active: 1
-  }).catch(() => {})
+  const pinHash = bcrypt.hashSync(u.pin, 10)
+  const existing = await db.queryOne<{ id: string }>('SELECT id FROM users WHERE username = ?', [u.username])
+  if (!existing) {
+    const id = uuid()
+    await db.run(
+      'INSERT INTO users (id, username, display_name, pin_hash, role) VALUES (?, ?, ?, ?, ?)',
+      [id, u.username, u.display_name, pinHash, u.role]
+    )
+    queueSync('insert', 'user', id, {
+      id, username: u.username, display_name: u.display_name, pin_hash: pinHash, role: u.role, active: 1
+    }).catch(() => {})
+  } else {
+    await db.run(
+      'UPDATE users SET display_name = ?, pin_hash = ?, role = ?, active = 1, failed_attempts = 0, locked_until = NULL WHERE id = ?',
+      [u.display_name, pinHash, u.role, existing.id]
+    )
+  }
 }
 
-async function writeAdminCredentialsFile(): Promise<void> {
+async function writeCredentialsFile(): Promise<void> {
   try {
     const dir = app.getPath('downloads')
-    const file = join(dir, 'ariemmas-admin-credentials.txt')
-    const body = `ARIEMMAS POS — ADMIN CREDENTIALS
+    const file = join(dir, 'ariemmas-credentials.txt')
+    const admins = SEED_USERS.filter((u) => u.role === 'admin')
+    const cashiers = SEED_USERS.filter((u) => u.role === 'cashier')
+    const row = (u: SeedUser) => `  ${u.display_name.padEnd(16)} username: ${u.username.padEnd(10)} PIN: ${u.pin}`
+    const body = `ARIEMMAS POS — LOGIN CREDENTIALS
 =================================
 
-Keep this file safe and do NOT share with cashiers.
+CONFIDENTIAL. Keep this file safe. Logins are NOT shown on the login
+screen — hand each person only their own username and PIN.
 
-  Username:  admin
-  PIN:       ${ADMIN_PIN}
+ADMINISTRATORS  (full access: products, reports, settings, all areas)
+${admins.map(row).join('\n')}
 
-Admin can: manage products, view reports, manage users/cashiers,
-change settings, void sales, and access all areas of the POS.
+CASHIERS  (till only: sell, take payment, open/close their shift)
+${cashiers.map(row).join('\n')}
 
-The five cashier accounts are visible on the login screen so any
-cashier on shift can sign in directly. The admin account is hidden
-from the login screen for security.
-
-If you need to change the admin PIN later, log in as admin and use
-Settings.
+Notes:
+- One cashier login works on one terminal at a time.
+- PINs are set by the system. To change them, ask your developer.
 
 Generated at: ${new Date().toISOString()}
 `
     await writeFile(file, body, 'utf8')
   } catch (err) {
-    console.error('[auth] Could not write admin credentials file:', err)
+    console.error('[auth] Could not write credentials file:', err)
   }
 }
 
 export async function seedDefaultAdmin(): Promise<void> {
-  await upsertUserByUsername('admin', 'Administrator', ADMIN_PIN, 'admin')
-  for (const c of CASHIER_SEED) {
-    await upsertUserByUsername(c.username, c.display_name, c.pin, 'cashier')
+  for (const u of SEED_USERS) {
+    await upsertSeedUser(u)
   }
-  await writeAdminCredentialsFile()
+  await writeCredentialsFile()
 }

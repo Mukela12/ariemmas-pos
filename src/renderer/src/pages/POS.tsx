@@ -73,10 +73,12 @@ export function POS() {
     showToast(hadItems ? 'New sale started' : 'Ready for a new sale', 'ok')
   }
 
-  // F5 — kick the cash drawer. The drawer is wired to the receipt printer's DK
-  // port, so this needs a printer configured. Report success/failure so the
-  // cashier isn't left guessing when nothing happens.
+  // F5 — kick the cash drawer. Only available during an open shift; when no shift
+  // is running a supervisor opens the drawer with the physical key instead. The
+  // drawer is wired to the receipt printer's DK port, so this needs a printer
+  // configured. Report success/failure so the cashier isn't left guessing.
   const handleOpenDrawer = async () => {
+    if (!currentShift) { showToast('Open a shift first to use the drawer button', 'err'); return }
     try {
       const ok = await window.api?.openCashDrawer?.()
       showToast(ok ? 'Cash drawer opened' : 'No printer set — choose one in Settings → Hardware', ok ? 'ok' : 'err')
@@ -109,12 +111,12 @@ export function POS() {
       if (e.key === 'F2') { e.preventDefault(); openSearch() }
       if (e.key === 'F8' && selectedIndex >= 0) { e.preventDefault(); removeItem(selectedIndex) }
       if (e.key === 'F1') { e.preventDefault(); handleNewSale() }
-      if (e.key === 'F5') { e.preventDefault(); handleOpenDrawer() }
+      if (e.key === 'F5' && currentShift) { e.preventDefault(); handleOpenDrawer() }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items.length, selectedIndex, removeItem, clearSale])
+  }, [items.length, selectedIndex, removeItem, clearSale, currentShift])
 
   const total = getTotal()
   const subtotal = getSubtotal()
@@ -331,7 +333,7 @@ export function POS() {
           { key: 'F1', label: 'New Sale', onClick: handleNewSale, disabled: false },
           { key: 'F2', label: 'Search', onClick: openSearch, disabled: false },
           { key: 'F3', label: 'Discount', onClick: () => {}, disabled: true },
-          { key: 'F5', label: 'Drawer', onClick: handleOpenDrawer, disabled: false },
+          { key: 'F5', label: 'Drawer', onClick: handleOpenDrawer, disabled: !currentShift },
           { key: 'F8', label: 'Remove', onClick: () => selectedIndex >= 0 && removeItem(selectedIndex), disabled: selectedIndex < 0 },
           { key: 'F12', label: 'Pay', onClick: () => items.length > 0 && currentShift && setShowPayment(true), disabled: items.length === 0 || !currentShift }
         ].map(f => (
@@ -395,7 +397,9 @@ export function POS() {
               })
 
               try { await window.api.printReceipt(receipt) } catch {}
-              if (paymentMethod === 'cash') {
+              // Only pop the drawer when change must be given back. Exact cash and
+              // mobile money need no change, so the drawer stays shut.
+              if (paymentMethod === 'cash' && (changeGiven ?? 0) > 0) {
                 try { await window.api.openCashDrawer() } catch {}
               }
 

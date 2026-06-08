@@ -218,23 +218,23 @@
   <p>This is everything you do on the till, from signing in to closing your shift. Follow it in order the first few times and it will quickly become second nature.</p>
 
   <h3><span class="num">2.1</span>Signing in</h3>
-  <p>When the terminal is ready you’ll see the sign-in screen. Each cashier has their own login and 4-digit PIN.</p>
+  <p>When the terminal is ready you’ll see the sign-in screen. Each person has their own username and PIN — your supervisor gives you yours. (Logins are no longer shown on screen, for security.)</p>
   <figure>
     <img src="img/01-login.png" alt="Login screen" />
-    <figcaption><b>The sign-in screen.</b> Your cashier logins are listed on the right under <strong>“Cashier Logins”</strong>.</figcaption>
+    <figcaption><b>The sign-in screen.</b> Tap the Username and PIN boxes to type with the on-screen keyboard — no Windows keyboard needed.</figcaption>
   </figure>
   <ol class="steps">
-    <li>Find your name in the <strong>Cashier Logins</strong> list (Cashier 1 to Cashier 5).</li>
-    <li><strong>Tap your row</strong> — this fills in your username and PIN automatically.</li>
-    <li>Tap <strong>“Sign In”</strong>.</li>
+    <li>Tap the <strong>Username</strong> box and type your username (for example <em>cashier1</em>) on the on-screen keyboard, then tap <strong>“Done”</strong>.</li>
+    <li>Tap the <strong>PIN</strong> box and type your PIN on the keypad.</li>
+    <li>Tap <strong>“SIGN IN”</strong>.</li>
   </ol>
   <figure>
     <img src="img/02-login-filled.png" alt="Login filled in" />
-    <figcaption>Tapping a cashier row fills the username and PIN ready to sign in.</figcaption>
+    <figcaption>Type your username and PIN on the on-screen keyboard / keypad, then SIGN IN.</figcaption>
   </figure>
   <div class="note">
     <b>Use your own login</b>
-    Always sign in as yourself. Every sale is tagged with your login, so the owner can see who served each customer. Signing in as someone else makes the reports wrong.
+    Always sign in as yourself. Every sale is tagged with your login, so the owner can see who served each customer. Signing in as someone else makes the reports wrong. Never share your PIN.
   </div>
 
   <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 2 · Cashier Guide</span></div>
@@ -407,7 +407,7 @@
 <section class="page page-break">
   <div class="sec-kicker">Part 3 · For Administrators</div>
   <h2>Administrator Guide</h2>
-  <p>Admins sign in with the <strong>admin</strong> login (the PIN is in the credentials file saved to the Downloads folder when the app is first installed). Admins see extra tabs: <strong>Products</strong>, <strong>Reports</strong>, and <strong>Settings</strong>.</p>
+  <p>There are <strong>two admin logins</strong> (the owner and the supervisor). Both PINs — and every cashier login — are listed in the credentials file <strong>ariemmas-credentials.txt</strong>, saved to the Downloads folder when the app is first installed. Admins see extra tabs: <strong>Products</strong>, <strong>Reports</strong>, and <strong>Settings</strong>.</p>
 
   <h3><span class="num">3.1</span>Managing products</h3>
   <figure>
@@ -551,7 +551,7 @@
   <h2>Troubleshooting &amp; FAQ</h2>
   <table>
     <tr><th>Problem</th><th>What to do</th></tr>
-    <tr><td>“Invalid username or PIN”</td><td>Check you tapped the right cashier row. PINs are 4 digits. If it still fails, ask the admin to confirm your login is active.</td></tr>
+    <tr><td>“Invalid username or PIN”</td><td>Re-type your username and PIN carefully (your supervisor has them). After 3 wrong tries the login locks for 5 minutes. If it still fails, ask the admin to confirm your login is active.</td></tr>
     <tr><td>It won’t let me sign in — says I’m already signed in elsewhere</td><td>Your login is open on another terminal. Close the shift and sign out there first, or wait a few minutes for it to release.</td></tr>
     <tr><td>The cash drawer didn’t open</td><td>Check the drawer cable is in the <strong>printer’s white DK port</strong>. The drawer only opens on cash sales and only when the receipt prints.</td></tr>
     <tr><td>The receipt didn’t print</td><td>Check the printer is on, has paper, and is selected in <strong>Settings → Hardware</strong>. Run <strong>Test Print</strong>.</td></tr>
