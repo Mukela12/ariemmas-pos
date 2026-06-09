@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react'
-import { Package, Plus, Search, Edit2, Download, RefreshCw, ImagePlus, X as XIcon, Boxes, History, AlertTriangle, SlidersHorizontal } from 'lucide-react'
+import { Package, Plus, Search, Edit2, Download, RefreshCw, ImagePlus, X as XIcon, Boxes, History, AlertTriangle, SlidersHorizontal, Camera } from 'lucide-react'
 import JsBarcode from 'jsbarcode'
 import { formatZMW, formatStock } from '../lib/currency'
 import { productImageSrc, fileToDataUrl, uploadToCloudinary, isElectron } from '../lib/productImage'
 import { TouchInput } from '../components/TouchInput'
 import { NumberKeypad } from '../components/NumberKeypad'
 import { OnScreenKeyboard } from '../components/OnScreenKeyboard'
+import { BarcodeScanModal, isBarcodeScannerSupported } from '../components/BarcodeScanModal'
 import type { Product, Category, InventorySummary, StockMovement } from '../../../shared/types'
 
 function generateBarcodeValue(): string {
@@ -84,6 +85,12 @@ export function Products() {
   const [summary, setSummary] = useState<InventorySummary | null>(null)
   const [adjustFor, setAdjustFor] = useState<Product | null>(null)
   const [historyFor, setHistoryFor] = useState<Product | null>(null)
+  const [scanOpen, setScanOpen] = useState(false)
+  // Camera scan is web-only and only when BarcodeDetector is available. On the
+  // Electron till the cashier uses the connected USB scanner, which types into
+  // the focused field directly; on web a USB scanner does the same into the
+  // native input — the camera is a phone/tablet bonus.
+  const showScanBtn = !isElectron && isBarcodeScannerSupported()
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [showForm, setShowForm] = useState(false)
@@ -558,6 +565,16 @@ export function Products() {
                       className={`${inputClass} flex-1`}
                       placeholder="Scan, type, or generate"
                     />
+                    {showScanBtn && (
+                      <button
+                        type="button"
+                        onClick={() => setScanOpen(true)}
+                        className="shrink-0 h-10 px-3 rounded-[2px] border border-[#E4E4E7] bg-white text-xs font-medium text-[#18181B] hover:bg-[#FAFAFA] flex items-center gap-1.5"
+                        title="Scan with the camera"
+                      >
+                        <Camera size={13} /> Scan
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => setForm({ ...form, barcode: generateBarcodeValue() })}
@@ -711,6 +728,12 @@ export function Products() {
       )}
       {historyFor && (
         <HistoryModal product={historyFor} onClose={() => setHistoryFor(null)} />
+      )}
+      {scanOpen && (
+        <BarcodeScanModal
+          onResult={(code) => { setForm((f) => ({ ...f, barcode: code })); setScanOpen(false) }}
+          onClose={() => setScanOpen(false)}
+        />
       )}
     </div>
   )

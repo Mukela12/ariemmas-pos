@@ -2,6 +2,7 @@ import { useId, useRef, useEffect } from 'react'
 import { useKeyboardStore } from '../stores/keyboardStore'
 import { OnScreenKeyboard } from './OnScreenKeyboard'
 import { NumberKeypad } from './NumberKeypad'
+import { isElectron } from '../lib/productImage'
 
 interface Props {
   value: string
@@ -29,15 +30,36 @@ export function TouchInput({ value, onChange, mode = 'text', placeholder, classN
   const setActive = useKeyboardStore((s) => s.setActive)
   const active = activeId === id && !disabled
   const ref = useRef<HTMLButtonElement>(null)
-
-  // Bring the tapped field into view above the keyboard (forms can be tall).
-  useEffect(() => {
-    if (active) ref.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
-  }, [active])
-  // Release the keyboard if this field unmounts while active.
-  useEffect(() => () => { if (useKeyboardStore.getState().activeId === id) setActive(null) }, [id, setActive])
-
   const isNum = mode !== 'text'
+
+  // Hooks must run on every render — keep them above any conditional return.
+  useEffect(() => {
+    if (active && isElectron) ref.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, [active])
+  useEffect(() => () => {
+    if (isElectron && useKeyboardStore.getState().activeId === id) setActive(null)
+  }, [id, setActive])
+
+  // ---- WEB (laptop/phone/tablet): native <input>. The device's own keyboard
+  // handles it; USB barcode scanners type straight in; inputMode hints the
+  // numeric pad on touch devices.
+  if (!isElectron) {
+    const inputMode = mode === 'numeric' ? 'numeric' : mode === 'decimal' ? 'decimal' : 'text'
+    return (
+      <input
+        type="text"
+        inputMode={inputMode}
+        value={value}
+        onChange={(e) => onChange(maxLength ? e.target.value.slice(0, maxLength) : e.target.value)}
+        placeholder={placeholder}
+        disabled={disabled}
+        maxLength={maxLength}
+        title={title}
+        className={`${className} disabled:opacity-50 disabled:bg-[#F4F4F5] disabled:cursor-not-allowed ${mono ? 'font-mono' : ''} focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]`}
+      />
+    )
+  }
+  // ---- DESKTOP (Electron till): tap-to-open in-app keypad/keyboard.
 
   return (
     <>

@@ -5,6 +5,7 @@ import { Eye, EyeOff, Loader2, User as UserIcon, KeyRound } from 'lucide-react'
 import { AnimatedGridPattern } from '../components/ui/AnimatedGridPattern'
 import { OnScreenKeyboard } from '../components/OnScreenKeyboard'
 import { NumberKeypad } from '../components/NumberKeypad'
+import { isElectron } from '../lib/productImage'
 import logoUrl from '../assets/logo.png'
 
 export function Login() {
@@ -63,28 +64,49 @@ export function Login() {
           <h2 className="text-[22px] font-semibold text-[#18181B] tracking-tight">Welcome back</h2>
           <p className="text-[13px] text-[#71717A] mt-1">Sign in to start your shift</p>
 
-          <div className="mt-8 space-y-5">
-            {/* Username — tap to type on the on-screen keyboard */}
+          <form onSubmit={(e) => { e.preventDefault(); doLogin() }} className="mt-8 space-y-5">
+            {/* Username — native input on web, tap-to-keypad on the Electron till */}
             <div>
               <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">Username</label>
-              <button type="button" onClick={() => setActiveField('username')}
-                className={`${fieldBase} ${activeField === 'username' ? fieldActive : fieldIdle}`}>
-                <UserIcon size={16} className="text-[#A1A1AA] shrink-0" />
-                {username ? <span className="text-[#18181B]">{username}</span> : <span className="text-[#A1A1AA]">Tap to enter your username</span>}
-              </button>
+              {isElectron ? (
+                <button type="button" onClick={() => setActiveField('username')}
+                  className={`${fieldBase} ${activeField === 'username' ? fieldActive : fieldIdle}`}>
+                  <UserIcon size={16} className="text-[#A1A1AA] shrink-0" />
+                  {username ? <span className="text-[#18181B]">{username}</span> : <span className="text-[#A1A1AA]">Tap to enter your username</span>}
+                </button>
+              ) : (
+                <div className={`${fieldBase} ${fieldIdle} focus-within:border-[#0D9488] focus-within:ring-[3px] focus-within:ring-[#0D9488]/[0.08]`}>
+                  <UserIcon size={16} className="text-[#A1A1AA] shrink-0" />
+                  <input type="text" autoFocus autoComplete="username" spellCheck={false}
+                    value={username} onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Username"
+                    className="flex-1 bg-transparent outline-none text-[15px] text-[#18181B] placeholder:text-[#A1A1AA]" />
+                </div>
+              )}
             </div>
 
-            {/* PIN — tap to type on the keypad */}
+            {/* PIN — native input on web (digits only, masked), tap-to-keypad on the till */}
             <div>
               <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1.5">PIN</label>
               <div className="relative">
-                <button type="button" onClick={() => setActiveField('pin')}
-                  className={`${fieldBase} pr-10 ${activeField === 'pin' ? fieldActive : fieldIdle}`}>
-                  <KeyRound size={16} className="text-[#A1A1AA] shrink-0" />
-                  {pin
-                    ? <span className="text-[#18181B] tracking-[0.3em]">{showPin ? pin : '•'.repeat(pin.length)}</span>
-                    : <span className="text-[#A1A1AA]">Tap to enter your PIN</span>}
-                </button>
+                {isElectron ? (
+                  <button type="button" onClick={() => setActiveField('pin')}
+                    className={`${fieldBase} pr-10 ${activeField === 'pin' ? fieldActive : fieldIdle}`}>
+                    <KeyRound size={16} className="text-[#A1A1AA] shrink-0" />
+                    {pin
+                      ? <span className="text-[#18181B] tracking-[0.3em]">{showPin ? pin : '•'.repeat(pin.length)}</span>
+                      : <span className="text-[#A1A1AA]">Tap to enter your PIN</span>}
+                  </button>
+                ) : (
+                  <div className={`${fieldBase} pr-10 ${fieldIdle} focus-within:border-[#0D9488] focus-within:ring-[3px] focus-within:ring-[#0D9488]/[0.08]`}>
+                    <KeyRound size={16} className="text-[#A1A1AA] shrink-0" />
+                    <input type={showPin ? 'text' : 'password'} inputMode="numeric" autoComplete="current-password"
+                      maxLength={6} value={pin}
+                      onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="PIN"
+                      className="flex-1 bg-transparent outline-none text-[15px] tracking-[0.3em] text-[#18181B] placeholder:text-[#A1A1AA] placeholder:tracking-normal" />
+                  </div>
+                )}
                 {pin.length > 0 && (
                   <button type="button" onClick={() => setShowPin(!showPin)} tabIndex={-1}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] hover:text-[#52525B]">
@@ -101,18 +123,18 @@ export function Login() {
               </div>
             )}
 
-            <button type="button" onClick={doLogin} disabled={isLoading || !canSubmit}
+            <button type="submit" disabled={isLoading || !canSubmit}
               className="w-full h-11 rounded-[2px] bg-[#18181B] text-white text-sm font-semibold hover:bg-[#27272A] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
               {isLoading ? <><Loader2 size={15} className="animate-spin" />Signing in...</> : 'Sign In'}
             </button>
 
             <p className="text-[12px] text-[#A1A1AA] text-center">Forgot your login? Ask your supervisor.</p>
-          </div>
+          </form>
         </div>
       </div>
 
-      {/* On-screen keyboards — username (letters) / PIN (keypad). No Windows keyboard needed. */}
-      {activeField === 'username' && (
+      {/* On-screen keyboards — only on the Electron till (web uses the device's own keyboard). */}
+      {isElectron && activeField === 'username' && (
         <div className="fixed inset-x-0 bottom-0 z-50">
           <OnScreenKeyboard
             value={username}
@@ -122,7 +144,7 @@ export function Login() {
           />
         </div>
       )}
-      {activeField === 'pin' && (
+      {isElectron && activeField === 'pin' && (
         <div className="fixed inset-x-0 bottom-0 z-50 graphite border-t border-[var(--color-graphite-line)] px-3 py-3">
           <div className="max-w-[300px] mx-auto">
             <div className="flex items-center justify-between mb-2">

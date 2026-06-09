@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Eye, EyeOff, KeyRound, Pencil, UserPlus, X, ShieldCheck, User as UserIcon, Loader2 } from 'lucide-react'
 import { NumberKeypad } from '../components/NumberKeypad'
 import { OnScreenKeyboard } from '../components/OnScreenKeyboard'
+import { isElectron } from '../lib/productImage'
 import type { ManagedUser } from '../../../shared/types'
 
 export function Cashiers() {
@@ -153,11 +154,29 @@ function SetPinModal({ user, onClose, onSaved, onError }: { user: ManagedUser; o
   }
   return (
     <ModalShell title={`New PIN for ${user.display_name}`} subtitle={`username: ${user.username}`} onClose={onClose}>
-      <div className="w-full h-14 px-4 rounded-[2px] border border-[#E4E4E7] bg-[#FAFAFA] flex items-center justify-center text-[30px] font-bold tabular-nums tracking-[0.3em] text-[#18181B]">
-        {pin || <span className="text-[#D4D4D8]">••••</span>}
-      </div>
-      <p className="text-[11px] text-[#A1A1AA] text-center">4 to 6 digits. The cashier uses this to sign in.</p>
-      <NumberKeypad value={pin} onChange={setPin} onEnter={save} enterLabel={saving ? '…' : 'SAVE'} enterTone="teal" enterDisabled={!ok || saving} maxLength={6} />
+      {isElectron ? (
+        <>
+          <div className="w-full h-14 px-4 rounded-[2px] border border-[#E4E4E7] bg-[#FAFAFA] flex items-center justify-center text-[30px] font-bold tabular-nums tracking-[0.3em] text-[#18181B]">
+            {pin || <span className="text-[#D4D4D8]">••••</span>}
+          </div>
+          <p className="text-[11px] text-[#A1A1AA] text-center">4 to 6 digits. The cashier uses this to sign in.</p>
+          <NumberKeypad value={pin} onChange={setPin} onEnter={save} enterLabel={saving ? '…' : 'SAVE'} enterTone="teal" enterDisabled={!ok || saving} maxLength={6} />
+        </>
+      ) : (
+        <form onSubmit={(e) => { e.preventDefault(); save() }} className="space-y-3">
+          <input type="text" inputMode="numeric" autoFocus autoComplete="off"
+            value={pin} maxLength={6}
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="4–6 digit PIN"
+            className="w-full h-12 px-4 rounded-[2px] border border-[#E4E4E7] bg-white text-[20px] font-semibold tabular-nums tracking-[0.2em] text-[#18181B] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]"
+          />
+          <p className="text-[11px] text-[#A1A1AA]">4 to 6 digits. The cashier uses this to sign in.</p>
+          <button type="submit" disabled={!ok || saving}
+            className="w-full h-11 rounded-[2px] bg-[#0D9488] text-white text-sm font-semibold hover:bg-[#0F766E] disabled:opacity-40 disabled:cursor-not-allowed">
+            {saving ? 'Saving…' : 'Save new PIN'}
+          </button>
+        </form>
+      )}
     </ModalShell>
   )
 }
@@ -175,8 +194,22 @@ function RenameModal({ user, onClose, onSaved, onError }: { user: ManagedUser; o
   }
   return (
     <ModalShell title="Rename" subtitle={`username: ${user.username}`} onClose={onClose}>
-      <div className="w-full min-h-12 px-3 py-2.5 rounded-[2px] border border-[#0D9488] bg-white text-[15px] text-[#18181B]">{name || <span className="text-[#A1A1AA]">Type a name…</span>}</div>
-      <OnScreenKeyboard value={name} onChange={setName} onEnter={save} onClose={onClose} />
+      {isElectron ? (
+        <>
+          <div className="w-full min-h-12 px-3 py-2.5 rounded-[2px] border border-[#0D9488] bg-white text-[15px] text-[#18181B]">{name || <span className="text-[#A1A1AA]">Type a name…</span>}</div>
+          <OnScreenKeyboard value={name} onChange={setName} onEnter={save} onClose={onClose} />
+        </>
+      ) : (
+        <form onSubmit={(e) => { e.preventDefault(); save() }} className="space-y-3">
+          <input type="text" autoFocus autoComplete="off" value={name}
+            onChange={(e) => setName(e.target.value)} placeholder="Display name"
+            className="w-full h-11 px-3 rounded-[2px] border border-[#E4E4E7] bg-white text-[15px] text-[#18181B] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]" />
+          <button type="submit" disabled={!name.trim() || saving}
+            className="w-full h-11 rounded-[2px] bg-[#0D9488] text-white text-sm font-semibold hover:bg-[#0F766E] disabled:opacity-40 disabled:cursor-not-allowed">
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        </form>
+      )}
     </ModalShell>
   )
 }
@@ -197,32 +230,60 @@ function AddCashierModal({ onClose, onSaved, onError }: { onClose: () => void; o
     } catch (e: any) { onError(e?.message || 'Could not add cashier.') } finally { setSaving(false) }
   }
   const fieldCls = (f: string) => `w-full min-h-11 px-3 py-2 rounded-[2px] border text-[14px] text-left flex items-center ${field === f ? 'border-[#0D9488] ring-[3px] ring-[#0D9488]/[0.08]' : 'border-[#E4E4E7]'}`
+  const inputCls = 'w-full h-11 px-3 rounded-[2px] border border-[#E4E4E7] bg-white text-[14px] text-[#18181B] focus:outline-none focus:border-[#0D9488] focus:ring-[3px] focus:ring-[#0D9488]/[0.08]'
   return (
     <ModalShell title="Add cashier" onClose={onClose}>
-      <div>
-        <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1">Username (letters/numbers)</label>
-        <button type="button" onClick={() => setField('username')} className={fieldCls('username')}>
-          {username ? <span className="text-[#18181B] font-mono">{username.toLowerCase()}</span> : <span className="text-[#A1A1AA]">e.g. cashier6</span>}
-        </button>
-      </div>
-      <div>
-        <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1">Display name</label>
-        <button type="button" onClick={() => setField('name')} className={fieldCls('name')}>
-          {name ? <span className="text-[#18181B]">{name}</span> : <span className="text-[#A1A1AA]">e.g. Cashier 6</span>}
-        </button>
-      </div>
-      <div>
-        <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1">PIN (4–6 digits)</label>
-        <button type="button" onClick={() => setField('pin')} className={fieldCls('pin')}>
-          <span className="text-[#18181B] tabular-nums tracking-[0.3em]">{pin ? '•'.repeat(pin.length) : <span className="text-[#A1A1AA] tracking-normal">Tap to set a PIN</span>}</span>
-        </button>
-      </div>
-
-      {field === 'pin'
-        ? <NumberKeypad value={pin} onChange={setPin} onEnter={save} enterLabel={saving ? '…' : 'ADD'} enterTone="teal" enterDisabled={!valid || saving} maxLength={6} />
-        : <OnScreenKeyboard value={field === 'username' ? username : name}
-            onChange={(v) => field === 'username' ? setUsername(v) : setName(v)}
-            onEnter={() => setField(field === 'username' ? 'name' : 'pin')} onClose={onClose} />}
+      {isElectron ? (
+        <>
+          <div>
+            <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1">Username (letters/numbers)</label>
+            <button type="button" onClick={() => setField('username')} className={fieldCls('username')}>
+              {username ? <span className="text-[#18181B] font-mono">{username.toLowerCase()}</span> : <span className="text-[#A1A1AA]">e.g. cashier6</span>}
+            </button>
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1">Display name</label>
+            <button type="button" onClick={() => setField('name')} className={fieldCls('name')}>
+              {name ? <span className="text-[#18181B]">{name}</span> : <span className="text-[#A1A1AA]">e.g. Cashier 6</span>}
+            </button>
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1">PIN (4–6 digits)</label>
+            <button type="button" onClick={() => setField('pin')} className={fieldCls('pin')}>
+              <span className="text-[#18181B] tabular-nums tracking-[0.3em]">{pin ? '•'.repeat(pin.length) : <span className="text-[#A1A1AA] tracking-normal">Tap to set a PIN</span>}</span>
+            </button>
+          </div>
+          {field === 'pin'
+            ? <NumberKeypad value={pin} onChange={setPin} onEnter={save} enterLabel={saving ? '…' : 'ADD'} enterTone="teal" enterDisabled={!valid || saving} maxLength={6} />
+            : <OnScreenKeyboard value={field === 'username' ? username : name}
+                onChange={(v) => field === 'username' ? setUsername(v) : setName(v)}
+                onEnter={() => setField(field === 'username' ? 'name' : 'pin')} onClose={onClose} />}
+        </>
+      ) : (
+        <form onSubmit={(e) => { e.preventDefault(); save() }} className="space-y-3">
+          <div>
+            <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1">Username (letters/numbers)</label>
+            <input type="text" autoFocus autoComplete="off" spellCheck={false}
+              value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().slice(0, 20))}
+              placeholder="e.g. cashier6" className={`${inputCls} font-mono`} />
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1">Display name</label>
+            <input type="text" autoComplete="off" value={name}
+              onChange={(e) => setName(e.target.value)} placeholder="e.g. Cashier 6" className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.06em] mb-1">PIN (4–6 digits)</label>
+            <input type="text" inputMode="numeric" autoComplete="off" maxLength={6}
+              value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="4–6 digits" className={`${inputCls} tabular-nums tracking-[0.2em]`} />
+          </div>
+          <button type="submit" disabled={!valid || saving}
+            className="w-full h-11 rounded-[2px] bg-[#0D9488] text-white text-sm font-semibold hover:bg-[#0F766E] disabled:opacity-40 disabled:cursor-not-allowed">
+            {saving ? 'Adding…' : 'Add cashier'}
+          </button>
+        </form>
+      )}
     </ModalShell>
   )
 }
