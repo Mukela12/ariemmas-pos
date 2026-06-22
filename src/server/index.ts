@@ -163,6 +163,39 @@ async function sendCashDrawerAlertIfNeeded(shiftId: string | null | undefined): 
   }
 }
 
+// Run migrations without ever blocking or crashing the boot. A pending DDL
+// migration (e.g. ADD COLUMN) can fail to acquire its lock while the previous
+// deploy is still serving during Railway's zero-downtime overlap. Rather than
+// hang forever (or exit and crash-loop), we start serving anyway and retry in
+// the background — once this container is healthy Railway stops the old one, the
+// lock clears, and the retry applies the migration.
+let migrationsDone = false
+async function applyMigrationsResilient(): Promise<void> {
+  try {
+    await runMigrations(db)
+    migrationsDone = true
+    console.log('[Migrations] up to date')
+  } catch (err: any) {
+    console.error('[Migrations] deferred — serving now, retrying in background:', err?.message || err)
+    let attempts = 0
+    const retry = async (): Promise<void> => {
+      attempts++
+      try {
+        await runMigrations(db)
+        migrationsDone = true
+        console.log(`[Migrations] applied on retry #${attempts}`)
+      } catch (e: any) {
+        if (attempts < 120) {
+          setTimeout(() => { void retry() }, 5000) // ~10 min of 5s retries
+        } else {
+          console.error('[Migrations] giving up after', attempts, 'retries:', e?.message || e)
+        }
+      }
+    }
+    setTimeout(() => { void retry() }, 5000)
+  }
+}
+
 async function initDb(): Promise<void> {
   const connectionString = process.env.DATABASE_URL
   db = new PostgresAdapter({
@@ -175,7 +208,7 @@ async function initDb(): Promise<void> {
     ssl: process.env.PG_SSL === 'true' ? { rejectUnauthorized: false } : false
   })
 
-  await runMigrations(db)
+  await applyMigrationsResilient()
 
   // Idempotent per-username seeding so cashier1..5 + admin always exist
   // on the Railway database (the web/Netlify build talks to this server).
@@ -1081,7 +1114,7 @@ app.post('/api/sessions/logout', (req, res) => {
 
 // --- Health ---
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', engine: 'postgres' })
+  res.json({ status: 'ok', engine: 'postgres', migrationsDone })
 })
 
 // Start

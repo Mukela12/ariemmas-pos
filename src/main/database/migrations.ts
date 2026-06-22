@@ -450,7 +450,13 @@ export const MIGRATIONS: Migration[] = [
         return `IF COL_LENGTH('products', 'scale_plu') IS NULL ALTER TABLE products ADD scale_plu INT NULL;`
       }
       if (engine === 'postgres') {
-        return `ALTER TABLE products ADD COLUMN IF NOT EXISTS scale_plu INTEGER;`
+        // lock_timeout so this fails fast instead of hanging when another
+        // connection holds a lock on products — e.g. the previous deploy during
+        // Railway's zero-downtime overlap. The server boot (src/server/index.ts)
+        // catches the failure, starts serving anyway, and retries in the
+        // background; once the old container is stopped the lock clears and the
+        // retry adds the column.
+        return `SET lock_timeout = '5s'; ALTER TABLE products ADD COLUMN IF NOT EXISTS scale_plu INTEGER; RESET lock_timeout;`
       }
       return `ALTER TABLE products ADD COLUMN scale_plu INTEGER;`
     }
