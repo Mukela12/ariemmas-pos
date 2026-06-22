@@ -158,7 +158,7 @@
     <div class="toc-item" style="padding-left:30px;"><span class="toc-sub">2.4 Adding products &nbsp;·&nbsp; 2.5 Selling by weight &nbsp;·&nbsp; 2.6 Taking payment</span></div>
     <div class="toc-item" style="padding-left:30px;"><span class="toc-sub">2.7 Receipt &amp; cash drawer &nbsp;·&nbsp; 2.8 Closing your shift &nbsp;·&nbsp; 2.9 The rules</span></div>
     <div class="toc-item"><span class="toc-num">3</span><span class="toc-title">Administrator Guide</span><span class="toc-sub">— products, barcodes, reports, exports</span></div>
-    <div class="toc-item" style="padding-left:30px;"><span class="toc-sub">3.1 Products &nbsp;·&nbsp; 3.2 Barcodes &nbsp;·&nbsp; 3.3 Butchery items &nbsp;·&nbsp; 3.4 Reports &nbsp;·&nbsp; 3.5 Settings</span></div>
+    <div class="toc-item" style="padding-left:30px;"><span class="toc-sub">3.1 Products &nbsp;·&nbsp; 3.2 Barcodes &nbsp;·&nbsp; 3.3 Butchery items &nbsp;·&nbsp; 3.3.1 Label-printing scale &nbsp;·&nbsp; 3.4 Reports &nbsp;·&nbsp; 3.5 Settings</span></div>
     <div class="toc-item"><span class="toc-num">4</span><span class="toc-title">Hardware: printer &amp; cash drawer</span><span class="toc-sub">— wiring and first-time setup</span></div>
     <div class="toc-item"><span class="toc-num">5</span><span class="toc-title">Troubleshooting &amp; FAQ</span><span class="toc-sub">— common problems and fixes</span></div>
     <div class="toc-item"><span class="toc-num">6</span><span class="toc-title">Quick reference card</span><span class="toc-sub">— logins and keyboard shortcuts (print &amp; pin up)</span></div>
@@ -332,6 +332,10 @@
     <b>Each weighing is its own line</b>
     If a customer buys two separate cuts of the same meat, weigh and add them one at a time. Each becomes its own line, so you can sell different weights of the same product in one sale.
   </div>
+  <div class="tip">
+    <b>If the item has a printed scale sticker, just scan it</b>
+    Some weighed items arrive with a barcode <strong>sticker printed by the shop scale</strong> — the weight and price are already on it. Scan the sticker like any other barcode and the item drops straight into the cart at the printed price; you do <strong>not</strong> open the Weigh item window or type anything. Only type the weight (the steps above) when there is no sticker. This works even when the internet is down. <em>(Setup is in section 3.3.1.)</em>
+  </div>
 
   <h3><span class="num">2.6</span>Taking payment</h3>
   <p>When the cart is complete, tap the green <strong>“Pay”</strong> button (or press <span class="kbd">F12</span>).</p>
@@ -447,6 +451,52 @@
     <li>Tick <strong>“Sold by weight (butchery)”</strong> near the bottom.</li>
     <li>Save. Now, whenever a cashier adds this item, the <strong>Weigh item</strong> window appears automatically (see section 2.5).</li>
   </ol>
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 3 · Administrator Guide</span></div>
+</section>
+
+<section class="page page-break">
+  <h3><span class="num">3.3.1</span>Connecting the label-printing scale</h3>
+  <p>The shop’s <strong>label-printing scale</strong> can print a barcode sticker that already has the <strong>weight and price</strong> on it. When a cashier scans that sticker, the till adds the item at the printed price — nobody types the weight. This is <strong>optional</strong>: weighed items still work the manual way (section 2.5). It also works <strong>with no internet</strong> — the till reads and prices the sticker on its own.</p>
+  <div class="note">
+    <b>How the whole thing flows</b>
+    The butcher weighs the meat on the scale → the scale prints a sticker with a barcode → the customer brings it to <strong>any</strong> till → the cashier scans it → the right product appears at the exact price on the sticker.
+  </div>
+  <p>Setting it up is a <strong>one-time</strong> job with two halves: give each product a number on the scale, then tell the POS that same number.</p>
+
+  <h4 style="margin:18px 0 6px;font-size:15px;">Part A — give each product a “PLU” number on the scale</h4>
+  <ol class="steps">
+    <li>Decide a simple number (a <strong>PLU</strong>) for each weighed product — e.g. <strong>1 = T-Bone</strong>, <strong>2 = Beef Sausages</strong>, <strong>3 = Bream Fish</strong>.</li>
+    <li>On the scale, enter programming mode (on our model: <strong>Prog → 2 → 3</strong>), then set that PLU’s <strong>name</strong> and <strong>price per kg</strong>, and save. Repeat for each product. <em>(Use the scale’s own manual for the exact keys — they vary by model.)</em></li>
+    <li><strong>Write the list down</strong> — which PLU is which product. You’ll need it for Part B.</li>
+  </ol>
+  <div class="warn">
+    <b>The price per kg must match</b>
+    Set the <strong>same price per kg on the scale and in the POS</strong>. The sticker charges whatever the scale printed, so if the two disagree the customer is charged the scale’s price, not the screen’s.
+  </div>
+  <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 3 · Administrator Guide</span></div>
+</section>
+
+<section class="page page-break">
+  <h4 style="margin:0 0 6px;font-size:15px;">Part B — link the PLU in the POS</h4>
+  <p>Do this once per product, easiest on the <strong>web admin</strong> (laptop or phone). It syncs to all three tills within about half a minute.</p>
+  <figure>
+    <img src="img/50-scale-plu.png" alt="Scale PLU field on the product form" />
+    <figcaption>Tick <strong>“Sold by weight (butchery)”</strong> and the <strong>“Scale PLU”</strong> box appears. Type the number you gave the product on the scale.</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>Open <strong>Products</strong> and <strong>edit</strong> the weighed product (or add it).</li>
+    <li>Make sure <strong>“Sold by weight (butchery)”</strong> is ticked — the <strong>Scale PLU</strong> box appears underneath.</li>
+    <li>In <strong>Scale PLU</strong>, type the <strong>same number</strong> you set on the scale (e.g. <code>2</code> for Beef Sausages).</li>
+    <li>Save. The link syncs to every till automatically.</li>
+  </ol>
+  <div class="tip">
+    <b>Test it once</b>
+    Print a sticker from the scale for that product and scan it at a till. It should appear as e.g. <strong>“Beef Sausages (0.620 kg)”</strong> at the sticker’s price. If the till says <strong>“Scale item PLU X isn’t linked to a product yet,”</strong> the number in Scale PLU doesn’t match the scale — fix one of them.
+  </div>
+  <div class="note">
+    <b>One scale, all three tills</b>
+    You program the scale and link the PLUs <strong>once</strong>. Every till can then scan that product’s stickers — the link travels with the product to all of them.
+  </div>
   <div class="footer-tag"><span>Ariemmas POS — Staff Training Guide</span><span>Part 3 · Administrator Guide</span></div>
 </section>
 
@@ -615,6 +665,7 @@
     <li>Scan/search the item → the <strong>Weigh item</strong> window opens.</li>
     <li>Type the kilograms (<code>0.450</code>), check the total, <strong>Add to cart</strong>.</li>
   </ol>
+  <p style="margin-top:8px;font-size:13px;"><strong>Has a printed scale sticker?</strong> Skip all three — just <strong>scan the sticker</strong> and it’s added at the printed price.</p>
 
   <h3>Golden rules</h3>
   <ul>
