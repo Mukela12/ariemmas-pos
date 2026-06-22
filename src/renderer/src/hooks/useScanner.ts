@@ -17,9 +17,9 @@ export function useScanner({ onScan, enabled = true, minLength = 4, maxDelay = 6
     if (!enabled) return
 
     const handleKeyDown = (e: KeyboardEvent): void => {
-      const target = e.target as HTMLElement
-      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA'
-      const isSearchInput = target.getAttribute('data-scanner') === 'true'
+      const target = e.target as HTMLElement | null
+      const isInput = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA'
+      const isSearchInput = target?.getAttribute?.('data-scanner') === 'true'
 
       if (isInput && !isSearchInput) return
 

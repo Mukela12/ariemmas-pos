@@ -14,6 +14,8 @@ const api = {
   // Products
   getProductByBarcode: (barcode: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.PRODUCT_GET_BY_BARCODE, barcode),
+  getProductByPlu: (plu: number) =>
+    ipcRenderer.invoke(IPC_CHANNELS.PRODUCT_GET_BY_PLU, plu),
   searchProducts: (query: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.PRODUCT_SEARCH, query),
   getAllProducts: (page?: number, limit?: number) =>

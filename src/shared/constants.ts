@@ -35,6 +35,7 @@ export const IPC_CHANNELS = {
 
   // Products
   PRODUCT_GET_BY_BARCODE: 'db:product:getByBarcode',
+  PRODUCT_GET_BY_PLU: 'db:product:getByPlu',
   PRODUCT_SEARCH: 'db:product:search',
   PRODUCT_GET_ALL: 'db:product:getAll',
   PRODUCT_CREATE: 'db:product:create',

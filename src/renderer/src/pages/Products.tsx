@@ -110,6 +110,7 @@ export function Products() {
     min_stock_level: '5',
     unit: 'each',
     is_weighted: false,
+    scale_plu: '',
     image_filename: '' as string,
     image_url: '' as string
   })
@@ -160,6 +161,7 @@ export function Products() {
       min_stock_level: '5',
       unit: 'each',
       is_weighted: false,
+      scale_plu: '',
       image_filename: '',
       image_url: ''
     })
@@ -181,6 +183,7 @@ export function Products() {
       min_stock_level: String(product.min_stock_level),
       unit: product.unit,
       is_weighted: !!product.is_weighted,
+      scale_plu: product.scale_plu != null ? String(product.scale_plu) : '',
       image_filename: product.image_filename || '',
       image_url: product.image_url || ''
     })
@@ -232,12 +235,13 @@ export function Products() {
       barcode: form.barcode || undefined,
       price: parseFloat(form.price),
       cost_price: form.cost_price ? parseFloat(form.cost_price) : undefined,
-      stock_quantity: parseInt(form.stock_quantity) || 0,
+      stock_quantity: parseFloat(form.stock_quantity) || 0,
       category_id: form.category_id || undefined,
       vat_rate: parseFloat(form.vat_rate),
       min_stock_level: parseInt(form.min_stock_level) || 5,
       unit: form.is_weighted ? 'kg' : form.unit,
       is_weighted: form.is_weighted ? 1 : 0,
+      scale_plu: form.scale_plu ? parseInt(form.scale_plu, 10) : null,
       image_filename: form.image_filename || null,
       image_url: form.image_url || null
     }
@@ -697,6 +701,23 @@ export function Products() {
                     </div>
                   </label>
                 </div>
+                {form.is_weighted && (
+                  <div className="col-span-2">
+                    <label className={labelClass}>Scale PLU (label-printing scale)</label>
+                    <TouchInput
+                      value={form.scale_plu}
+                      onChange={(v) => setForm({ ...form, scale_plu: v.replace(/\D/g, '').slice(0, 6) })}
+                      mode="numeric"
+                      maxLength={6}
+                      title="Scale PLU"
+                      className={`${inputClass} tabular-nums max-w-[180px]`}
+                      placeholder="e.g. 1"
+                    />
+                    <p className="text-[11px] text-[#71717A] mt-1.5">
+                      The product number you programmed on the scale. When a cashier scans this item's printed scale label, the till matches it by this PLU and charges the label price.
+                    </p>
+                  </div>
+                )}
               </div>
               </div>
               <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#E4E4E7] bg-[#FAFAFA] shrink-0">

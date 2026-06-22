@@ -6,6 +6,7 @@ interface SaleState {
   items: CartItem[]
   selectedIndex: number
   addItem: (product: Product, explicitQuantity?: number) => void
+  addScaleItem: (product: Product, labelTotal: number) => void
   removeItem: (index: number) => void
   updateQuantity: (index: number, quantity: number) => void
   clearSale: () => void
@@ -75,6 +76,30 @@ export const useSaleStore = create<SaleState>((set, get) => ({
         line_total: lineTotal,
         vat_amount: calcVat(lineTotal, vatRate),
         is_weighted: false,
+        image_url: product.image_url,
+        image_filename: product.image_filename
+      }
+      return { items: [...state.items, newItem], selectedIndex: state.items.length }
+    })
+  },
+
+  // A scanned scale label: charge exactly the label's total, derive the weight
+  // from total ÷ price-per-kg for display + inventory. Always its own line.
+  addScaleItem: (product: Product, labelTotal: number) => {
+    const pricePerKg = Number(product.price) || 0
+    const vatRate = Number(product.vat_rate)
+    const weight = pricePerKg > 0 ? labelTotal / pricePerKg : 0
+    set((state) => {
+      const newItem: CartItem = {
+        product_id: product.id,
+        barcode: product.barcode,
+        name: `${product.name} (${weight.toFixed(3)} kg)`,
+        price: pricePerKg,
+        vat_rate: vatRate,
+        quantity: weight,
+        line_total: labelTotal,
+        vat_amount: calcVat(labelTotal, vatRate),
+        is_weighted: true,
         image_url: product.image_url,
         image_filename: product.image_filename
       }

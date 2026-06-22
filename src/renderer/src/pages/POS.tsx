@@ -4,6 +4,7 @@ import { useSaleStore } from '../stores/saleStore'
 import { useAuthStore } from '../stores/authStore'
 import { useShiftStore } from '../stores/shiftStore'
 import { useScanner } from '../hooks/useScanner'
+import { parseScaleBarcode } from '../../../shared/scaleBarcode'
 import { formatZMW } from '../lib/currency'
 import { productImageSrc } from '../lib/productImage'
 import { buildPrintableReceipt } from '../lib/receipt'
@@ -32,7 +33,7 @@ export function POS() {
     toastTimer.current = setTimeout(() => setToast(null), 2600)
   }, [])
 
-  const { items, addItem, removeItem, updateQuantity, selectedIndex, selectItem, clearSale, getSubtotal, getVatTotal, getTotal, getItemCount } = useSaleStore()
+  const { items, addItem, addScaleItem, removeItem, updateQuantity, selectedIndex, selectItem, clearSale, getSubtotal, getVatTotal, getTotal, getItemCount } = useSaleStore()
   const { user } = useAuthStore()
   const { currentShift, setShift } = useShiftStore()
 
@@ -44,13 +45,30 @@ export function POS() {
     }
   }, [addItem])
 
+  // A label-printing-scale barcode (EAN-13, flag 2) carries a PLU + the price
+  // the scale computed. Match the PLU to a product and charge the label price.
+  // Returns true if it was handled as a scale label.
+  const tryScaleLabel = useCallback(async (barcode: string): Promise<boolean> => {
+    const scale = parseScaleBarcode(barcode)
+    if (!scale) return false
+    const product = await window.api.getProductByPlu?.(scale.plu)
+    if (product) {
+      addScaleItem(product, scale.price)
+      showToast(`${product.name} · ${formatZMW(scale.price)}`, 'ok')
+    } else {
+      showToast(`Scale item PLU ${scale.plu} isn't linked to a product yet`, 'err')
+    }
+    return true
+  }, [addScaleItem, showToast])
+
   const handleBarcodeScan = useCallback(async (barcode: string) => {
+    if (await tryScaleLabel(barcode)) { setSearchQuery(''); return }
     const product = await window.api.getProductByBarcode(barcode)
     if (product) {
       requestAddProduct(product)
       setSearchQuery('')
     }
-  }, [requestAddProduct])
+  }, [requestAddProduct, tryScaleLabel])
 
   useScanner({ onScan: handleBarcodeScan, enabled: !showPayment && !searchActive })
 
@@ -99,6 +117,7 @@ export function POS() {
 
   const handleSearchKeyDown = async (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && searchQuery.trim().length >= 3) {
+      if (await tryScaleLabel(searchQuery.trim())) { closeSearch(); return }
       const product = await window.api.getProductByBarcode(searchQuery.trim())
       if (product) { pickSearchResult(product); return }
       if (searchResults.length === 1) pickSearchResult(searchResults[0])

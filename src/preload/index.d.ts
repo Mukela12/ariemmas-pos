@@ -7,6 +7,7 @@ interface PosAPI {
   getCurrentUser(): Promise<UserPublic | null>
 
   getProductByBarcode(barcode: string): Promise<Product | null>
+  getProductByPlu(plu: number): Promise<Product | null>
   searchProducts(query: string): Promise<Product[]>
   getAllProducts(page?: number, limit?: number): Promise<{ products: Product[]; total: number; page: number; limit: number }>
   createProduct(product: Partial<Product>): Promise<Product>

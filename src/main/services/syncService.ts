@@ -114,17 +114,18 @@ export async function pullCatalog(): Promise<{ changed: number }> {
       const stock = keepStock ? local.stock_quantity : (p.stock_quantity ?? 0)
       const isW = p.is_weighted ? 1 : 0
 
+      const plu = p.scale_plu ?? null
       if (!local) {
         await db.run(
-          `INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit, is_weighted, image_filename, image_url, active, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [p.id, p.barcode ?? null, p.name, p.category_id ?? null, p.price, p.cost_price ?? 0, p.vat_rate ?? 0.16, stock, p.min_stock_level ?? 5, p.unit ?? 'each', isW, imageFilename, p.image_url ?? null, p.active ?? 1, p.updated_at ?? null]
+          `INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit, is_weighted, scale_plu, image_filename, image_url, active, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [p.id, p.barcode ?? null, p.name, p.category_id ?? null, p.price, p.cost_price ?? 0, p.vat_rate ?? 0.16, stock, p.min_stock_level ?? 5, p.unit ?? 'each', isW, plu, imageFilename, p.image_url ?? null, p.active ?? 1, p.updated_at ?? null]
         )
         changed++
       } else {
         await db.run(
-          `UPDATE products SET barcode = ?, name = ?, category_id = ?, price = ?, cost_price = ?, vat_rate = ?, stock_quantity = ?, min_stock_level = ?, unit = ?, is_weighted = ?, image_filename = ?, image_url = ?, active = ?, updated_at = ? WHERE id = ?`,
-          [p.barcode ?? null, p.name, p.category_id ?? null, p.price, p.cost_price ?? 0, p.vat_rate ?? 0.16, stock, p.min_stock_level ?? 5, p.unit ?? 'each', isW, imageFilename, p.image_url ?? null, p.active ?? 1, p.updated_at ?? null, local.id]
+          `UPDATE products SET barcode = ?, name = ?, category_id = ?, price = ?, cost_price = ?, vat_rate = ?, stock_quantity = ?, min_stock_level = ?, unit = ?, is_weighted = ?, scale_plu = ?, image_filename = ?, image_url = ?, active = ?, updated_at = ? WHERE id = ?`,
+          [p.barcode ?? null, p.name, p.category_id ?? null, p.price, p.cost_price ?? 0, p.vat_rate ?? 0.16, stock, p.min_stock_level ?? 5, p.unit ?? 'each', isW, plu, imageFilename, p.image_url ?? null, p.active ?? 1, p.updated_at ?? null, local.id]
         )
         changed++
       }

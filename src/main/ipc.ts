@@ -97,6 +97,12 @@ export async function registerIpcHandlers(): Promise<void> {
     return db.queryOne('SELECT * FROM products WHERE barcode = ? AND active = 1', [barcode])
   })
 
+  // Look up a product by its scale PLU (for scanned label-printing-scale barcodes).
+  ipcMain.handle(IPC_CHANNELS.PRODUCT_GET_BY_PLU, async (_e, plu: number) => {
+    const db = getDb()
+    return db.queryOne('SELECT * FROM products WHERE scale_plu = ? AND active = 1', [plu])
+  })
+
   ipcMain.handle(IPC_CHANNELS.PRODUCT_SEARCH, async (_e, query: string) => {
     const db = getDb()
     return db.query(
@@ -124,9 +130,9 @@ export async function registerIpcHandlers(): Promise<void> {
     const db = getDb()
     const id = uuid()
     await db.run(`
-      INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit, is_weighted, image_filename, image_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [id, product.barcode, product.name, product.category_id, product.price, product.cost_price || 0, product.vat_rate || 0.16, product.stock_quantity || 0, product.min_stock_level || 5, product.unit || 'each', product.is_weighted ? 1 : 0, product.image_filename || null, product.image_url || null])
+      INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit, is_weighted, scale_plu, image_filename, image_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [id, product.barcode, product.name, product.category_id, product.price, product.cost_price || 0, product.vat_rate || 0.16, product.stock_quantity || 0, product.min_stock_level || 5, product.unit || 'each', product.is_weighted ? 1 : 0, product.scale_plu || null, product.image_filename || null, product.image_url || null])
     const created = await db.queryOne('SELECT * FROM products WHERE id = ?', [id])
     queueSync('insert', 'product', id, created!).catch(() => {})
     return created
@@ -145,11 +151,11 @@ export async function registerIpcHandlers(): Promise<void> {
     await db.run(`
       UPDATE products SET barcode = ?, name = ?, category_id = ?, price = ?, cost_price = ?,
         vat_rate = ?, stock_quantity = ?, min_stock_level = ?, unit = ?, is_weighted = ?,
-        image_filename = ?, image_url = ?, updated_at = ${nowExpr}
+        scale_plu = ?, image_filename = ?, image_url = ?, updated_at = ${nowExpr}
       WHERE id = ?
     `, [product.barcode, product.name, product.category_id, product.price, product.cost_price || 0,
       product.vat_rate || 0.16, product.stock_quantity || 0, product.min_stock_level || 5,
-      product.unit || 'each', product.is_weighted ? 1 : 0,
+      product.unit || 'each', product.is_weighted ? 1 : 0, product.scale_plu || null,
       product.image_filename || null, product.image_url || null, product.id])
     const updated = await db.queryOne('SELECT * FROM products WHERE id = ?', [product.id])
     queueSync('update', 'product', product.id, updated!).catch(() => {})

@@ -40,6 +40,10 @@ export interface Product {
   min_stock_level: number
   unit: string
   is_weighted: number
+  // PLU number programmed on the label-printing scale. A scanned scale label
+  // (EAN-13 starting with 2) carries this PLU; the till matches it to find the
+  // product, then charges the price encoded on the label.
+  scale_plu: number | null
   image_filename: string | null
   image_url: string | null
   active: number

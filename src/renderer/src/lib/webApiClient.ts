@@ -61,6 +61,8 @@ export const webApi = {
   // Products
   getProductByBarcode: async (barcode: string) =>
     json<any>(`/api/products/barcode/${encodeURIComponent(barcode)}`),
+  getProductByPlu: async (plu: number) =>
+    json<any>(`/api/products/plu/${plu}`),
   searchProducts: async (query: string) =>
     json<any[]>(`/api/products/search?q=${encodeURIComponent(query)}`),
   getAllProducts: async (page = 1, limit = 50) =>

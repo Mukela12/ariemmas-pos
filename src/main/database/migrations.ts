@@ -440,6 +440,20 @@ export const MIGRATIONS: Migration[] = [
       }
       return `CREATE TABLE IF NOT EXISTS stock_movements ${cols};`
     }
+  },
+  {
+    // Scale PLU: links a product to its number on the label-printing scale, so a
+    // scanned scale label (EAN-13 flag 2) can be matched to this product.
+    name: '011_product_scale_plu',
+    getSql: (engine) => {
+      if (engine === 'mssql') {
+        return `IF COL_LENGTH('products', 'scale_plu') IS NULL ALTER TABLE products ADD scale_plu INT NULL;`
+      }
+      if (engine === 'postgres') {
+        return `ALTER TABLE products ADD COLUMN IF NOT EXISTS scale_plu INTEGER;`
+      }
+      return `ALTER TABLE products ADD COLUMN scale_plu INTEGER;`
+    }
   }
 ]
 
