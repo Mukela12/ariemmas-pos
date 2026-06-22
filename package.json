@@ -27,7 +27,6 @@
     "@electron-toolkit/utils": "^4.0.0",
     "@rive-app/react-canvas": "^4.27.1",
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^11.7.0",
     "cors": "^2.8.6",
     "dayjs": "^1.11.13",
     "dotenv": "^17.3.1",
@@ -39,6 +38,9 @@
     "pg": "^8.20.0",
     "resend": "^6.9.4",
     "uuid": "^11.1.0"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^11.7.0"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",
