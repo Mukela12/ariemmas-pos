@@ -13,6 +13,10 @@ jobs:
   build:
     strategy:
       fail-fast: false
+      # Run one OS at a time. electron-builder publishes directly to the same
+      # GitHub release from each job; running them in parallel races on release
+      # creation and silently drops assets (v1.2.2 lost the Windows .exe this way).
+      max-parallel: 1
       matrix:
         include:
           - os: windows-latest
