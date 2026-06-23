@@ -96,76 +96,74 @@
   </div>
 
   <p class="doc-sub">Quick setup sheet</p>
-  <h1 class="doc-title">Adding Products That Are Sold by Weight</h1>
-  <p>Some things in the shop are sold <strong>by the kilogram</strong> — meat, fish, chicken, liver. These are called <strong>weighed products</strong>. Before the till can ring one up, two people / two places must be set up <strong>to match</strong>:</p>
+  <h1 class="doc-title">Adding Products Sold by Weight</h1>
+  <p>Meat, fish, chicken — anything sold <strong>by the kilo</strong>. Set it up in two places, and they must <strong>match</strong>:</p>
 
   <div class="flow">
     <div class="flow-box">
       <div class="ico">⚖️</div>
       <div class="lbl">1. On the scale</div>
-      <div class="txt">Each product gets a number — a <b>PLU</b>. The scale knows its name &amp; price per kg.</div>
+      <div class="txt">Give the product a number — a <b>PLU</b> — and its price per kg.</div>
     </div>
     <div class="flow-arrow">→</div>
     <div class="flow-box">
       <div class="ico">💻</div>
       <div class="lbl">2. In the POS</div>
-      <div class="txt">You add the product and type that <b>same PLU number</b> in the “Scale PLU” box.</div>
+      <div class="txt">Add the product and type that <b>same PLU</b> in “Scale PLU”.</div>
     </div>
     <div class="flow-arrow">→</div>
     <div class="flow-box">
       <div class="ico">🧾</div>
       <div class="lbl">3. At the till</div>
-      <div class="txt">The clerk scans the printed sticker — the item rings up at the right price.</div>
+      <div class="txt">Clerk scans the sticker — it rings up on its own.</div>
     </div>
   </div>
 
   <div class="warn">
-    <b>The one rule that matters</b>
-    The <strong>PLU number</strong> and the <strong>price per kg</strong> must be <strong>exactly the same</strong> on the scale and in the POS. If the scale says PLU 2 = Beef Sausages at K85/kg, then in the POS, Beef Sausages must have Scale PLU <code>2</code> and Selling Price <code>85</code>. This sheet is about step 2 — keying them into the POS.
+    <b>The one rule</b>
+    The <strong>PLU</strong> and the <strong>price per kg</strong> must be the <strong>same</strong> on the scale and in the POS.
   </div>
 
-  <h2><span class="n">●</span>A worked example</h2>
-  <p>Say the butcher programs the scale like this: <strong>PLU 2 = Beef Sausages, K85.00 per kg.</strong> You then add the same product in the POS, set its price to <code>85</code> per kg, tick “Sold by weight,” and put <code>2</code> in <strong>Scale PLU</strong>.</p>
-  <p>Now when a customer buys some, the butcher weighs 0.620 kg and the scale prints a barcode sticker. The clerk scans it and the till shows:</p>
+  <h2><span class="n">●</span>Example</h2>
+  <p>Scale: <strong>PLU 2 = Beef Sausages, K85/kg.</strong> &nbsp; In the POS: same name, price <code>85</code>, Scale PLU <code>2</code>.</p>
   <div class="tip">
     <b>Beef Sausages (0.620 kg) &nbsp;=&nbsp; K 52.70</b>
-    0.620 kg × K85.00 = K52.70. The clerk types nothing — scanning the sticker does it all. This works even if the internet is down.
+    The clerk just scans the sticker — no typing. Works offline too.
   </div>
-  <p style="color:var(--muted); font-size:10pt;">You only do this setup <strong>once per product</strong>. After that, it just works at every till.</p>
+  <p style="color:var(--muted); font-size:10pt;">Do this <strong>once per product</strong>. Then it works at every till.</p>
 </section>
 
 <!-- ============ PAGE 2 — HOW TO KEY IT IN ============ -->
 <section class="page page-break">
-  <h2 style="margin-top:0;"><span class="n">●</span>How to key a weighed product into the POS</h2>
-  <p>Do this on a <strong>laptop or phone</strong> using the admin website — it’s easier to type on, and it sends the product to all three tills automatically within about half a minute.</p>
+  <h2 style="margin-top:0;"><span class="n">●</span>Key it into the POS</h2>
+  <p>Do it on a <strong>laptop or phone</strong> (admin website). It syncs to all three tills.</p>
 
   <ol class="steps">
-    <li>Open the admin site and sign in, then tap <strong>Products</strong>.</li>
-    <li>Tap <strong>“+ Add Product”</strong> (top right). To fix an existing one, tap the <strong>pencil</strong> next to it instead.</li>
-    <li>Fill in the <strong>Product Name</strong>, choose the <strong>Category</strong>, and set the <strong>Selling Price</strong> to the <strong>price per kilogram</strong> (the same price that is on the scale).</li>
-    <li>Tick the box <strong>“Sold by weight (butchery)”</strong>. A new box called <strong>“Scale PLU”</strong> appears underneath.</li>
-    <li>In <strong>Scale PLU</strong>, type the <strong>same number</strong> the product has on the scale (for example <code>2</code>).</li>
-    <li>Tap <strong>“Add Product”</strong> (or <strong>“Update Product”</strong>) to save. Done.</li>
+    <li>Open <strong>Products</strong> → tap <strong>“+ Add Product”</strong> (or the <strong>pencil</strong> to edit one).</li>
+    <li>Enter the <strong>Name</strong>, pick the <strong>Category</strong>, set <strong>Selling Price</strong> = price per kg.</li>
+    <li>Tick <strong>“Sold by weight (butchery)”</strong>. The <strong>Scale PLU</strong> box appears.</li>
+    <li>Type the <strong>Scale PLU</strong> — the same number as on the scale.</li>
+    <li>Tap <strong>Save</strong>.</li>
   </ol>
 
   <figure>
-    <img src="img/50-scale-plu.png" alt="The Add Product form with the Sold by weight box ticked and the Scale PLU field filled in" />
-    <figcaption><b>What it looks like.</b> Selling Price is the price per kg, “Sold by weight (butchery)” is ticked, and <strong>Scale PLU</strong> holds the product’s number from the scale.</figcaption>
+    <img src="img/50-scale-plu.png" alt="Add Product form with Sold by weight ticked and Scale PLU filled in" />
+    <figcaption><b>What it looks like.</b> Price per kg, “Sold by weight” ticked, and the <strong>Scale PLU</strong> number filled in.</figcaption>
   </figure>
 
   <h2><span class="n">●</span>What each box means</h2>
   <ul class="field-list">
-    <li><span class="f">Product Name</span> What the customer sees on the screen and receipt (e.g. <em>Beef Sausages</em>).</li>
-    <li><span class="f">Selling Price</span> The price for <strong>one kilogram</strong>. Must match the scale.</li>
-    <li><span class="f">Sold by weight</span> Tick this for anything weighed. It turns the unit into <strong>kg</strong>.</li>
-    <li><span class="f">Scale PLU</span> The product’s number on the scale. Must match the scale.</li>
+    <li><span class="f">Name</span> What shows on the screen &amp; receipt.</li>
+    <li><span class="f">Selling Price</span> Price for <strong>one kg</strong>. Match the scale.</li>
+    <li><span class="f">Sold by weight</span> Tick for anything weighed.</li>
+    <li><span class="f">Scale PLU</span> The product’s number on the scale. Match the scale.</li>
   </ul>
 </section>
 
 <!-- ============ PAGE 3 — WORKSHEET ============ -->
 <section class="page page-break">
-  <h2 style="margin-top:0;"><span class="n">●</span>Your weighed-products worksheet</h2>
-  <p>Write down every weighed product here as you set it up. Fill the PLU and price per kg, then tick the box once it’s done on the scale and once it’s done in the POS. The first two rows are filled in as examples.</p>
+  <h2 style="margin-top:0;"><span class="n">●</span>Worksheet</h2>
+  <p>Write each weighed product here as you set it up. Tick when it’s done on the scale and in the POS. (First two rows are examples.)</p>
 
   <table>
     <thead>
@@ -186,22 +184,23 @@
       <tr class="fill"><td></td><td></td><td></td><td class="tick">☐</td><td class="tick">☐</td></tr>
       <tr class="fill"><td></td><td></td><td></td><td class="tick">☐</td><td class="tick">☐</td></tr>
       <tr class="fill"><td></td><td></td><td></td><td class="tick">☐</td><td class="tick">☐</td></tr>
+      <tr class="fill"><td></td><td></td><td></td><td class="tick">☐</td><td class="tick">☐</td></tr>
+      <tr class="fill"><td></td><td></td><td></td><td class="tick">☐</td><td class="tick">☐</td></tr>
     </tbody>
   </table>
 
-  <h2><span class="n">●</span>Check it worked &amp; common mistakes</h2>
+  <h2><span class="n">●</span>Check &amp; common mistakes</h2>
   <div class="tip">
-    <b>Test each product once</b>
-    Print a sticker from the scale and scan it at a till. It should show the right name, weight and price. If the till says <strong>“Scale item PLU X isn’t linked to a product yet,”</strong> the number doesn’t match — check the PLU on the scale and in the POS are the same.
+    <b>Test it</b>
+    Print a sticker and scan it at a till. If it says <strong>“PLU X isn’t linked,”</strong> the numbers don’t match.
   </div>
   <div class="warn">
-    <b>Watch out for these</b>
-    • <strong>Different PLU</strong> on the scale vs the POS — they must be identical.<br/>
-    • <strong>Different price per kg</strong> — the sticker charges the scale’s price, so make them match.<br/>
-    • Forgot to tick <strong>“Sold by weight”</strong> — then the Scale PLU box never appears.<br/>
-    • Typing the price as <strong>grams</strong> or a total — it must be the price for <strong>one kilogram</strong>.
+    <b>Common mistakes</b>
+    • PLU different on scale vs POS.<br/>
+    • Price per kg different.<br/>
+    • Forgot to tick <strong>“Sold by weight”</strong>.<br/>
+    • Typed grams, not the price per kg.
   </div>
-  <p style="color:var(--muted); font-size:10pt; margin-top:14px;">Keep this sheet near the scale. When you add a new weighed product, do the scale and the POS at the same time so the numbers always match.</p>
 </section>
 
 </body>
