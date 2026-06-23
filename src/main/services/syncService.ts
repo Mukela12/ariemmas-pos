@@ -114,7 +114,11 @@ export async function pullCatalog(): Promise<{ changed: number }> {
       const stock = keepStock ? local.stock_quantity : (p.stock_quantity ?? 0)
       const isW = p.is_weighted ? 1 : 0
 
-      const plu = p.scale_plu ?? null
+      // Preserve a locally-set scale PLU when the cloud doesn't carry the field
+      // (an older server without the scale_plu column omits it entirely). Adopt
+      // the cloud's value only when it actually sends one — present even as null
+      // means it was explicitly cleared there.
+      const plu = ('scale_plu' in p) ? (p.scale_plu ?? null) : (local?.scale_plu ?? null)
       if (!local) {
         await db.run(
           `INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit, is_weighted, scale_plu, image_filename, image_url, active, updated_at)
