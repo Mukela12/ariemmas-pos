@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ariemmas POS — Setting Up Weighed Products</title>
+<style>
+  :root {
+    --teal: #0D9488; --teal-dark: #0F766E; --ink: #18181B; --ink-2: #3F3F46;
+    --muted: #71717A; --line: #E4E4E7; --bg-soft: #F4F4F5; --green: #16A34A;
+    --amber: #B45309; --amber-bg: #FFFBEB; --red: #B91C1C; --red-bg: #FEF2F2;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink); font-size: 11.5pt; line-height: 1.55; background: #fff;
+  }
+  .page { width: 210mm; padding: 14mm 18mm; margin: 0 auto; background: #fff; }
+  .page-break { page-break-before: always; }
+  .no-break { page-break-inside: avoid; }
+  h2, h3 { page-break-after: avoid; }
+  figure { page-break-inside: avoid; }
+  @media screen {
+    body { background: #d9d9d6; padding: 20px 0; }
+    .page { box-shadow: 0 2px 16px rgba(0,0,0,.12); margin-bottom: 22px; min-height: 269mm; }
+  }
+
+  /* Header band on page 1 */
+  .masthead { display: flex; align-items: center; gap: 14px; padding-bottom: 16px; border-bottom: 2px solid var(--line); margin-bottom: 18px; }
+  .logo-mark { width: 52px; height: 52px; border-radius: 12px; background: var(--teal); color: #fff; font-weight: 800; font-size: 24pt; display: flex; align-items: center; justify-content: center; letter-spacing: -.02em; }
+  .masthead .brand { font-size: 15pt; font-weight: 800; letter-spacing: -.01em; }
+  .masthead .brand small { display: block; font-size: 8.5pt; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--teal); margin-top: 2px; }
+  .doc-title { font-size: 26pt; font-weight: 800; letter-spacing: -.025em; line-height: 1.08; margin: 4px 0 6px; }
+  .doc-sub { font-size: 12.5pt; color: var(--muted); margin: 0 0 4px; }
+
+  h2 { font-size: 16pt; font-weight: 800; letter-spacing: -.02em; margin: 14px 0 6px; }
+  h2 .n { color: var(--teal); margin-right: 8px; }
+  p { margin: 0 0 11px; }
+  strong { font-weight: 700; }
+  code, .kbd { font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace; font-size: .9em; background: var(--bg-soft); padding: 1px 6px; border-radius: 4px; }
+
+  .note, .warn, .tip { border-radius: 8px; padding: 10px 14px; margin: 10px 0; font-size: 10.5pt; border: 1px solid; }
+  .note { background: #F0FDFA; border-color: #99F6E4; }
+  .warn { background: var(--amber-bg); border-color: #FDE68A; }
+  .tip  { background: #F0FDF4; border-color: #BBF7D0; }
+  .note b, .warn b, .tip b { display: block; margin-bottom: 3px; }
+  .warn b { color: var(--amber); } .tip b { color: var(--green); } .note b { color: var(--teal-dark); }
+
+  .steps { counter-reset: step; padding-left: 0; list-style: none; margin: 6px 0 14px; }
+  .steps > li { position: relative; padding-left: 40px; margin-bottom: 9px; min-height: 28px; }
+  .steps > li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 0; top: -1px; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--teal); color: #fff; font-weight: 700; font-size: 12pt;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  figure { margin: 8px 0; text-align: center; }
+  figure img { max-width: 100%; max-height: 72mm; width: auto; border: 1px solid var(--line); border-radius: 8px; }
+  figcaption { font-size: 9.5pt; color: var(--muted); margin-top: 6px; text-align: left; }
+  figcaption b { color: var(--ink-2); }
+
+  /* Flow diagram */
+  .flow { display: flex; align-items: stretch; gap: 0; margin: 16px 0 8px; }
+  .flow-box { flex: 1; border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 13px; }
+  .flow-box .ico { font-size: 17pt; }
+  .flow-box .lbl { font-size: 8.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--teal); margin: 4px 0 3px; }
+  .flow-box .txt { font-size: 10pt; color: var(--ink-2); }
+  .flow-box .txt b { color: var(--ink); }
+  .flow-arrow { display: flex; align-items: center; padding: 0 8px; font-size: 18pt; color: var(--teal); font-weight: 800; }
+
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 14px; font-size: 10.5pt; }
+  th, td { text-align: left; padding: 9px 10px; border: 1px solid var(--line); vertical-align: middle; }
+  th { background: var(--teal); color: #fff; font-weight: 700; font-size: 9.5pt; text-transform: uppercase; letter-spacing: .03em; border-color: var(--teal-dark); }
+  tbody tr:nth-child(even) td { background: var(--bg-soft); }
+  .ex td { color: var(--muted); font-style: italic; }
+  .fill { height: 26px; }
+  .tick { text-align: center; font-size: 13pt; color: var(--line); }
+
+  .field-list { list-style: none; padding: 0; margin: 8px 0 12px; }
+  .field-list li { padding: 7px 0; border-bottom: 1px dotted var(--line); font-size: 10.5pt; }
+  .field-list .f { display: inline-block; min-width: 130px; font-weight: 700; color: var(--teal-dark); }
+
+  .footer-tag { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ============ PAGE 1 — WHAT & WHY ============ -->
+<section class="page">
+  <div class="masthead">
+    <div class="logo-mark">A</div>
+    <div class="brand">Ariemmas Shop<small>Point of Sale</small></div>
+  </div>
+
+  <p class="doc-sub">Quick setup sheet</p>
+  <h1 class="doc-title">Adding Products That Are Sold by Weight</h1>
+  <p>Some things in the shop are sold <strong>by the kilogram</strong> — meat, fish, chicken, liver. These are called <strong>weighed products</strong>. Before the till can ring one up, two people / two places must be set up <strong>to match</strong>:</p>
+
+  <div class="flow">
+    <div class="flow-box">
+      <div class="ico">⚖️</div>
+      <div class="lbl">1. On the scale</div>
+      <div class="txt">Each product gets a number — a <b>PLU</b>. The scale knows its name &amp; price per kg.</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">
+      <div class="ico">💻</div>
+      <div class="lbl">2. In the POS</div>
+      <div class="txt">You add the product and type that <b>same PLU number</b> in the “Scale PLU” box.</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">
+      <div class="ico">🧾</div>
+      <div class="lbl">3. At the till</div>
+      <div class="txt">The clerk scans the printed sticker — the item rings up at the right price.</div>
+    </div>
+  </div>
+
+  <div class="warn">
+    <b>The one rule that matters</b>
+    The <strong>PLU number</strong> and the <strong>price per kg</strong> must be <strong>exactly the same</strong> on the scale and in the POS. If the scale says PLU 2 = Beef Sausages at K85/kg, then in the POS, Beef Sausages must have Scale PLU <code>2</code> and Selling Price <code>85</code>. This sheet is about step 2 — keying them into the POS.
+  </div>
+
+  <h2><span class="n">●</span>A worked example</h2>
+  <p>Say the butcher programs the scale like this: <strong>PLU 2 = Beef Sausages, K85.00 per kg.</strong> You then add the same product in the POS, set its price to <code>85</code> per kg, tick “Sold by weight,” and put <code>2</code> in <strong>Scale PLU</strong>.</p>
+  <p>Now when a customer buys some, the butcher weighs 0.620 kg and the scale prints a barcode sticker. The clerk scans it and the till shows:</p>
+  <div class="tip">
+    <b>Beef Sausages (0.620 kg) &nbsp;=&nbsp; K 52.70</b>
+    0.620 kg × K85.00 = K52.70. The clerk types nothing — scanning the sticker does it all. This works even if the internet is down.
+  </div>
+  <p style="color:var(--muted); font-size:10pt;">You only do this setup <strong>once per product</strong>. After that, it just works at every till.</p>
+</section>
+
+<!-- ============ PAGE 2 — HOW TO KEY IT IN ============ -->
+<section class="page page-break">
+  <h2 style="margin-top:0;"><span class="n">●</span>How to key a weighed product into the POS</h2>
+  <p>Do this on a <strong>laptop or phone</strong> using the admin website — it’s easier to type on, and it sends the product to all three tills automatically within about half a minute.</p>
+
+  <ol class="steps">
+    <li>Open the admin site and sign in, then tap <strong>Products</strong>.</li>
+    <li>Tap <strong>“+ Add Product”</strong> (top right). To fix an existing one, tap the <strong>pencil</strong> next to it instead.</li>
+    <li>Fill in the <strong>Product Name</strong>, choose the <strong>Category</strong>, and set the <strong>Selling Price</strong> to the <strong>price per kilogram</strong> (the same price that is on the scale).</li>
+    <li>Tick the box <strong>“Sold by weight (butchery)”</strong>. A new box called <strong>“Scale PLU”</strong> appears underneath.</li>
+    <li>In <strong>Scale PLU</strong>, type the <strong>same number</strong> the product has on the scale (for example <code>2</code>).</li>
+    <li>Tap <strong>“Add Product”</strong> (or <strong>“Update Product”</strong>) to save. Done.</li>
+  </ol>
+
+  <figure>
+    <img src="img/50-scale-plu.png" alt="The Add Product form with the Sold by weight box ticked and the Scale PLU field filled in" />
+    <figcaption><b>What it looks like.</b> Selling Price is the price per kg, “Sold by weight (butchery)” is ticked, and <strong>Scale PLU</strong> holds the product’s number from the scale.</figcaption>
+  </figure>
+
+  <h2><span class="n">●</span>What each box means</h2>
+  <ul class="field-list">
+    <li><span class="f">Product Name</span> What the customer sees on the screen and receipt (e.g. <em>Beef Sausages</em>).</li>
+    <li><span class="f">Selling Price</span> The price for <strong>one kilogram</strong>. Must match the scale.</li>
+    <li><span class="f">Sold by weight</span> Tick this for anything weighed. It turns the unit into <strong>kg</strong>.</li>
+    <li><span class="f">Scale PLU</span> The product’s number on the scale. Must match the scale.</li>
+  </ul>
+</section>
+
+<!-- ============ PAGE 3 — WORKSHEET ============ -->
+<section class="page page-break">
+  <h2 style="margin-top:0;"><span class="n">●</span>Your weighed-products worksheet</h2>
+  <p>Write down every weighed product here as you set it up. Fill the PLU and price per kg, then tick the box once it’s done on the scale and once it’s done in the POS. The first two rows are filled in as examples.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:14%;">PLU&nbsp;#</th>
+        <th style="width:40%;">Product name</th>
+        <th style="width:20%;">Price / kg (K)</th>
+        <th style="width:13%;">On scale</th>
+        <th style="width:13%;">In POS</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="ex"><td>1</td><td>T-Bone Steak</td><td>289.99</td><td class="tick">✓</td><td class="tick">✓</td></tr>
+      <tr class="ex"><td>2</td><td>Beef Sausages</td><td>85.00</td><td class="tick">✓</td><td class="tick">✓</td></tr>
+      <tr class="fill"><td></td><td></td><td></td><td class="tick">☐</td><td class="tick">☐</td></tr>
+      <tr class="fill"><td></td><td></td><td></td><td class="tick">☐</td><td class="tick">☐</td></tr>
+      <tr class="fill"><td></td><td></td><td></td><td class="tick">☐</td><td class="tick">☐</td></tr>
+      <tr class="fill"><td></td><td></td><td></td><td class="tick">☐</td><td class="tick">☐</td></tr>
+      <tr class="fill"><td></td><td></td><td></td><td class="tick">☐</td><td class="tick">☐</td></tr>
+      <tr class="fill"><td></td><td></td><td></td><td class="tick">☐</td><td class="tick">☐</td></tr>
+    </tbody>
+  </table>
+
+  <h2><span class="n">●</span>Check it worked &amp; common mistakes</h2>
+  <div class="tip">
+    <b>Test each product once</b>
+    Print a sticker from the scale and scan it at a till. It should show the right name, weight and price. If the till says <strong>“Scale item PLU X isn’t linked to a product yet,”</strong> the number doesn’t match — check the PLU on the scale and in the POS are the same.
+  </div>
+  <div class="warn">
+    <b>Watch out for these</b>
+    • <strong>Different PLU</strong> on the scale vs the POS — they must be identical.<br/>
+    • <strong>Different price per kg</strong> — the sticker charges the scale’s price, so make them match.<br/>
+    • Forgot to tick <strong>“Sold by weight”</strong> — then the Scale PLU box never appears.<br/>
+    • Typing the price as <strong>grams</strong> or a total — it must be the price for <strong>one kilogram</strong>.
+  </div>
+  <p style="color:var(--muted); font-size:10pt; margin-top:14px;">Keep this sheet near the scale. When you add a new weighed product, do the scale and the POS at the same time so the numbers always match.</p>
+</section>
+
+</body>
+</html>
