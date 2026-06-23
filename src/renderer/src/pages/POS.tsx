@@ -51,6 +51,12 @@ export function POS() {
   const tryScaleLabel = useCallback(async (barcode: string): Promise<boolean> => {
     const scale = parseScaleBarcode(barcode)
     if (!scale) return false
+    if (!scale.plu) {
+      // The label is a valid scale label but its product-number field is 0 — the
+      // product wasn't given an item code on the scale, so we can't match it.
+      showToast('Scale label has no product number — set the item code on the scale', 'err')
+      return true
+    }
     const product = await window.api.getProductByPlu?.(scale.plu)
     if (product) {
       addScaleItem(product, scale.price)

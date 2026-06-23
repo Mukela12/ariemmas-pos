@@ -41,7 +41,9 @@ export function parseScaleBarcode(raw: string): ScaleBarcode | null {
 
   const plu = parseInt(code.slice(1, 7), 10) // positions 2..7
   const priceNgwee = parseInt(code.slice(7, 12), 10) // positions 8..12
-  if (!plu) return null
 
+  // plu can be 0 when the scale label has no item code programmed for the product.
+  // Return it anyway (it IS a valid flag-2 scale label) so the till can show a
+  // helpful "set the item code" message rather than silently doing nothing.
   return { plu, price: priceNgwee / 100 }
 }
