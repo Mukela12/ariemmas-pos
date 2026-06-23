@@ -805,28 +805,32 @@ app.post('/api/sync/sales', async (req, res) => {
     if (!sale?.id) return res.status(400).json({ error: 'Missing sale data' })
 
     const existing = await db.queryOne('SELECT id FROM sales WHERE id = $1', [sale.id])
-    if (existing) return res.json({ status: 'already_synced' })
+    // NOTE: do NOT early-return when the sale already exists. We must still walk
+    // the items below (each insert is idempotent), so any line that failed on an
+    // earlier attempt — e.g. its product hadn't synced yet — gets filled in now.
 
     // Ensure the user exists (skip FK if not)
     const userExists = await db.queryOne('SELECT id FROM users WHERE id = $1', [sale.user_id])
     if (!userExists) return res.status(422).json({ error: `User ${sale.user_id} not synced yet` })
 
     await db.transaction(async () => {
-      // Handle receipt_number conflict (web and desktop may generate same numbers)
-      let receiptNumber = sale.receipt_number
-      const receiptExists = await db.queryOne('SELECT id FROM sales WHERE receipt_number = $1', [receiptNumber])
-      if (receiptExists) {
-        receiptNumber = receiptNumber + '-D'
-      }
+      if (!existing) {
+        // Handle receipt_number conflict (web and desktop may generate same numbers)
+        let receiptNumber = sale.receipt_number
+        const receiptExists = await db.queryOne('SELECT id FROM sales WHERE receipt_number = $1', [receiptNumber])
+        if (receiptExists) {
+          receiptNumber = receiptNumber + '-D'
+        }
 
-      await db.run(
-        `INSERT INTO sales (id, receipt_number, user_id, shift_id, subtotal, vat_total, total,
-          payment_method, amount_tendered, change_given, mobile_ref, status, terminal_id, created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-        [sale.id, receiptNumber, sale.user_id, sale.shift_id, sale.subtotal,
-         sale.vat_total, sale.total, sale.payment_method, sale.amount_tendered,
-         sale.change_given, sale.mobile_ref, sale.status, sale.terminal_id || null, sale.created_at]
-      )
+        await db.run(
+          `INSERT INTO sales (id, receipt_number, user_id, shift_id, subtotal, vat_total, total,
+            payment_method, amount_tendered, change_given, mobile_ref, status, terminal_id, created_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+          [sale.id, receiptNumber, sale.user_id, sale.shift_id, sale.subtotal,
+           sale.vat_total, sale.total, sale.payment_method, sale.amount_tendered,
+           sale.change_given, sale.mobile_ref, sale.status, sale.terminal_id || null, sale.created_at]
+        )
+      }
 
       for (const item of items || []) {
         const itemExists = await db.queryOne('SELECT id FROM sale_items WHERE id = $1', [item.id])

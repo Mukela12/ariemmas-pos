@@ -163,6 +163,13 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
   let synced = 0
   let failed = 0
 
+  // Self-heal: a sale must never be permanently dropped. Anything left 'failed'
+  // by an earlier build (a long offline stretch that exhausted retries) is reset
+  // to pending so it syncs the moment the cloud is reachable again.
+  try {
+    await db.run(`UPDATE _sync_queue SET status = 'pending', attempts = 0 WHERE status = 'failed'`)
+  } catch { /* ignore */ }
+
   try {
     // Process in dependency order: users/categories first, then products, then shifts, then sales
     const pending = await db.query<{
@@ -199,16 +206,18 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
         synced++
       } catch (err: any) {
         failed++
-        await db.run(
-          `UPDATE _sync_queue SET attempts = attempts + 1, error = ? WHERE id = ?`,
-          [err.message || 'Unknown error', item.id]
-        )
-        // Mark as failed if max attempts reached
-        if (item.attempts + 1 >= MAX_ATTEMPTS) {
-          await db.run(
-            `UPDATE _sync_queue SET status = 'failed' WHERE id = ?`,
-            [item.id]
-          )
+        const msg = err?.message || 'Unknown error'
+        // Only a 4xx means the server rejected the data itself. Network errors,
+        // timeouts and 5xx are transient (the shop is offline, or the cloud is
+        // down) — keep the item pending WITHOUT counting an attempt, so an
+        // offline sale is retried every cycle and is never permanently dropped.
+        if (/Sync failed: 4\d\d/.test(msg)) {
+          await db.run(`UPDATE _sync_queue SET attempts = attempts + 1, error = ? WHERE id = ?`, [msg, item.id])
+          if (item.attempts + 1 >= MAX_ATTEMPTS) {
+            await db.run(`UPDATE _sync_queue SET status = 'failed' WHERE id = ?`, [item.id])
+          }
+        } else {
+          await db.run(`UPDATE _sync_queue SET error = ? WHERE id = ?`, [msg, item.id])
         }
       }
     }
@@ -238,11 +247,21 @@ async function syncToRemote(
     throw new Error(`No sync endpoint for ${operation} ${entityType}`)
   }
 
-  const res = await fetch(`${SYNC_API_URL}${endpoint.path}`, {
-    method: endpoint.method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  })
+  // Time the request out so a push to an unreachable cloud fails fast (and stays
+  // pending for the next cycle) instead of hanging on the OS TCP timeout.
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 12_000)
+  let res: Response
+  try {
+    res = await fetch(`${SYNC_API_URL}${endpoint.path}`, {
+      method: endpoint.method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    })
+  } finally {
+    clearTimeout(timer)
+  }
 
   if (!res.ok) {
     const text = await res.text().catch(() => 'No response body')
