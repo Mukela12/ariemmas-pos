@@ -15,31 +15,31 @@
   body {
     margin: 0;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    color: var(--ink); font-size: 11.5pt; line-height: 1.55; background: #fff;
+    color: var(--ink); font-size: 11.5pt; line-height: 1.5; background: #fff;
   }
   .page { width: 210mm; padding: 14mm 18mm; margin: 0 auto; background: #fff; }
   .page-break { page-break-before: always; }
-  .no-break { page-break-inside: avoid; }
   h2, h3 { page-break-after: avoid; }
-  figure { page-break-inside: avoid; }
+  figure, table { page-break-inside: avoid; }
   @media screen {
     body { background: #d9d9d6; padding: 20px 0; }
     .page { box-shadow: 0 2px 16px rgba(0,0,0,.12); margin-bottom: 22px; min-height: 269mm; }
   }
 
-  /* Header band on page 1 */
-  .masthead { display: flex; align-items: center; gap: 14px; padding-bottom: 16px; border-bottom: 2px solid var(--line); margin-bottom: 18px; }
-  .logo-mark { width: 52px; height: 52px; border-radius: 12px; background: var(--teal); color: #fff; font-weight: 800; font-size: 24pt; display: flex; align-items: center; justify-content: center; letter-spacing: -.02em; }
-  .masthead .brand { font-size: 15pt; font-weight: 800; letter-spacing: -.01em; }
+  .masthead { display: flex; align-items: center; gap: 14px; padding-bottom: 14px; border-bottom: 2px solid var(--line); margin-bottom: 16px; }
+  .logo-mark { width: 50px; height: 50px; border-radius: 12px; background: var(--teal); color: #fff; font-weight: 800; font-size: 23pt; display: flex; align-items: center; justify-content: center; letter-spacing: -.02em; }
+  .masthead .brand { font-size: 15pt; font-weight: 800; }
   .masthead .brand small { display: block; font-size: 8.5pt; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--teal); margin-top: 2px; }
-  .doc-title { font-size: 26pt; font-weight: 800; letter-spacing: -.025em; line-height: 1.08; margin: 4px 0 6px; }
-  .doc-sub { font-size: 12.5pt; color: var(--muted); margin: 0 0 4px; }
+  .doc-sub { font-size: 12pt; color: var(--muted); margin: 0 0 2px; }
+  .doc-title { font-size: 25pt; font-weight: 800; letter-spacing: -.025em; line-height: 1.08; margin: 2px 0 8px; }
 
   h2 { font-size: 16pt; font-weight: 800; letter-spacing: -.02em; margin: 14px 0 6px; }
   h2 .n { color: var(--teal); margin-right: 8px; }
-  p { margin: 0 0 11px; }
+  .part-tag { display: inline-block; font-size: 9pt; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #fff; background: var(--teal); padding: 3px 11px; border-radius: 999px; margin-bottom: 6px; }
+  p { margin: 0 0 10px; }
   strong { font-weight: 700; }
-  code, .kbd { font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace; font-size: .9em; background: var(--bg-soft); padding: 1px 6px; border-radius: 4px; }
+  code, .kbd { font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace; font-size: .9em; }
+  .kbd { background: var(--ink); color: #fff; border-radius: 5px; padding: 1px 7px; font-weight: 700; font-size: .82em; white-space: nowrap; }
 
   .note, .warn, .tip { border-radius: 8px; padding: 10px 14px; margin: 10px 0; font-size: 10.5pt; border: 1px solid; }
   .note { background: #F0FDFA; border-color: #99F6E4; }
@@ -48,110 +48,150 @@
   .note b, .warn b, .tip b { display: block; margin-bottom: 3px; }
   .warn b { color: var(--amber); } .tip b { color: var(--green); } .note b { color: var(--teal-dark); }
 
-  .steps { counter-reset: step; padding-left: 0; list-style: none; margin: 6px 0 14px; }
-  .steps > li { position: relative; padding-left: 40px; margin-bottom: 9px; min-height: 28px; }
+  .steps { counter-reset: step; padding-left: 0; list-style: none; margin: 6px 0 12px; }
+  .steps > li { position: relative; padding-left: 38px; margin-bottom: 9px; min-height: 26px; }
   .steps > li::before {
     counter-increment: step; content: counter(step);
-    position: absolute; left: 0; top: -1px; width: 28px; height: 28px; border-radius: 50%;
-    background: var(--teal); color: #fff; font-weight: 700; font-size: 12pt;
+    position: absolute; left: 0; top: -1px; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--teal); color: #fff; font-weight: 700; font-size: 11pt;
     display: flex; align-items: center; justify-content: center;
   }
 
   figure { margin: 8px 0; text-align: center; }
-  figure img { max-width: 100%; max-height: 72mm; width: auto; border: 1px solid var(--line); border-radius: 8px; }
+  figure img { max-width: 100%; max-height: 70mm; width: auto; border: 1px solid var(--line); border-radius: 8px; }
   figcaption { font-size: 9.5pt; color: var(--muted); margin-top: 6px; text-align: left; }
   figcaption b { color: var(--ink-2); }
 
-  /* Flow diagram */
-  .flow { display: flex; align-items: stretch; gap: 0; margin: 16px 0 8px; }
-  .flow-box { flex: 1; border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 13px; }
-  .flow-box .ico { font-size: 17pt; }
-  .flow-box .lbl { font-size: 8.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--teal); margin: 4px 0 3px; }
-  .flow-box .txt { font-size: 10pt; color: var(--ink-2); }
+  .flow { display: flex; align-items: stretch; gap: 0; margin: 14px 0 6px; }
+  .flow-box { flex: 1; border: 1.5px solid var(--line); border-radius: 10px; padding: 11px 12px; }
+  .flow-box .ico { font-size: 16pt; }
+  .flow-box .lbl { font-size: 8.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--teal); margin: 4px 0 3px; }
+  .flow-box .txt { font-size: 9.5pt; color: var(--ink-2); }
   .flow-box .txt b { color: var(--ink); }
-  .flow-arrow { display: flex; align-items: center; padding: 0 8px; font-size: 18pt; color: var(--teal); font-weight: 800; }
+  .flow-arrow { display: flex; align-items: center; padding: 0 7px; font-size: 17pt; color: var(--teal); font-weight: 800; }
 
-  table { width: 100%; border-collapse: collapse; margin: 12px 0 14px; font-size: 10.5pt; }
-  th, td { text-align: left; padding: 9px 10px; border: 1px solid var(--line); vertical-align: middle; }
-  th { background: var(--teal); color: #fff; font-weight: 700; font-size: 9.5pt; text-transform: uppercase; letter-spacing: .03em; border-color: var(--teal-dark); }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 12px; font-size: 10pt; }
+  th, td { text-align: left; padding: 7px 10px; border: 1px solid var(--line); vertical-align: middle; }
+  th { background: var(--teal); color: #fff; font-weight: 700; font-size: 9pt; text-transform: uppercase; letter-spacing: .03em; border-color: var(--teal-dark); }
   tbody tr:nth-child(even) td { background: var(--bg-soft); }
+  td code { background: #fff; padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
   .ex td { color: var(--muted); font-style: italic; }
   .fill { height: 26px; }
-  .tick { text-align: center; font-size: 13pt; color: var(--line); }
+  .tick { text-align: center; font-size: 12pt; color: var(--line); }
 
-  .field-list { list-style: none; padding: 0; margin: 8px 0 12px; }
-  .field-list li { padding: 7px 0; border-bottom: 1px dotted var(--line); font-size: 10.5pt; }
-  .field-list .f { display: inline-block; min-width: 130px; font-weight: 700; color: var(--teal-dark); }
+  /* Scale key-press table */
+  .keys { table-layout: fixed; }
+  .keys th, .keys td { padding: 5px 8px; font-size: 9pt; vertical-align: top; }
+  .keys td:first-child { font-weight: 600; }
+  .keys .kbd { font-size: .72em; padding: 1px 5px; }
+  .keys .disp { font-family: 'JetBrains Mono', monospace; font-size: 8.5pt; color: var(--teal-dark); word-break: break-word; }
+  .keys tbody tr:nth-child(even) td { background: var(--bg-soft); }
 
+  .field-list { list-style: none; padding: 0; margin: 6px 0 10px; }
+  .field-list li { padding: 6px 0; border-bottom: 1px dotted var(--line); font-size: 10.5pt; }
+  .field-list .f { display: inline-block; min-width: 120px; font-weight: 700; color: var(--teal-dark); }
   .footer-tag { display: none; }
 </style>
 </head>
 <body>
 
-<!-- ============ PAGE 1 — WHAT & WHY ============ -->
+<!-- ============ PAGE 1 — OVERVIEW ============ -->
 <section class="page">
   <div class="masthead">
     <div class="logo-mark">A</div>
     <div class="brand">Ariemmas Shop<small>Point of Sale</small></div>
   </div>
 
-  <p class="doc-sub">Quick setup sheet</p>
-  <h1 class="doc-title">Adding Products Sold by Weight</h1>
-  <p>Meat, fish, chicken — anything sold <strong>by the kilo</strong>. Set it up in two places, and they must <strong>match</strong>:</p>
+  <p class="doc-sub">Setup sheet — weighed products</p>
+  <h1 class="doc-title">Setting Up Products Sold by Weight</h1>
+  <p>Meat, fish, chicken — anything sold <strong>by the kilo</strong>. Each one needs <strong>two steps</strong>, and the numbers must <strong>match</strong>:</p>
 
   <div class="flow">
     <div class="flow-box">
       <div class="ico">⚖️</div>
-      <div class="lbl">1. On the scale</div>
-      <div class="txt">Give the product a number — a <b>PLU</b> — and its price per kg.</div>
+      <div class="lbl">Part A · The scale</div>
+      <div class="txt">Give the product a number — a <b>PLU</b> — with its name &amp; price per kg.</div>
     </div>
     <div class="flow-arrow">→</div>
     <div class="flow-box">
       <div class="ico">💻</div>
-      <div class="lbl">2. In the POS</div>
+      <div class="lbl">Part B · The POS</div>
       <div class="txt">Add the product and type that <b>same PLU</b> in “Scale PLU”.</div>
     </div>
     <div class="flow-arrow">→</div>
     <div class="flow-box">
       <div class="ico">🧾</div>
-      <div class="lbl">3. At the till</div>
-      <div class="txt">Clerk scans the sticker — it rings up on its own.</div>
+      <div class="lbl">Then · The till</div>
+      <div class="txt">Clerk scans the printed sticker — it rings up on its own.</div>
     </div>
   </div>
 
   <div class="warn">
     <b>The one rule</b>
-    The <strong>PLU</strong> and the <strong>price per kg</strong> must be the <strong>same</strong> on the scale and in the POS.
+    The <strong>PLU number</strong> and the <strong>price per kg</strong> must be the <strong>same</strong> on the scale (Part A) and in the POS (Part B). Do <strong>both parts</strong> for every weighed product.
   </div>
 
-  <h2><span class="n">●</span>Example</h2>
-  <p>Scale: <strong>PLU 2 = Beef Sausages, K85/kg.</strong> &nbsp; In the POS: same name, price <code>85</code>, Scale PLU <code>2</code>.</p>
   <div class="tip">
-    <b>Beef Sausages (0.620 kg) &nbsp;=&nbsp; K 52.70</b>
-    The clerk just scans the sticker — no typing. Works offline too.
+    <b>Example — Beef Sausages, PLU 2, K85/kg</b>
+    Set it on the scale as PLU 2 at K85/kg, then add it in the POS with Scale PLU <code>2</code> and price <code>85</code>. A customer buys 0.620 kg → the sticker scans as <strong>Beef Sausages (0.620 kg) = K52.70</strong>. Works offline too.
   </div>
-  <p style="color:var(--muted); font-size:10pt;">Do this <strong>once per product</strong>. Then it works at every till.</p>
+
+  <div class="note">
+    <b>Start your real products at PLU 2</b>
+    <strong>PLU 1 is still the “TEST” item</strong> from setup. Either leave it, or reprogram it to a real product using Part A. Give each real product its own number — 2, 3, 4 …
+  </div>
 </section>
 
-<!-- ============ PAGE 2 — HOW TO KEY IT IN ============ -->
+<!-- ============ PAGE 2 — PART A: THE SCALE ============ -->
 <section class="page page-break">
-  <h2 style="margin-top:0;"><span class="n">●</span>Key it into the POS</h2>
-  <p>Do it on a <strong>laptop or phone</strong> (admin website). It syncs to all three tills.</p>
+  <span class="part-tag">Part A · On the scale</span>
+  <h2 style="margin-top:2px;">Program the product on the scale</h2>
+  <p>Do this on the scale. <strong>It beeps on every key press — that’s normal.</strong> First press <span class="kbd">Cancel</span>/<span class="kbd">Mode</span> until the screen shows <strong>0.000 kg</strong>. Then follow these keys (example: <strong>PLU 2 = Beef Sausages, K85.00/kg</strong>):</p>
+
+  <table class="keys">
+    <thead><tr><th style="width:39%;">Press</th><th style="width:27%;">Screen shows</th><th style="width:34%;">What it means</th></tr></thead>
+    <tbody>
+      <tr><td><span class="kbd">Prog</span> then <span class="kbd">2</span> then <span class="kbd">3</span></td><td class="disp">F23  PLU.00  noSEt  0</td><td>You’re in PLU edit.</td></tr>
+      <tr><td><span class="kbd">2</span> &nbsp;(the PLU number)</td><td class="disp">…  noSEt  2</td><td>This product = PLU 2.</td></tr>
+      <tr><td><span class="kbd">V4 →</span></td><td class="disp">F23  PLU.01  iCodE</td><td>Item-code step.</td></tr>
+      <tr><td><span class="kbd">2</span></td><td class="disp">…  2</td><td>Item code (use the same number).</td></tr>
+      <tr><td><span class="kbd">V4 →</span></td><td class="disp">F23  PLU.03  Unit  0</td><td>Leave at <strong>0</strong> = sold by weight.</td></tr>
+      <tr><td><span class="kbd">V4 →</span></td><td class="disp">F23  PLU.04  PriCE</td><td>Price step.</td></tr>
+      <tr><td><span class="kbd">8</span> <span class="kbd">5</span> <span class="kbd">0</span> <span class="kbd">0</span></td><td class="disp">…  85.00</td><td>Price per kg. Last 2 digits are cents.</td></tr>
+      <tr><td><span class="kbd">V4 →</span></td><td class="disp">F23  PLU.14  nAmE</td><td>Name step.</td></tr>
+      <tr><td><span class="kbd">Accu/Confirm</span></td><td class="disp">En-1  0</td><td>Now in text-typing mode.</td></tr>
+      <tr><td>Type the name on the <strong>letter keys</strong> (each key has 2 letters; press <span class="kbd">IME</span> to switch to CAPITALS).</td><td class="disp">B E E F …</td><td>e.g. <strong>BEEF SAUS</strong>.</td></tr>
+      <tr><td><span class="kbd">Amend</span></td><td class="disp">(saves the name)</td><td>Saves the name.</td></tr>
+      <tr><td><span class="kbd">V4 →</span> then <span class="kbd">0</span></td><td class="disp">F23  PLU.26  …  0</td><td>0 = don’t print a shelf date.</td></tr>
+      <tr><td><span class="kbd">Amend</span></td><td class="disp">F23  PLU.00  noSEt  0</td><td><strong>PLU saved!</strong> Back at the start.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="warn">
+    <b>Save, then next or finish</b>
+    The final <span class="kbd" style="font-size:.78em;">Amend</span> saves the product — <strong>skip it and nothing is saved.</strong> To add another, type its PLU number and repeat. When done, press <span class="kbd" style="font-size:.78em;">Cancel</span>/<span class="kbd" style="font-size:.78em;">Mode</span> to <strong>0.000 kg</strong> (or switch off — saved PLUs stay). Write each PLU on the worksheet as you go.
+  </div>
+</section>
+
+<!-- ============ PAGE 3 — PART B: THE POS ============ -->
+<section class="page page-break">
+  <span class="part-tag">Part B · In the POS</span>
+  <h2 style="margin-top:2px;">Add the same product in the POS</h2>
+  <p>Do it on a <strong>laptop or phone</strong> (admin website). It syncs to all three tills. Use the <strong>same PLU and price</strong> as on the scale.</p>
 
   <ol class="steps">
     <li>Open <strong>Products</strong> → tap <strong>“+ Add Product”</strong> (or the <strong>pencil</strong> to edit one).</li>
-    <li>Enter the <strong>Name</strong>, pick the <strong>Category</strong>, set <strong>Selling Price</strong> = price per kg.</li>
+    <li>Enter the <strong>Name</strong>, pick the <strong>Category</strong>, set <strong>Selling Price</strong> = price per kg (same as the scale).</li>
     <li>Tick <strong>“Sold by weight (butchery)”</strong>. The <strong>Scale PLU</strong> box appears.</li>
-    <li>Type the <strong>Scale PLU</strong> — the same number as on the scale.</li>
+    <li>Type the <strong>Scale PLU</strong> — the same number you gave it on the scale.</li>
     <li>Tap <strong>Save</strong>.</li>
   </ol>
 
   <figure>
     <img src="img/50-scale-plu.png" alt="Add Product form with Sold by weight ticked and Scale PLU filled in" />
-    <figcaption><b>What it looks like.</b> Price per kg, “Sold by weight” ticked, and the <strong>Scale PLU</strong> number filled in.</figcaption>
+    <figcaption><b>What it looks like.</b> Price per kg, “Sold by weight” ticked, and the <strong>Scale PLU</strong> number (here <code>2</code>) filled in.</figcaption>
   </figure>
 
-  <h2><span class="n">●</span>What each box means</h2>
   <ul class="field-list">
     <li><span class="f">Name</span> What shows on the screen &amp; receipt.</li>
     <li><span class="f">Selling Price</span> Price for <strong>one kg</strong>. Match the scale.</li>
@@ -160,24 +200,25 @@
   </ul>
 </section>
 
-<!-- ============ PAGE 3 — WORKSHEET ============ -->
+<!-- ============ PAGE 4 — WORKSHEET ============ -->
 <section class="page page-break">
   <h2 style="margin-top:0;"><span class="n">●</span>Worksheet</h2>
-  <p>Write each weighed product here as you set it up. Tick when it’s done on the scale and in the POS. (First two rows are examples.)</p>
+  <p>Write each weighed product here as you set it up. Tick when it’s done on the scale and in the POS. (First row is an example.)</p>
 
   <table>
     <thead>
       <tr>
-        <th style="width:14%;">PLU&nbsp;#</th>
-        <th style="width:40%;">Product name</th>
+        <th style="width:13%;">PLU&nbsp;#</th>
+        <th style="width:41%;">Product name</th>
         <th style="width:20%;">Price / kg (K)</th>
         <th style="width:13%;">On scale</th>
         <th style="width:13%;">In POS</th>
       </tr>
     </thead>
     <tbody>
-      <tr class="ex"><td>1</td><td>T-Bone Steak</td><td>289.99</td><td class="tick">✓</td><td class="tick">✓</td></tr>
       <tr class="ex"><td>2</td><td>Beef Sausages</td><td>85.00</td><td class="tick">✓</td><td class="tick">✓</td></tr>
+      <tr class="fill"><td></td><td></td><td></td><td class="tick">☐</td><td class="tick">☐</td></tr>
+      <tr class="fill"><td></td><td></td><td></td><td class="tick">☐</td><td class="tick">☐</td></tr>
       <tr class="fill"><td></td><td></td><td></td><td class="tick">☐</td><td class="tick">☐</td></tr>
       <tr class="fill"><td></td><td></td><td></td><td class="tick">☐</td><td class="tick">☐</td></tr>
       <tr class="fill"><td></td><td></td><td></td><td class="tick">☐</td><td class="tick">☐</td></tr>
@@ -191,15 +232,16 @@
 
   <h2><span class="n">●</span>Check &amp; common mistakes</h2>
   <div class="tip">
-    <b>Test it</b>
-    Print a sticker and scan it at a till. If it says <strong>“PLU X isn’t linked,”</strong> the numbers don’t match.
+    <b>Test each product</b>
+    Print a sticker from the scale and scan it at a till. It should show the right name, weight and price. If the till says <strong>“PLU X isn’t linked,”</strong> the numbers don’t match.
   </div>
   <div class="warn">
     <b>Common mistakes</b>
-    • PLU different on scale vs POS.<br/>
-    • Price per kg different.<br/>
-    • Forgot to tick <strong>“Sold by weight”</strong>.<br/>
-    • Typed grams, not the price per kg.
+    • PLU different on the scale vs the POS — must be identical.<br/>
+    • Price per kg different on the scale vs the POS.<br/>
+    • Forgot <span class="kbd" style="font-size:.78em;">Amend</span> on the scale, so the product didn’t save.<br/>
+    • Forgot to tick <strong>“Sold by weight”</strong> in the POS.<br/>
+    • Used PLU 1 for a real product — it’s the TEST item.
   </div>
 </section>
 
