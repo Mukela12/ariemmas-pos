@@ -154,7 +154,7 @@
       <tr><td><span class="kbd">Prog</span> then <span class="kbd">2</span> then <span class="kbd">3</span></td><td class="disp">F23  PLU.00  noSEt  0</td><td>You’re in PLU edit.</td></tr>
       <tr><td><span class="kbd">2</span> &nbsp;(the PLU number)</td><td class="disp">…  noSEt  2</td><td>This product = PLU 2.</td></tr>
       <tr><td><span class="kbd">V4 →</span></td><td class="disp">F23  PLU.01  iCodE</td><td>Item-code step.</td></tr>
-      <tr><td><span class="kbd">2</span></td><td class="disp">…  2</td><td>Item code (use the same number).</td></tr>
+      <tr><td><span class="kbd">2</span></td><td class="disp">…  2</td><td><strong>IMPORTANT: type the same number here too.</strong> This “item code” is what goes in the barcode — leave it 0 and scanning won’t work.</td></tr>
       <tr><td><span class="kbd">V4 →</span></td><td class="disp">F23  PLU.03  Unit  0</td><td>Leave at <strong>0</strong> = sold by weight.</td></tr>
       <tr><td><span class="kbd">V4 →</span></td><td class="disp">F23  PLU.04  PriCE</td><td>Price step.</td></tr>
       <tr><td><span class="kbd">8</span> <span class="kbd">5</span> <span class="kbd">0</span> <span class="kbd">0</span></td><td class="disp">…  85.00</td><td>Price per kg. Last 2 digits are cents.</td></tr>
@@ -168,8 +168,12 @@
   </table>
 
   <div class="warn">
+    <b>#1 mistake: item code left at 0</b>
+    Print a label and look at the barcode digits: after the first <code>2</code> you should see your number, e.g. <code>2&nbsp;000002&nbsp;…</code>. If it reads <code>2&nbsp;000000&nbsp;…</code> the <strong>item code wasn’t set</strong> — go back to the <code>iCodE</code> step, type the number, and finish with <span class="kbd" style="font-size:.78em;">Amend</span>. A barcode with <code>000000</code> will not scan.
+  </div>
+  <div class="tip">
     <b>Save, then next or finish</b>
-    The final <span class="kbd" style="font-size:.78em;">Amend</span> saves the product — <strong>skip it and nothing is saved.</strong> To add another, type its PLU number and repeat. When done, press <span class="kbd" style="font-size:.78em;">Cancel</span>/<span class="kbd" style="font-size:.78em;">Mode</span> to <strong>0.000 kg</strong> (or switch off — saved PLUs stay). Write each PLU on the worksheet as you go.
+    The final <span class="kbd" style="font-size:.78em;">Amend</span> saves the product — <strong>skip it and nothing is saved.</strong> To add another, type its number and repeat. When done, press <span class="kbd" style="font-size:.78em;">Cancel</span>/<span class="kbd" style="font-size:.78em;">Mode</span> to <strong>0.000 kg</strong> (or switch off — saved products stay). Write each number on the worksheet as you go.
   </div>
 </section>
 
@@ -233,15 +237,18 @@
   <h2><span class="n">●</span>Check &amp; common mistakes</h2>
   <div class="tip">
     <b>Test each product</b>
-    Print a sticker from the scale and scan it at a till. It should show the right name, weight and price. If the till says <strong>“PLU X isn’t linked,”</strong> the numbers don’t match.
+    Print a sticker and scan it at a till. It should show the right name, weight and price.
+    • Till says <strong>“no product number”</strong> → the barcode is <code>2&nbsp;000000&nbsp;…</code>; set the <strong>item code</strong> on the scale.
+    • Till says <strong>“PLU X isn’t linked”</strong> → the scale’s number and the POS Scale PLU don’t match.
   </div>
   <div class="warn">
     <b>Common mistakes</b>
-    • PLU different on the scale vs the POS — must be identical.<br/>
+    • <strong>Item code left at 0</strong> on the scale — barcode reads <code>2 000000 …</code> and won’t scan.<br/>
+    • Item code (scale) and Scale PLU (POS) are different numbers — must be identical.<br/>
     • Price per kg different on the scale vs the POS.<br/>
     • Forgot <span class="kbd" style="font-size:.78em;">Amend</span> on the scale, so the product didn’t save.<br/>
     • Forgot to tick <strong>“Sold by weight”</strong> in the POS.<br/>
-    • Used PLU 1 for a real product — it’s the TEST item.
+    • Used number 1 for a real product — it’s the TEST item.
   </div>
 </section>
 
