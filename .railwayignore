@@ -1,0 +1,13 @@
+node_modules
+dist
+dist-server
+dist-web
+out
+build
+.git
+*.exe
+*.dmg
+ariemmas-pos.db
+ariemmas-pos.db-shm
+ariemmas-pos.db-wal
+docs/training-guide/*.pdf

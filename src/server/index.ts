@@ -141,6 +141,21 @@ async function sendCashRegisterAlertEmail({
   return true
 }
 
+// Make sure a user row exists for the given id so a sale/shift FK resolves. With
+// multiple tills sharing usernames, one till's user-sync can delete another's
+// user id — we must never drop a sale/shift over that. A placeholder is created
+// if needed; the real cashier still shows in reports via the shift's cashier name.
+async function ensureUserRow(userId: string | null | undefined): Promise<void> {
+  if (!userId) return
+  const exists = await db.queryOne('SELECT id FROM users WHERE id = $1', [userId])
+  if (exists) return
+  await db.run(
+    `INSERT INTO users (id, username, display_name, pin_hash, role, active)
+     VALUES ($1, $2, 'Cashier (synced)', '!', 'cashier', 1) ON CONFLICT (id) DO NOTHING`,
+    [userId, 'sync_' + String(userId).replace(/[^A-Za-z0-9]/g, '')]
+  ).catch(() => { /* concurrent insert / race — fine */ })
+}
+
 async function sendCashDrawerAlertIfNeeded(shiftId: string | null | undefined): Promise<void> {
   if (!shiftId) return
 
@@ -809,9 +824,11 @@ app.post('/api/sync/sales', async (req, res) => {
     // the items below (each insert is idempotent), so any line that failed on an
     // earlier attempt — e.g. its product hadn't synced yet — gets filled in now.
 
-    // Ensure the user exists (skip FK if not)
-    const userExists = await db.queryOne('SELECT id FROM users WHERE id = $1', [sale.user_id])
-    if (!userExists) return res.status(422).json({ error: `User ${sale.user_id} not synced yet` })
+    // Never drop a sale because its cashier's user row isn't on the cloud — with
+    // several tills sharing usernames, one till's user-sync can delete another's
+    // user id. Create a placeholder so the FK resolves; the real cashier still
+    // shows in reports via the shift's cashier name.
+    await ensureUserRow(sale.user_id)
 
     await db.transaction(async () => {
       if (!existing) {
@@ -933,10 +950,10 @@ app.post('/api/sync/shifts', async (req, res) => {
     const s = req.body
     if (!s?.id) return res.status(400).json({ error: 'Missing shift data' })
 
-    // Ensure user exists before inserting shift
+    // Ensure user exists before inserting shift (placeholder if a multi-till id
+    // churn removed it) so a shift is never dropped.
     if (s.user_id) {
-      const userExists = await db.queryOne('SELECT id FROM users WHERE id = $1', [s.user_id])
-      if (!userExists) return res.status(422).json({ error: `User ${s.user_id} not synced yet` })
+      await ensureUserRow(s.user_id)
     }
 
     const existing = await db.queryOne('SELECT id FROM shifts WHERE id = $1', [s.id])
