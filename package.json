@@ -1,6 +1,6 @@
 {
   "name": "ariemmas-pos",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Point of Sale system for Ariemmas Shop, Mongu, Zambia",
   "main": "./out/main/index.js",
   "author": "Mukela Katungu",

@@ -460,6 +460,18 @@ export const MIGRATIONS: Migration[] = [
       }
       return `ALTER TABLE products ADD COLUMN scale_plu INTEGER;`
     }
+  },
+  {
+    // One-time backlog recovery. The shop's first day ran on an older build whose
+    // sync silently failed yet still marked sales 'synced' in the local queue —
+    // so those sales never reached the cloud and the till won't re-send them.
+    // Reset sale + shift queue rows to pending so they re-upload on the next sync.
+    // The cloud sync is now idempotent (INSERT ... ON CONFLICT DO NOTHING), so
+    // re-sending an already-synced row is a harmless no-op. No effect on the cloud
+    // itself — only tills push, and a freshly-synced till just re-confirms its rows.
+    name: '012_requeue_orphaned_sales',
+    getSql: () =>
+      `UPDATE _sync_queue SET status = 'pending', attempts = 0 WHERE entity_type IN ('sale', 'shift') AND status = 'synced';`
   }
 ]
 
