@@ -832,17 +832,24 @@ app.post('/api/sync/sales', async (req, res) => {
 
     await db.transaction(async () => {
       if (!existing) {
-        // Handle receipt_number conflict (web and desktop may generate same numbers)
+        // Receipt numbers are per-till sequences, so several tills generate the
+        // SAME number (20260623-0001...). Disambiguate a collision with a short
+        // slice of the globally-unique sale id — a plain '-D' broke on the third
+        // till's matching receipt (its '-D' clashed too) and 500'd the sale.
         let receiptNumber = sale.receipt_number
         const receiptExists = await db.queryOne('SELECT id FROM sales WHERE receipt_number = $1', [receiptNumber])
         if (receiptExists) {
-          receiptNumber = receiptNumber + '-D'
+          receiptNumber = `${receiptNumber}-${String(sale.id).replace(/-/g, '').slice(0, 6)}`
         }
 
+        // ON CONFLICT keeps a re-sent sale idempotent. The sale id is a uuid, so a
+        // clash is always the SAME sale (never a different one) — the old
+        // non-atomic "if (!existing)" guard let a retry/race hit duplicate key
+        // sales_pkey, return 500, and loop forever, clogging the whole queue.
         await db.run(
           `INSERT INTO sales (id, receipt_number, user_id, shift_id, subtotal, vat_total, total,
             payment_method, amount_tendered, change_given, mobile_ref, status, terminal_id, created_at)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) ON CONFLICT (id) DO NOTHING`,
           [sale.id, receiptNumber, sale.user_id, sale.shift_id, sale.subtotal,
            sale.vat_total, sale.total, sale.payment_method, sale.amount_tendered,
            sale.change_given, sale.mobile_ref, sale.status, sale.terminal_id || null, sale.created_at]
@@ -863,7 +870,7 @@ app.post('/api/sync/sales', async (req, res) => {
           await db.run(
             `INSERT INTO sale_items (id, sale_id, product_id, product_name, barcode,
               quantity, unit_price, vat_rate, vat_amount, line_total)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (id) DO NOTHING`,
             [item.id, item.sale_id, pid, item.product_name, item.barcode,
              item.quantity, item.unit_price, item.vat_rate, item.vat_amount, item.line_total]
           )
