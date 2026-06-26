@@ -7,8 +7,9 @@ import { join } from 'path'
 import type { PrintableReceipt } from '../../shared/types'
 import { formatMonguDateTime } from '../../shared/datetime'
 
-// 80mm thermal printers (e.g. PD-POS806UE) fit 48 chars per line in Font A.
-const LINE_WIDTH = 48
+// Thermal print width in characters (Font A): 80mm paper fits 48, 58mm fits 32.
+// Chosen per till via the receipt_paper_width setting; this is the 80mm default.
+const DEFAULT_LINE_WIDTH = 48
 
 // --- ESC/POS control codes ---
 const ESC = 0x1b
@@ -33,19 +34,24 @@ function line(text = ''): Buffer {
   return Buffer.from(`${text}\n`, 'latin1')
 }
 
-// Left/right justified within LINE_WIDTH. Truncates left side if it would collide.
-function lr(left: string, right: string): Buffer {
-  const space = LINE_WIDTH - right.length
-  const l = left.length > space - 1 ? left.slice(0, Math.max(0, space - 1)) : left
-  const pad = Math.max(1, LINE_WIDTH - l.length - right.length)
-  return line(l + ' '.repeat(pad) + right)
+// Build the width-aware text helpers for a given line width (chars per line).
+function textHelpers(width: number): {
+  lr: (left: string, right: string) => Buffer
+  divider: () => Buffer
+} {
+  // Left/right justified within `width`. Truncates left side if it would collide.
+  const lr = (left: string, right: string): Buffer => {
+    const space = width - right.length
+    const l = left.length > space - 1 ? left.slice(0, Math.max(0, space - 1)) : left
+    const pad = Math.max(1, width - l.length - right.length)
+    return line(l + ' '.repeat(pad) + right)
+  }
+  const divider = (): Buffer => line('-'.repeat(width))
+  return { lr, divider }
 }
 
-function divider(): Buffer {
-  return line('-'.repeat(LINE_WIDTH))
-}
-
-export function buildReceiptBytes(r: PrintableReceipt): Buffer {
+export function buildReceiptBytes(r: PrintableReceipt, lineWidth = DEFAULT_LINE_WIDTH): Buffer {
+  const { lr, divider } = textHelpers(lineWidth)
   const paymentLabel =
     r.paymentMethod === 'mobile_money' ? 'Mobile Money' : r.paymentMethod === 'cash' ? 'Cash' : 'Split'
   const timestamp = formatMonguDateTime(r.printedAt)
@@ -105,7 +111,8 @@ export function buildReceiptBytes(r: PrintableReceipt): Buffer {
   return Buffer.concat(parts)
 }
 
-export function buildTestBytes(): Buffer {
+export function buildTestBytes(lineWidth = DEFAULT_LINE_WIDTH): Buffer {
+  const { divider } = textHelpers(lineWidth)
   return Buffer.concat([
     INIT,
     ALIGN_CENTER,
