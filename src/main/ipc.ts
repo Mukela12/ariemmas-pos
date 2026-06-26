@@ -27,6 +27,12 @@ async function getSettingValue(key: string, fallback: string): Promise<string> {
   return row?.value ?? fallback
 }
 
+// Receipt width depends on the paper loaded on this till: 80mm = 48 chars/line,
+// 58mm = 32. Per-till setting (receipt_paper_width), defaults to 80mm.
+async function getReceiptLineWidth(): Promise<number> {
+  return (await getSettingValue('receipt_paper_width', '80')) === '58' ? 32 : 48
+}
+
 async function getCashSalesForShift(shiftId: string): Promise<number> {
   const db = getDb()
   const row = await db.queryOne<{ total: number }>(
@@ -325,7 +331,7 @@ export async function registerIpcHandlers(): Promise<void> {
       return false
     }
     try {
-      await sendRaw(printer.name, buildReceiptBytes(receipt))
+      await sendRaw(printer.name, buildReceiptBytes(receipt, await getReceiptLineWidth()))
       return true
     } catch (err) {
       console.error('[printer] Failed to print receipt:', err)
@@ -338,7 +344,7 @@ export async function registerIpcHandlers(): Promise<void> {
     const printer = await resolvePrinter(saved)
     if (!printer) return { ok: false, error: 'No printer found' }
     try {
-      await sendRaw(printer.name, buildTestBytes())
+      await sendRaw(printer.name, buildTestBytes(await getReceiptLineWidth()))
       return { ok: true }
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : String(err) }

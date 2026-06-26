@@ -183,6 +183,30 @@ export function Settings() {
                 <label className={labelClass}>Receipt Footer Message</label>
                 <TouchInput value={settings.receipt_footer || ''} onChange={(v) => updateField('receipt_footer', v)} className={inputClass} placeholder="Thank you for shopping with us!" />
               </div>
+              {/* Receipt paper width — match the paper loaded in the printer */}
+              <div>
+                <label className={labelClass}>Receipt Paper Width</label>
+                <div className="flex gap-2">
+                  {[
+                    { val: '80', label: '80mm', hint: 'Standard (came with printer)' },
+                    { val: '58', label: '58mm', hint: 'Narrow paper' }
+                  ].map((opt) => {
+                    const active = (settings.receipt_paper_width || '80') === opt.val
+                    return (
+                      <button
+                        key={opt.val}
+                        type="button"
+                        onClick={() => updateField('receipt_paper_width', opt.val)}
+                        className={`flex-1 h-12 px-3 rounded-[2px] border text-left transition-colors ${active ? 'border-[#0D9488] bg-[#0D9488]/[0.06]' : 'border-[#E4E4E7] bg-white'}`}
+                      >
+                        <div className={`text-sm font-semibold ${active ? 'text-[#0D9488]' : 'text-[#18181B]'}`}>{opt.label}</div>
+                        <div className="text-[10px] text-[#71717A] leading-tight">{opt.hint}</div>
+                      </button>
+                    )
+                  })}
+                </div>
+                <p className="text-[11px] text-[#71717A] mt-1.5">Match this to the paper loaded in the printer so receipts print full-width without cutting off the sides.</p>
+              </div>
               {/* VAT on/off toggle */}
               <div className="flex items-center justify-between gap-4 py-2 px-3 rounded-[2px] border border-[#E4E4E7] bg-[#FAFAFA]">
                 <div>
