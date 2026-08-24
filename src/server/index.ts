@@ -361,6 +361,143 @@ app.post('/api/admin/users/rename', async (req, res) => {
   res.json({ ok: true })
 })
 
+// ============================================================================
+// Data export API (owner/admin only).
+// Lets Mary pull raw data straight from the database for her own analytics —
+// all history or filtered by date. Protected by the SAME admin credentials as
+// the rest of the platform (verifyAdminCreds: admin/manager role + bcrypt PIN),
+// supplied via HTTP Basic Auth so it works directly from a browser, Excel/Power
+// BI ("From Web"), or curl over HTTPS. Read-only (SELECT); cashiers/public are
+// rejected with 401.
+// ============================================================================
+function parseBasicAuth(req: any): { username: string; pin: string } | null {
+  const h = String(req.headers.authorization || '')
+  if (!h.startsWith('Basic ')) return null
+  try {
+    const decoded = Buffer.from(h.slice(6), 'base64').toString('utf8')
+    const i = decoded.indexOf(':')
+    if (i < 0) return null
+    return { username: decoded.slice(0, i), pin: decoded.slice(i + 1) }
+  } catch {
+    return null
+  }
+}
+
+function toCsv(rows: any[]): string {
+  if (!rows.length) return ''
+  const cols = Object.keys(rows[0])
+  const esc = (v: any): string => {
+    if (v === null || v === undefined) return ''
+    const s = String(v)
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+  }
+  const lines = [cols.join(',')]
+  for (const r of rows) lines.push(cols.map((c) => esc(r[c])).join(','))
+  return lines.join('\r\n')
+}
+
+// Optional date-range filter on a text timestamp column. $1 = from, $2 = to;
+// an empty/null bound means "no limit on that side" (so omitting both = all history).
+const dateWhere = (col: string): string =>
+  `(COALESCE($1,'') = '' OR NULLIF(${col},'')::date >= $1::date) AND (COALESCE($2,'') = '' OR NULLIF(${col},'')::date <= $2::date)`
+
+const EXPORT_QUERIES: Record<string, (from: string | null, to: string | null) => { sql: string; params: any[] }> = {
+  sales: (from, to) => ({
+    sql: `SELECT s.id AS sale_id, s.receipt_number, s.terminal_id, u.display_name AS "user",
+            sh.cashier_name AS cashier, s.created_at, s.payment_method,
+            s.subtotal, s.vat_total, s.total, s.amount_tendered, s.change_given, s.mobile_ref, s.status
+          FROM sales s
+          LEFT JOIN users u ON u.id = s.user_id
+          LEFT JOIN shifts sh ON sh.id = s.shift_id
+          WHERE ${dateWhere('s.created_at')}
+          ORDER BY s.created_at`,
+    params: [from, to]
+  }),
+  'sale-items': (from, to) => ({
+    sql: `SELECT si.id AS item_id, si.sale_id, s.receipt_number, s.terminal_id, s.created_at,
+            si.product_name, si.barcode, si.quantity, si.unit_price, si.vat_rate, si.vat_amount, si.line_total
+          FROM sale_items si
+          JOIN sales s ON s.id = si.sale_id
+          WHERE ${dateWhere('s.created_at')}
+          ORDER BY s.created_at`,
+    params: [from, to]
+  }),
+  products: () => ({
+    sql: `SELECT p.id, p.barcode, p.name, c.name AS category, p.price, p.cost_price, p.vat_rate,
+            p.stock_quantity, p.min_stock_level, p.unit, p.is_weighted, p.scale_plu, p.active, p.updated_at
+          FROM products p LEFT JOIN categories c ON c.id = p.category_id
+          ORDER BY p.name`,
+    params: []
+  }),
+  shifts: (from, to) => ({
+    sql: `SELECT sh.id AS shift_id, u.display_name AS "user", sh.cashier_name, sh.opened_at, sh.closed_at,
+            sh.opening_cash, sh.closing_cash, sh.expected_cash, sh.variance,
+            sh.total_sales, sh.total_transactions, sh.total_vat, sh.status, sh.notes
+          FROM shifts sh LEFT JOIN users u ON u.id = sh.user_id
+          WHERE ${dateWhere('sh.opened_at')}
+          ORDER BY sh.opened_at`,
+    params: [from, to]
+  }),
+  'stock-movements': (from, to) => ({
+    sql: `SELECT sm.id, sm.created_at, p.name AS product, sm.type, sm.quantity_change, sm.balance_after,
+            sm.reason, sm.terminal_id
+          FROM stock_movements sm LEFT JOIN products p ON p.id = sm.product_id
+          WHERE ${dateWhere('sm.created_at')}
+          ORDER BY sm.created_at`,
+    params: [from, to]
+  })
+}
+
+function requireExportAuth(req: any, res: any): Promise<boolean> {
+  const creds = parseBasicAuth(req)
+  return (creds ? verifyAdminCreds(creds.username, creds.pin) : Promise.resolve(false)).then((ok) => {
+    if (!ok) {
+      res.set('WWW-Authenticate', 'Basic realm="Ariemmas Data Export"')
+      res.status(401).json({ error: 'Admin login required. Use your Mary / admin username and PIN.' })
+    }
+    return ok
+  })
+}
+
+// Index — lists the datasets + usage (also auth-protected so nothing leaks).
+app.get('/api/export', async (req, res) => {
+  if (!(await requireExportAuth(req, res))) return
+  res.json({
+    datasets: Object.keys(EXPORT_QUERIES),
+    usage: '/api/export/{dataset}?from=YYYY-MM-DD&to=YYYY-MM-DD&format=csv|json  — dates optional (omit for all history); format defaults to csv',
+    examples: [
+      '/api/export/sales',
+      '/api/export/sales?from=2026-07-01&to=2026-07-31',
+      '/api/export/sales?from=2026-01-01&to=2026-12-31&format=json',
+      '/api/export/sale-items?from=2026-07-01',
+      '/api/export/products'
+    ]
+  })
+})
+
+app.get('/api/export/:dataset', async (req, res) => {
+  if (!(await requireExportAuth(req, res))) return
+  const builder = EXPORT_QUERIES[req.params.dataset]
+  if (!builder) {
+    return res.status(404).json({ error: `Unknown dataset "${req.params.dataset}". Available: ${Object.keys(EXPORT_QUERIES).join(', ')}` })
+  }
+  const from = (req.query.from as string) || null
+  const to = (req.query.to as string) || null
+  try {
+    const { sql, params } = builder(from, to)
+    const rows = await db.query<any>(sql, params)
+    if (String(req.query.format || 'csv').toLowerCase() === 'json') {
+      return res.json({ dataset: req.params.dataset, from, to, count: rows.length, rows })
+    }
+    res.set('Content-Type', 'text/csv; charset=utf-8')
+    res.set('Content-Disposition', `attachment; filename="ariemmas-${req.params.dataset}-${from || 'all'}-to-${to || 'all'}.csv"`)
+    res.send(toCsv(rows))
+  } catch (err: any) {
+    console.error('[Export] error:', err.message)
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // --- Products ---
 app.get('/api/products', async (req, res) => {
   const page = parseInt(req.query.page as string) || 1
