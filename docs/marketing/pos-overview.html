@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TillSync POS — Product &amp; Services Overview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal:#0D9488; --teal-d:#0B7C72; --teal-t:#0D94880F; --teal-t2:#0D948814;
+    --ink:#141417; --ink-2:#3F3F46; --muted:#71717A; --faint:#A1A1AA;
+    --line:#E7E7EA; --paper:#FFFFFF; --band:#FAFAF9; --band-2:#F4F4F5;
+    --amber:#E8A13A;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  body{
+    font-family:'Inter',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+    color:var(--ink); font-size:10.2px; line-height:1.55; background:var(--paper);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4{line-height:1.15; letter-spacing:-0.015em;}
+  .pad{padding-left:15mm; padding-right:15mm;}
+  .eyebrow{
+    font-size:8.2px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;
+    color:var(--teal); margin-bottom:7px;
+  }
+  .sec-title{font-size:20px; font-weight:800; color:var(--ink); letter-spacing:-0.02em;}
+  .sec-intro{font-size:10.4px; color:var(--muted); max-width:150mm; margin-top:8px; line-height:1.6;}
+  .section{padding-top:15mm; padding-bottom:3mm;}
+  .avoid{page-break-inside:avoid;}
+  .breakbefore{page-break-before:always;}
+
+  /* ---------- COVER ---------- */
+  .cover{
+    position:relative; overflow:hidden; height:273mm; page-break-after:always;
+    background:radial-gradient(120% 90% at 82% 8%, #16302E 0%, #101215 46%, #0C0D10 100%);
+    color:#fff; padding:20mm 15mm 15mm;
+    display:flex; flex-direction:column;
+  }
+  .cover .grid-bg{
+    position:absolute; inset:0;
+    background-image:linear-gradient(#ffffff0a 1px,transparent 1px),linear-gradient(90deg,#ffffff0a 1px,transparent 1px);
+    background-size:9mm 9mm; mask-image:radial-gradient(120% 80% at 80% 6%, #000 0%, transparent 68%);
+  }
+  .cover .arc{position:absolute; border-radius:50%; border:1px solid #0D948833;}
+  .cover .arc.a{width:150mm; height:150mm; right:-40mm; top:-46mm;}
+  .cover .arc.b{width:110mm; height:110mm; right:-20mm; top:-26mm; border-color:#0D948855;}
+  .cover .arc.c{width:70mm; height:70mm; right:0mm; top:-6mm; border-color:#0D948877;}
+  .brandrow{display:flex; align-items:center; gap:9px; position:relative; z-index:2;}
+  .logo-mark{width:22px; height:22px; border-radius:5px; background:var(--teal);
+    display:flex; align-items:center; justify-content:center;}
+  .logo-mark svg{width:13px; height:13px;}
+  .brandname{font-size:13px; font-weight:800; letter-spacing:-0.01em; color:#fff;}
+  .cover-mid{margin-top:auto; position:relative; z-index:2;}
+  .kicker{font-size:9px; font-weight:700; letter-spacing:0.22em; text-transform:uppercase; color:var(--teal); margin-bottom:14px;}
+  .cover h1{font-size:52px; font-weight:900; letter-spacing:-0.03em; color:#fff; line-height:1.02;}
+  .cover h1 .accent{color:var(--teal);}
+  .tagline{font-size:16px; font-weight:600; color:#E7E7EA; margin-top:16px; letter-spacing:-0.01em;}
+  .lead{font-size:10.8px; color:#A9AAB0; margin-top:12px; max-width:120mm; line-height:1.65;}
+  .cover-chips{display:flex; flex-wrap:wrap; gap:7px; margin-top:20px;}
+  .cover-chips span{
+    font-size:8.6px; font-weight:600; color:#D6D7DB; border:1px solid #ffffff22;
+    background:#ffffff08; padding:5px 10px; border-radius:20px;
+  }
+  .cover-foot{position:relative; z-index:2; margin-top:26mm; display:flex; justify-content:space-between;
+    align-items:flex-end; border-top:1px solid #ffffff1a; padding-top:12px;}
+  .cover-foot .l{font-size:11px; font-weight:700; color:#fff; letter-spacing:0.02em;}
+  .cover-foot .s{font-size:8.4px; color:#8B8C93; margin-top:3px;}
+  .cover-foot .r{font-size:8.4px; color:#8B8C93; text-align:right;}
+
+  /* ---------- HIGHLIGHT STRIP ---------- */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid var(--line);
+    border-radius:12px; overflow:hidden; margin-top:18px;}
+  .stat{padding:14px 14px; border-right:1px solid var(--line); background:var(--paper);}
+  .stat:last-child{border-right:none;}
+  .stat .n{font-size:16px; font-weight:800; color:var(--teal); letter-spacing:-0.02em;}
+  .stat .t{font-size:8.6px; color:var(--muted); margin-top:3px; font-weight:500; line-height:1.4;}
+
+  /* ---------- FEATURE GRID ---------- */
+  .fgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-top:16px;}
+  .fcard{border:1px solid var(--line); border-radius:11px; padding:13px 13px 14px; background:var(--paper);}
+  .ficon{width:30px; height:30px; border-radius:8px; background:var(--teal-t2);
+    display:flex; align-items:center; justify-content:center; margin-bottom:10px;}
+  .ficon svg{width:17px; height:17px; stroke:var(--teal);}
+  .fcard h3{font-size:10.6px; font-weight:700; color:var(--ink); letter-spacing:-0.01em;}
+  .fcard p{font-size:9px; color:var(--muted); margin-top:5px; line-height:1.5;}
+
+  /* ---------- HOW IT WORKS ---------- */
+  .flow{display:grid; grid-template-columns:1fr auto 1fr auto 1fr; align-items:stretch; gap:0; margin-top:16px;}
+  .node{border:1px solid var(--line); border-radius:12px; padding:15px 13px; text-align:center; background:var(--paper);}
+  .node.center{background:var(--ink); border-color:var(--ink);}
+  .node .nicon{width:34px; height:34px; border-radius:9px; background:var(--teal-t2); margin:0 auto 9px;
+    display:flex; align-items:center; justify-content:center;}
+  .node.center .nicon{background:#ffffff14;}
+  .node .nicon svg{width:19px; height:19px; stroke:var(--teal);}
+  .node h4{font-size:10.6px; font-weight:700; color:var(--ink);}
+  .node.center h4{color:#fff;}
+  .node p{font-size:8.4px; color:var(--muted); margin-top:5px; line-height:1.45;}
+  .node.center p{color:#B7B8BE;}
+  .arrow{display:flex; align-items:center; justify-content:center; width:30px; color:var(--faint);}
+  .arrow svg{width:20px; height:20px; stroke:var(--faint);}
+  .flow-caption{margin-top:12px; font-size:9.4px; color:var(--muted); text-align:center; line-height:1.6;
+    max-width:158mm; margin-left:auto; margin-right:auto;}
+  .flow-caption b{color:var(--ink); font-weight:600;}
+
+  /* ---------- SERVICES / TWO-COL LIST ---------- */
+  .twocol{display:grid; grid-template-columns:1fr 1fr; gap:9px 16px; margin-top:16px;}
+  .lrow{display:flex; gap:11px; align-items:flex-start; padding:11px 0; border-bottom:1px solid var(--line);}
+  .lrow .lic{flex:0 0 26px; width:26px; height:26px; border-radius:7px; background:var(--teal-t2);
+    display:flex; align-items:center; justify-content:center; margin-top:1px;}
+  .lrow .lic svg{width:15px; height:15px; stroke:var(--teal);}
+  .lrow h4{font-size:10px; font-weight:700; color:var(--ink);}
+  .lrow p{font-size:8.9px; color:var(--muted); margin-top:3px; line-height:1.5;}
+
+  /* ---------- HARDWARE ---------- */
+  .hw{display:grid; grid-template-columns:repeat(5,1fr); gap:9px; margin-top:16px;}
+  .hwcard{border:1px solid var(--line); border-radius:10px; padding:13px 9px; text-align:center; background:var(--band);}
+  .hwcard .hic{width:30px;height:30px;margin:0 auto 8px;border-radius:8px;background:var(--paper);
+    border:1px solid var(--line); display:flex;align-items:center;justify-content:center;}
+  .hwcard .hic svg{width:17px;height:17px;stroke:var(--ink-2);}
+  .hwcard h4{font-size:9px; font-weight:600; color:var(--ink); line-height:1.35;}
+
+  /* ---------- ADD-ONS ---------- */
+  .addgrid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px 14px; margin-top:16px;}
+  .addrow{display:flex; gap:9px; align-items:flex-start;}
+  .plus{flex:0 0 16px; width:16px; height:16px; border-radius:5px; background:var(--teal); color:#fff;
+    display:flex; align-items:center; justify-content:center; margin-top:2px; font-weight:800; font-size:11px;}
+  .plus svg{width:10px;height:10px;stroke:#fff;}
+  .addrow h4{font-size:9.8px; font-weight:700; color:var(--ink); display:inline;}
+  .addrow p{font-size:8.9px; color:var(--muted); margin-top:2px; line-height:1.45;}
+
+  /* ---------- WHO / CHIPS ---------- */
+  .chips{display:flex; flex-wrap:wrap; gap:7px; margin-top:14px;}
+  .chip{font-size:9.2px; font-weight:600; color:var(--ink-2); background:var(--band-2);
+    border:1px solid var(--line); padding:6px 12px; border-radius:20px;}
+
+  /* ---------- WHY US ---------- */
+  .why{display:grid; grid-template-columns:1fr 1fr; gap:6px 18px; margin-top:14px;}
+  .whyrow{display:flex; gap:9px; align-items:flex-start; padding:6px 0;}
+  .check{flex:0 0 18px; width:18px; height:18px; border-radius:50%; background:var(--teal-t2);
+    display:flex; align-items:center; justify-content:center; margin-top:1px;}
+  .check svg{width:11px; height:11px; stroke:var(--teal);}
+  .whyrow p{font-size:9.6px; color:var(--ink-2); line-height:1.5;}
+  .whyrow b{color:var(--ink); font-weight:700;}
+
+  /* ---------- CTA ---------- */
+  .cta{margin:16mm 15mm 0; border-radius:16px; overflow:hidden;
+    background:radial-gradient(120% 140% at 85% 10%, #16302E 0%, #101215 60%); color:#fff; padding:22px 24px;
+    display:flex; justify-content:space-between; align-items:center; gap:20px;}
+  .cta h3{font-size:19px; font-weight:800; letter-spacing:-0.02em; color:#fff;}
+  .cta p{font-size:9.6px; color:#AFB0B6; margin-top:7px; max-width:95mm; line-height:1.6;}
+  .cta .contact{text-align:right; font-size:9.2px; color:#D6D7DB; line-height:1.85; flex:0 0 auto;}
+  .cta .contact .lab{color:var(--teal); font-weight:700; font-size:8px; letter-spacing:0.12em; text-transform:uppercase;}
+  .cta .contact b{color:#fff; font-weight:600;}
+  .endnote{text-align:center; font-size:8.2px; color:var(--faint); margin:9mm 15mm 4mm;}
+</style>
+</head>
+<body>
+
+  <!-- ===================== COVER ===================== -->
+  <section class="cover">
+    <div class="grid-bg"></div>
+    <div class="arc a"></div><div class="arc b"></div><div class="arc c"></div>
+
+    <div class="brandrow">
+      <span class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v13H3z"/><path d="M3 20h18"/><path d="M8 16v4"/><path d="M16 16v4"/></svg>
+      </span>
+      <span class="brandname">TillSync&nbsp;POS</span>
+    </div>
+
+    <div class="cover-mid">
+      <div class="kicker">Product &amp; Services Overview</div>
+      <h1>Point of sale,<br>built for how<br>you <span class="accent">actually trade.</span></h1>
+      <div class="tagline">Sell anywhere. Sync everywhere.</div>
+      <p class="lead">A modern, offline-first point-of-sale system — custom-built, installed and supported for retail businesses. It keeps selling when the internet drops and syncs to a live cloud dashboard the moment you're back online.</p>
+      <div class="cover-chips">
+        <span>Works fully offline</span><span>Multi-till sync</span><span>Cloud dashboard</span>
+        <span>Local hardware ready</span><span>Tailored &amp; supported</span>
+      </div>
+    </div>
+
+    <div class="cover-foot">
+      <div>
+        <div class="l">Already live in a real shop.</div>
+        <div class="s">Running daily across multiple tills — proven, not a prototype.</div>
+      </div>
+      <div class="r">Prepared for partners &amp; prospective clients<br>2026 Edition</div>
+    </div>
+  </section>
+
+  <!-- ===================== WHAT IT IS ===================== -->
+  <section class="section pad">
+    <div class="eyebrow">The System</div>
+    <div class="sec-title">A complete till, cloud and back-office — in one</div>
+    <p class="sec-intro">TillSync runs on the shop's tills and handles the whole sale — scanning, weighing, receipts, payments and the cash drawer. Every sale is saved instantly on the till and syncs automatically to a secure cloud, so the owner sees live sales and stock from anywhere. It isn't an off-the-shelf app you rent and adapt to — it's our own system, tailored to each business and fully set up, trained and supported.</p>
+    <div class="stats">
+      <div class="stat"><div class="n">100%</div><div class="t">Keeps selling with no internet</div></div>
+      <div class="stat"><div class="n">Multi-till</div><div class="t">Many registers, one live dashboard</div></div>
+      <div class="stat"><div class="n">Real-time</div><div class="t">Sales &amp; stock synced to the cloud</div></div>
+      <div class="stat"><div class="n">Bespoke</div><div class="t">Built &amp; extended around your needs</div></div>
+    </div>
+  </section>
+
+  <!-- ===================== CORE FEATURES ===================== -->
+  <section class="section pad">
+    <div class="eyebrow">What it does today</div>
+    <div class="sec-title">Core features</div>
+    <p class="sec-intro">Everything a busy shop needs to sell fast, track stock and understand its numbers — working reliably whether it's online or off.</p>
+    <div class="fgrid">
+      <div class="fcard avoid">
+        <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.5 3h2l2.6 13.4a1 1 0 0 0 1 .8h9.7a1 1 0 0 0 1-.8L21 7H6"/></svg></div>
+        <h3>Fast checkout</h3><p>Barcode scanning, instant product search and a clean touch-friendly till screen built for speed.</p>
+      </div>
+      <div class="fcard avoid">
+        <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M6 7h12"/><path d="M7 7l-3.5 6a3 3 0 0 0 7 0L7 7z"/><path d="M17 7l-3.5 6a3 3 0 0 0 7 0L17 7z"/><path d="M8 21h8"/></svg></div>
+        <h3>Weighed products</h3><p>Integrates with label-printing scales for butchery, produce and deli — scan the weighed label and it rings up.</p>
+      </div>
+      <div class="fcard avoid">
+        <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12" y2="20"/><line x1="2" y1="2" x2="22" y2="22"/></svg></div>
+        <h3>Works offline</h3><p>Never stops trading. Sales are safe on the till and upload automatically the moment the connection returns.</p>
+      </div>
+      <div class="fcard avoid">
+        <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="9" height="7" rx="1"/><rect x="13" y="3" width="9" height="7" rx="1"/><rect x="2" y="14" width="9" height="7" rx="1"/><rect x="13" y="14" width="9" height="7" rx="1"/></svg></div>
+        <h3>Multi-till</h3><p>Run several registers in one shop, each syncing to a single live dashboard with no duplicate data.</p>
+      </div>
+      <div class="fcard avoid">
+        <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg></div>
+        <h3>Inventory &amp; stock</h3><p>Live stock levels, full movement history, low-stock tracking and quick manual adjustments.</p>
+      </div>
+      <div class="fcard avoid">
+        <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/></svg></div>
+        <h3>Receipts &amp; cash drawer</h3><p>Thermal receipts (80mm or 58mm, admin-configurable) and automatic cash-drawer opening.</p>
+      </div>
+      <div class="fcard avoid">
+        <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg></div>
+        <h3>Cashiers &amp; shifts</h3><p>PIN logins, roles, shift open/close, cash reconciliation and automatic over-cash alerts.</p>
+      </div>
+      <div class="fcard avoid">
+        <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+        <h3>Flexible payments</h3><p>Cash, mobile money and split payments, with automatic change and tender tracking.</p>
+      </div>
+      <div class="fcard avoid">
+        <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="4" width="3" height="14"/></svg></div>
+        <h3>Reports &amp; analytics</h3><p>Daily sales, revenue, VAT, and breakdowns by cashier and till — with one-click export to Excel.</p>
+      </div>
+      <div class="fcard avoid">
+        <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg></div>
+        <h3>Cloud dashboard</h3><p>Owners manage products and watch sales live from any browser — at the shop, at home or on the road.</p>
+      </div>
+      <div class="fcard avoid">
+        <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 3 12V4a1 1 0 0 1 1-1h8a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.6z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg></div>
+        <h3>Product catalog</h3><p>Categories, product images, pricing and VAT — all managed centrally and pushed to every till.</p>
+      </div>
+      <div class="fcard avoid">
+        <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14a1 1 0 0 1 1 1v17l-3-2-3 2-3-2-3 2-3-2V4a1 1 0 0 1 1-1z"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/></svg></div>
+        <h3>VAT &amp; tax-ready</h3><p>Configurable VAT, TPIN printed on receipts, and a clear path to e-invoicing when you need it.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== HOW IT WORKS ===================== -->
+  <section class="section pad breakbefore">
+    <div class="eyebrow">How it works</div>
+    <div class="sec-title">Offline-first, cloud-connected</div>
+    <p class="sec-intro">The reason it's dependable where other systems struggle: the till never depends on the internet to make a sale.</p>
+    <div class="flow">
+      <div class="node avoid">
+        <div class="nicon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+        <h4>Tills in the shop</h4><p>Sell, print and take payment — instantly, with or without internet.</p>
+      </div>
+      <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16"/><path d="M15 7l5 5-5 5"/></svg></div>
+      <div class="node center avoid">
+        <div class="nicon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .9-8.9A6 6 0 0 0 6.6 9 4.5 4.5 0 0 0 7 18h10.5z"/></svg></div>
+        <h4>Secure cloud</h4><p>Sales, stock and settings sync automatically and safely.</p>
+      </div>
+      <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16"/><path d="M15 7l5 5-5 5"/></svg></div>
+      <div class="node avoid">
+        <div class="nicon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><path d="M6 8h5M6 11h8"/></svg></div>
+        <h4>Owner's dashboard</h4><p>Watch sales live and manage the shop from any browser, anywhere.</p>
+      </div>
+    </div>
+    <p class="flow-caption">Every sale is written to the till the instant it happens, so <b>nothing is ever lost</b> — even during a power cut or an internet outage. When the connection returns, the tills and the cloud <b>reconcile automatically</b>, keeping every register and the owner's dashboard perfectly in step.</p>
+  </section>
+
+  <!-- ===================== HARDWARE ===================== -->
+  <section class="section pad">
+    <div class="eyebrow">Hardware</div>
+    <div class="sec-title">Works with the equipment shops actually use</div>
+    <p class="sec-intro">We supply, install and configure the hardware — or set it up with what you already own.</p>
+    <div class="hw">
+      <div class="hwcard avoid"><div class="hic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg></div><h4>Thermal receipt printers<br>(80mm &amp; 58mm)</h4></div>
+      <div class="hwcard avoid"><div class="hic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5v14"/><path d="M7 5v14"/><path d="M10 5v14"/><path d="M14 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg></div><h4>Barcode scanners</h4></div>
+      <div class="hwcard avoid"><div class="hic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M6 7h12"/><path d="M7 7l-3.5 6a3 3 0 0 0 7 0z"/><path d="M17 7l-3.5 6a3 3 0 0 0 7 0z"/></svg></div><h4>Label-printing scales</h4></div>
+      <div class="hwcard avoid"><div class="hic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="12" rx="2"/><path d="M9 12h6"/><path d="M6 7V5h12v2"/></svg></div><h4>Cash drawers</h4></div>
+      <div class="hwcard avoid"><div class="hic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><h4>Windows touch tills / PCs</h4></div>
+    </div>
+  </section>
+
+  <!-- ===================== BESPOKE SERVICES ===================== -->
+  <section class="section pad breakbefore">
+    <div class="eyebrow">Beyond the software</div>
+    <div class="sec-title">Bespoke services &amp; tailoring</div>
+    <p class="sec-intro">A shop doesn't buy software — it buys a working till on day one. We deliver the whole thing and shape it to each business.</p>
+    <div class="twocol">
+      <div class="lrow"><span class="lic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 1 5 5L9 22l-6 1 1-6z"/><path d="M13 8l3 3"/></svg></span><div><h4>Custom features</h4><p>We build what your business needs — not a fixed one-size-fits-all app.</p></div></div>
+      <div class="lrow"><span class="lic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2a10 10 0 1 0 0 20c1 0 1.5-.8 1.5-1.5a2 2 0 0 1 2-2H18a4 4 0 0 0 4-4 10 10 0 0 0-10-10.5z"/></svg></span><div><h4>Your branding</h4><p>Your logo, colours and receipt design — the system looks like yours.</p></div></div>
+      <div class="lrow"><span class="lic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span><div><h4>Installation &amp; setup</h4><p>On-site install, your products loaded and every till configured for you.</p></div></div>
+      <div class="lrow"><span class="lic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></span><div><h4>Staff training</h4><p>Hands-on training so your team is confident and fast from day one.</p></div></div>
+      <div class="lrow"><span class="lic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 11v6c0 1.7 4 3 9 3s9-1.3 9-3v-6"/></svg></span><div><h4>Data migration</h4><p>We import your existing product and price lists so you start ready to sell.</p></div></div>
+      <div class="lrow"><span class="lic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10h-4a6 6 0 1 1-6-6z"/><path d="M12 6v6l4 2"/></svg></span><div><h4>Ongoing support</h4><p>Updates, fixes and help whenever you need it — we're a message away.</p></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== ADD-ONS / ROADMAP ===================== -->
+  <section class="section pad">
+    <div class="eyebrow">Grows with the business</div>
+    <div class="sec-title">Optional modules we can add</div>
+    <p class="sec-intro">Because the system is ours, almost anything can be built or integrated on request. Popular additions include:</p>
+    <div class="addgrid">
+      <div class="addrow"><span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><div><h4>ZRA Smart Invoice / e-invoicing.</h4><p>Fiscal compliance for VAT-registered businesses.</p></div></div>
+      <div class="addrow"><span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><div><h4>Customer loyalty.</h4><p>Points, member profiles and targeted promotions.</p></div></div>
+      <div class="addrow"><span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><div><h4>Multi-branch.</h4><p>Run several shops or a chain from one dashboard.</p></div></div>
+      <div class="addrow"><span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><div><h4>Purchasing &amp; suppliers.</h4><p>Purchase orders, restocking and supplier management.</p></div></div>
+      <div class="addrow"><span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><div><h4>Accounting integration.</h4><p>Sync sales and stock with your accounting or ERP.</p></div></div>
+      <div class="addrow"><span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><div><h4>Promotions &amp; discounts.</h4><p>Time-based pricing, bundles and specials.</p></div></div>
+      <div class="addrow"><span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><div><h4>Digital receipts.</h4><p>Send receipts by SMS, WhatsApp or email.</p></div></div>
+      <div class="addrow"><span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><div><h4>Restaurant mode.</h4><p>Tables, order tickets and a kitchen display.</p></div></div>
+      <div class="addrow"><span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><div><h4>Customer display.</h4><p>A second screen facing the customer at checkout.</p></div></div>
+      <div class="addrow"><span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><div><h4>Commission &amp; performance.</h4><p>Track staff sales and calculate commissions.</p></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== WHO / WHY ===================== -->
+  <section class="section pad">
+    <div class="eyebrow">Who it's for</div>
+    <div class="sec-title">Built for any counter with stock</div>
+    <div class="chips">
+      <span class="chip">Supermarkets</span><span class="chip">Minimarts &amp; groceries</span><span class="chip">Bottle stores</span>
+      <span class="chip">Pharmacies</span><span class="chip">Butcheries &amp; delis</span><span class="chip">Hardware shops</span>
+      <span class="chip">Boutiques</span><span class="chip">Restaurants &amp; takeaways</span><span class="chip">Wholesalers</span>
+    </div>
+
+    <div style="height:9mm"></div>
+    <div class="eyebrow">Why choose us</div>
+    <div class="sec-title">The edge over off-the-shelf apps</div>
+    <div class="why">
+      <div class="whyrow"><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span><p><b>Tailored to the business</b> — the system fits how they work, not the other way around.</p></div>
+      <div class="whyrow"><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span><p><b>Reliable offline</b> — designed and proven for real-world power and internet.</p></div>
+      <div class="whyrow"><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span><p><b>Local hardware &amp; local support</b> — set up in person, help close at hand.</p></div>
+      <div class="whyrow"><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span><p><b>Fully set up &amp; trained</b> — not handed an app and left to figure it out.</p></div>
+      <div class="whyrow"><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span><p><b>One system that grows</b> — add features and branches as the business expands.</p></div>
+      <div class="whyrow"><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span><p><b>You own your data</b> — a clear, direct relationship, not a foreign subscription.</p></div>
+    </div>
+  </section>
+
+  <!-- ===================== CTA ===================== -->
+  <div class="cta">
+    <div>
+      <h3>Let's set up a demo.</h3>
+      <p>See it running on a real till in minutes — then we'll tailor a package for the business, install it and train the team.</p>
+    </div>
+    <div class="contact">
+      <div class="lab">Get in touch</div>
+      <b>Mukela Katungu</b><br>
+      Phone / WhatsApp: +260 771 699 187
+    </div>
+  </div>
+  <p class="endnote">TillSync POS — Product &amp; Services Overview · Prepared for partners and prospective clients · 2026</p>
+
+</body>
+</html>
