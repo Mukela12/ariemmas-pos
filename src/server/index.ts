@@ -439,6 +439,29 @@ const EXPORT_QUERIES: Record<string, (from: string | null, to: string | null) =>
           ORDER BY sh.opened_at`,
     params: [from, to]
   }),
+  // refunds.created_at is a real timestamptz (not text like the older tables),
+  // so it casts to ::date directly without the NULLIF dance.
+  refunds: (from, to) => ({
+    sql: `SELECT r.id AS refund_id, r.refund_number, s.receipt_number AS sale_receipt, r.terminal_id,
+            u.display_name AS processed_by, r.created_at, r.reason, r.restocked, r.vat_total, r.total
+          FROM refunds r
+          LEFT JOIN sales s ON s.id = r.sale_id
+          LEFT JOIN users u ON u.id = r.user_id
+          WHERE (COALESCE($1,'') = '' OR r.created_at::date >= $1::date)
+            AND (COALESCE($2,'') = '' OR r.created_at::date <= $2::date)
+          ORDER BY r.created_at`,
+    params: [from, to]
+  }),
+  'refund-items': (from, to) => ({
+    sql: `SELECT ri.id AS item_id, r.refund_number, r.created_at,
+            ri.product_name, ri.quantity, ri.unit_price, ri.vat_amount, ri.line_total
+          FROM refund_items ri
+          JOIN refunds r ON r.id = ri.refund_id
+          WHERE (COALESCE($1,'') = '' OR r.created_at::date >= $1::date)
+            AND (COALESCE($2,'') = '' OR r.created_at::date <= $2::date)
+          ORDER BY r.created_at`,
+    params: [from, to]
+  }),
   'stock-movements': (from, to) => ({
     sql: `SELECT sm.id, sm.created_at, p.name AS product, sm.type, sm.quantity_change, sm.balance_after,
             sm.reason, sm.terminal_id

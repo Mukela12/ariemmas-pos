@@ -56,6 +56,25 @@ export async function exportDailySalesToExcel(date: string): Promise<string | nu
     ORDER BY s.created_at ASC, si.product_name ASC
   `, [date])
 
+  // Refunds paid out that day (the original sale may be from an earlier day).
+  const refunds = await db.query<any>(`
+    SELECT r.refund_number, r.created_at, s.receipt_number AS sale_receipt,
+      u.display_name AS processed_by, r.reason, r.restocked, r.vat_total, r.total
+    FROM refunds r
+    LEFT JOIN sales s ON s.id = r.sale_id
+    LEFT JOIN users u ON u.id = r.user_id
+    WHERE ${dateOf('r.created_at', db.engine)} = ?
+    ORDER BY r.created_at ASC
+  `, [date])
+
+  const refundItems = await db.query<any>(`
+    SELECT r.refund_number, ri.product_name, ri.quantity, ri.unit_price, ri.line_total
+    FROM refund_items ri
+    JOIN refunds r ON r.id = ri.refund_id
+    WHERE ${dateOf('r.created_at', db.engine)} = ?
+    ORDER BY r.created_at ASC, ri.product_name ASC
+  `, [date])
+
   const dateFormatted = dayjs(date).format('DD-MMM-YYYY')
   const defaultName = `Ariemmas_Sales_${dayjs(date).format('YYYY-MM-DD')}.xlsx`
 
@@ -87,11 +106,16 @@ export async function exportDailySalesToExcel(date: string): Promise<string | nu
   const cashSales = sales.filter(r => r.payment_method === 'cash').reduce((s, r) => s + Number(r.total), 0)
   const mobileSales = sales.filter(r => r.payment_method === 'mobile_money').reduce((s, r) => s + Number(r.total), 0)
 
+  const refundTotal = refunds.reduce((s, r) => s + Number(r.total), 0)
+
   ws.addRow(['Total Transactions', sales.length])
   ws.addRow(['Total Revenue', totalRevenue])
   ws.addRow(['Total VAT', totalVat])
   ws.addRow(['Cash Sales', cashSales])
   ws.addRow(['Mobile Money Sales', mobileSales])
+  ws.addRow(['Refunds', refunds.length])
+  ws.addRow(['Refunded Amount', -refundTotal])
+  ws.addRow(['Net Revenue (after refunds)', totalRevenue - refundTotal])
   ws.addRow([])
 
   const headerRow = ws.addRow([
@@ -174,6 +198,58 @@ export async function exportDailySalesToExcel(date: string): Promise<string | nu
   wsItems.getColumn(7).width = 12
   for (const col of [5, 6, 7]) {
     wsItems.getColumn(col).numFmt = '#,##0.00'
+  }
+
+  // --- Refunds Sheet (only when there were any that day) ---
+  if (refunds.length > 0) {
+    const wsRef = wb.addWorksheet('Refunds')
+
+    wsRef.mergeCells('A1:H1')
+    const refTitle = wsRef.getCell('A1')
+    refTitle.value = `Ariemmas — Refunds (${dateFormatted})`
+    refTitle.font = { size: 14, bold: true }
+    wsRef.addRow([])
+
+    const refHeader = wsRef.addRow([
+      'Refund #', 'Time', 'Original Receipt', 'Processed By', 'Reason', 'Restocked', 'VAT', 'Amount'
+    ])
+    refHeader.eachCell((cell) => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB45309' } }
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+      cell.border = { bottom: { style: 'thin' } }
+    })
+
+    for (const r of refunds) {
+      wsRef.addRow([
+        r.refund_number,
+        dayjs(r.created_at).format('HH:mm:ss'),
+        r.sale_receipt || '',
+        r.processed_by || '',
+        r.reason || '',
+        Number(r.restocked) ? 'Yes' : 'No',
+        Number(r.vat_total),
+        Number(r.total)
+      ])
+    }
+
+    wsRef.addRow([])
+    const refItemHeader = wsRef.addRow(['Refund #', 'Product', 'Qty', 'Unit Price', 'Line Total'])
+    refItemHeader.eachCell((cell) => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB45309' } }
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+      cell.border = { bottom: { style: 'thin' } }
+    })
+    for (const ri of refundItems) {
+      wsRef.addRow([ri.refund_number, ri.product_name, Number(ri.quantity), Number(ri.unit_price), Number(ri.line_total)])
+    }
+
+    wsRef.getColumn(1).width = 22
+    wsRef.getColumn(2).width = 10
+    wsRef.getColumn(3).width = 18
+    wsRef.getColumn(4).width = 16
+    wsRef.getColumn(5).width = 20
+    wsRef.getColumn(6).width = 10
+    for (const col of [7, 8]) wsRef.getColumn(col).numFmt = '#,##0.00'
   }
 
   await wb.xlsx.writeFile(filePath)
