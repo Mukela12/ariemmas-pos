@@ -362,6 +362,111 @@ app.post('/api/admin/users/rename', async (req, res) => {
   res.json({ ok: true })
 })
 
+// --- Refunds (web) — admin/manager gated; mirrors the desktop till flow. ---
+const round2 = (n: number): number => Math.round(n * 100) / 100
+
+app.post('/api/refunds/lookup', async (req, res) => {
+  const { username, pin, receipt } = req.body || {}
+  if (!(await verifyAdminCreds(username, pin))) return res.status(403).json({ error: 'Admin authentication failed.' })
+  try {
+    const q = String(receipt || '').trim()
+    const sale = await db.queryOne<any>('SELECT * FROM sales WHERE receipt_number = $1 OR id = $1', [q])
+    if (!sale) return res.json(null)
+    const items = await db.query<any>('SELECT * FROM sale_items WHERE sale_id = $1', [sale.id])
+    const refunds = await db.query<any>('SELECT * FROM refunds WHERE sale_id = $1 ORDER BY created_at', [sale.id])
+    const refunded = await db.query<any>(
+      `SELECT ri.sale_item_id, SUM(ri.quantity) as qty
+       FROM refund_items ri JOIN refunds r ON r.id = ri.refund_id
+       WHERE r.sale_id = $1 GROUP BY ri.sale_item_id`, [sale.id])
+    const refundedBy = new Map(refunded.map((r: any) => [r.sale_item_id, Number(r.qty) || 0]))
+    res.json({
+      sale,
+      items: items.map((it: any) => ({ ...it, refunded_quantity: refundedBy.get(it.id) || 0 })),
+      refunds
+    })
+  } catch (err: any) {
+    console.error('[Refunds] lookup error:', err.message)
+    res.status(500).json({ error: 'Could not load the sale.' })
+  }
+})
+
+app.post('/api/refunds', async (req, res) => {
+  const { username, pin, input } = req.body || {}
+  if (!(await verifyAdminCreds(username, pin))) return res.status(403).json({ error: 'Admin authentication failed.' })
+  try {
+    const admin = await db.queryOne<any>('SELECT id FROM users WHERE username = $1 AND active = 1', [username])
+    const sale = await db.queryOne<any>('SELECT * FROM sales WHERE id = $1', [input?.sale_id])
+    if (!sale) return res.status(404).json({ error: 'Sale not found' })
+
+    const saleItems = await db.query<any>('SELECT * FROM sale_items WHERE sale_id = $1', [sale.id])
+    const byId = new Map(saleItems.map((s: any) => [s.id, s]))
+    const refunded = await db.query<any>(
+      `SELECT ri.sale_item_id, SUM(ri.quantity) as qty
+       FROM refund_items ri JOIN refunds r ON r.id = ri.refund_id
+       WHERE r.sale_id = $1 GROUP BY ri.sale_item_id`, [sale.id])
+    const refundedBy = new Map(refunded.map((r: any) => [r.sale_item_id, Number(r.qty) || 0]))
+
+    const lines: any[] = []
+    let total = 0
+    let vatTotal = 0
+    for (const reqItem of input?.items || []) {
+      const qty = Math.round(Number(reqItem.quantity) * 1000) / 1000
+      if (!Number.isFinite(qty) || qty <= 0) continue
+      const orig = byId.get(reqItem.sale_item_id)
+      if (!orig) return res.status(400).json({ error: 'Selected item is not on this sale' })
+      const remaining = Number(orig.quantity) - (refundedBy.get(orig.id) || 0)
+      if (qty > remaining + 1e-9) {
+        return res.status(400).json({ error: `Only ${remaining} of ${orig.product_name} can still be refunded` })
+      }
+      lines.push({
+        id: uuid(), sale_item_id: orig.id, product_id: orig.product_id,
+        product_name: orig.product_name, quantity: qty,
+        unit_price: Number(orig.unit_price),
+        vat_amount: round2(Number(orig.vat_amount) * (qty / Number(orig.quantity))),
+        line_total: round2(Number(orig.unit_price) * qty)
+      })
+      total = round2(total + round2(Number(orig.unit_price) * qty))
+      vatTotal = round2(vatTotal + round2(Number(orig.vat_amount) * (qty / Number(orig.quantity))))
+    }
+    if (lines.length === 0) return res.status(400).json({ error: 'Nothing selected to refund' })
+
+    const prior = await db.queryOne<any>('SELECT COUNT(*) as c FROM refunds WHERE sale_id = $1', [sale.id])
+    const refundNumber = `R${(Number(prior?.c) || 0) + 1}-${sale.receipt_number}`
+    const refundId = uuid()
+
+    await db.run(
+      `INSERT INTO refunds (id, sale_id, refund_number, user_id, reason, total, vat_total, restocked, terminal_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'web')`,
+      [refundId, sale.id, refundNumber, admin?.id || null, String(input?.reason || '').trim() || null,
+       total, vatTotal, input?.restock ? 1 : 0])
+
+    for (const l of lines) {
+      await db.run(
+        `INSERT INTO refund_items (id, refund_id, sale_item_id, product_id, product_name, quantity, unit_price, vat_amount, line_total)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        [l.id, refundId, l.sale_item_id, l.product_id, l.product_name, l.quantity, l.unit_price, l.vat_amount, l.line_total])
+      if (input?.restock && l.product_id) {
+        await db.run('UPDATE products SET stock_quantity = stock_quantity + $1 WHERE id = $2', [l.quantity, l.product_id])
+        const af = await db.queryOne<any>('SELECT stock_quantity FROM products WHERE id = $1', [l.product_id])
+        await db.run(
+          'INSERT INTO stock_movements (id, product_id, type, quantity_change, balance_after, reason, user_id, terminal_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+          [uuid(), l.product_id, 'refund', l.quantity, Number(af?.stock_quantity ?? 0), `Refund ${refundNumber}`, admin?.id || null, 'web'])
+      }
+    }
+
+    await db.run(
+      'INSERT INTO audit_log (id, user_id, action, entity_type, entity_id, details) VALUES ($1,$2,$3,$4,$5,$6)',
+      [uuid(), admin?.id || null, 'refund', 'refund', refundId,
+       JSON.stringify({ sale_id: sale.id, receipt: sale.receipt_number, refund_number: refundNumber, total, items: lines.length, restocked: !!input?.restock, via: 'web' })])
+
+    const refund = await db.queryOne('SELECT * FROM refunds WHERE id = $1', [refundId])
+    res.json(refund)
+  } catch (err: any) {
+    console.error('[Refunds] create error:', err.message)
+    res.status(500).json({ error: 'Refund failed.' })
+  }
+})
+
 // ============================================================================
 // Data export API (owner/admin only).
 // Lets Mary pull raw data straight from the database for her own analytics —

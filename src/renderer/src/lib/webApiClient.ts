@@ -58,6 +58,21 @@ export const webApi = {
     return json<any>('/api/admin/users/rename', { method: 'POST', body: JSON.stringify({ ...adminCreds, targetId: userId, displayName }) })
   },
 
+  // Refunds — admin/manager only; the server re-verifies the PIN on every call.
+  // No printRefund on web: the signed slip is a till-printer thing.
+  getSaleForRefund: async (receiptNumber: string) => {
+    if (!adminCreds) throw new Error('Sign in as an admin to process refunds.')
+    return json<any>('/api/refunds/lookup', {
+      method: 'POST', body: JSON.stringify({ ...adminCreds, receipt: receiptNumber })
+    })
+  },
+  createRefund: async (input: any) => {
+    if (!adminCreds) throw new Error('Sign in as an admin to process refunds.')
+    return json<any>('/api/refunds', {
+      method: 'POST', body: JSON.stringify({ ...adminCreds, input })
+    })
+  },
+
   // Products
   getProductByBarcode: async (barcode: string) =>
     json<any>(`/api/products/barcode/${encodeURIComponent(barcode)}`),
