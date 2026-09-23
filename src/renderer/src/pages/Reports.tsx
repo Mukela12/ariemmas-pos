@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { BarChart3, Calendar, TrendingUp, DollarSign, ShoppingBag, Download, Users, Monitor, Receipt } from 'lucide-react'
+import { BarChart3, Calendar, TrendingUp, DollarSign, ShoppingBag, Download, Users, Monitor, Receipt, RotateCcw } from 'lucide-react'
 import { formatZMW } from '../lib/currency'
+import { RefundModal } from '../components/RefundModal'
 
 interface CashierRow {
   user_id: string
@@ -29,6 +30,15 @@ interface TransactionRow {
   shift_cashier_name: string | null
 }
 
+interface RefundRow {
+  id: string
+  refund_number: string
+  sale_receipt: string | null
+  total: number
+  reason: string | null
+  created_at: string
+}
+
 interface DailySalesData {
   total_sales: number
   total_revenue: number
@@ -37,6 +47,10 @@ interface DailySalesData {
   cash_sales: number
   mobile_sales: number
   average_sale: number
+  refund_count?: number
+  refund_total?: number
+  net_revenue?: number
+  refunds?: RefundRow[]
   by_cashier?: CashierRow[]
   by_terminal?: TerminalRow[]
   transactions?: TransactionRow[]
@@ -66,6 +80,9 @@ export function Reports() {
   const [data, setData] = useState<DailySalesData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
+  const [refundFor, setRefundFor] = useState<TransactionRow | null>(null)
+  // Refunds are processed at the till (desktop build only).
+  const canRefund = typeof window.api.createRefund === 'function'
 
   useEffect(() => {
     loadReport()
@@ -217,10 +234,18 @@ export function Reports() {
                       {formatZMW(data?.total_vat || 0)}
                     </span>
                   </div>
+                  {(data?.refund_total || 0) > 0 && (
+                    <div className="flex items-center justify-between py-2 border-t border-[#F4F4F5]">
+                      <span className="text-sm text-[#B45309]">Refunds ({data?.refund_count || 0})</span>
+                      <span className="text-sm font-medium text-[#B45309] tabular-nums">
+                        −{formatZMW(data?.refund_total || 0)}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between py-2 border-t border-[#E4E4E7]">
                     <span className="text-sm font-semibold text-[#18181B]">Net Revenue</span>
                     <span className="text-sm font-bold text-[#18181B] tabular-nums">
-                      {formatZMW((data?.total_revenue || 0) - (data?.total_vat || 0))}
+                      {formatZMW((data?.total_revenue || 0) - (data?.total_vat || 0) - (data?.refund_total || 0))}
                     </span>
                   </div>
                 </div>
@@ -278,12 +303,12 @@ export function Reports() {
                   <h3 className="text-sm font-semibold text-[#18181B]">Transactions</h3>
                   <span className="text-[11px] text-[#71717A] ml-1">newest first</span>
                 </div>
-                <div className="grid grid-cols-[90px_120px_1fr_1fr_90px_80px_110px] gap-3 px-5 py-2 text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.04em] bg-[#FAFAFA] border-b border-[#F4F4F5]">
-                  <span>Time</span><span>Receipt</span><span>Cashier</span><span>Person</span><span>Terminal</span><span>Pay</span><span className="text-right">Total</span>
+                <div className={`grid ${canRefund ? 'grid-cols-[90px_120px_1fr_1fr_90px_80px_110px_80px]' : 'grid-cols-[90px_120px_1fr_1fr_90px_80px_110px]'} gap-3 px-5 py-2 text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.04em] bg-[#FAFAFA] border-b border-[#F4F4F5]`}>
+                  <span>Time</span><span>Receipt</span><span>Cashier</span><span>Person</span><span>Terminal</span><span>Pay</span><span className="text-right">Total</span>{canRefund && <span />}
                 </div>
                 <div className="max-h-[420px] overflow-y-auto">
                   {data.transactions.map((t) => (
-                    <div key={t.id} className="grid grid-cols-[90px_120px_1fr_1fr_90px_80px_110px] gap-3 px-5 py-2 text-sm border-b border-[#F4F4F5] last:border-0">
+                    <div key={t.id} className={`grid ${canRefund ? 'grid-cols-[90px_120px_1fr_1fr_90px_80px_110px_80px]' : 'grid-cols-[90px_120px_1fr_1fr_90px_80px_110px]'} gap-3 px-5 py-2 text-sm border-b border-[#F4F4F5] last:border-0 items-center`}>
                       <span className="text-[#52525B] tabular-nums">{fmtTime(t.created_at)}</span>
                       <span className="text-[#18181B] font-mono text-[12px]">{t.receipt_number}</span>
                       <span className="text-[#18181B]">{t.display_name || t.username || '—'}</span>
@@ -291,9 +316,41 @@ export function Reports() {
                       <span className="text-[#52525B] font-mono text-[11px]">{shortTerminal(t.terminal_id)}</span>
                       <span className="text-[#52525B]">{paymentLabel(t.payment_method)}</span>
                       <span className="text-right text-[#18181B] font-semibold tabular-nums">{formatZMW(t.total)}</span>
+                      {canRefund && (
+                        <button
+                          onClick={() => setRefundFor(t)}
+                          className="h-8 px-2 text-[12px] font-medium text-[#B45309] border border-[#E4E4E7] rounded-[2px] hover:border-[#B45309] hover:bg-[#FFF7ED] flex items-center gap-1 justify-center"
+                        >
+                          <RotateCcw size={12} />
+                          Refund
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Refunds given that day */}
+            {data && data.refunds && data.refunds.length > 0 && (
+              <div className="bg-white border border-[#E4E4E7] rounded-[2px] overflow-hidden">
+                <div className="flex items-center gap-2 px-5 py-3 border-b border-[#E4E4E7]">
+                  <RotateCcw size={16} className="text-[#B45309]" />
+                  <h3 className="text-sm font-semibold text-[#18181B]">Refunds</h3>
+                  <span className="text-[11px] text-[#71717A] ml-1">money returned to customers</span>
+                </div>
+                <div className="grid grid-cols-[90px_1fr_1fr_1fr_110px] gap-3 px-5 py-2 text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.04em] bg-[#FAFAFA] border-b border-[#F4F4F5]">
+                  <span>Time</span><span>Refund #</span><span>Original sale</span><span>Reason</span><span className="text-right">Amount</span>
+                </div>
+                {data.refunds.map((r) => (
+                  <div key={r.id} className="grid grid-cols-[90px_1fr_1fr_1fr_110px] gap-3 px-5 py-2 text-sm border-b border-[#F4F4F5] last:border-0">
+                    <span className="text-[#52525B] tabular-nums">{fmtTime(r.created_at)}</span>
+                    <span className="text-[#18181B] font-mono text-[12px]">{r.refund_number}</span>
+                    <span className="text-[#52525B] font-mono text-[12px]">{r.sale_receipt || '—'}</span>
+                    <span className="text-[#52525B]">{r.reason || <em className="text-[#A1A1AA]">—</em>}</span>
+                    <span className="text-right text-[#B45309] font-semibold tabular-nums">−{formatZMW(r.total)}</span>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -314,6 +371,14 @@ export function Reports() {
           </div>
         )}
       </div>
+
+      {refundFor && (
+        <RefundModal
+          receiptNumber={refundFor.receipt_number}
+          onClose={() => setRefundFor(null)}
+          onDone={() => { setRefundFor(null); loadReport() }}
+        />
+      )}
     </div>
   )
 }

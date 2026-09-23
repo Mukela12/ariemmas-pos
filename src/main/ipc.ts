@@ -8,6 +8,7 @@ import { queueSync, getSyncStatus, processSyncQueue, pullCatalog } from './servi
 import { adjustStock, getStockMovements, getInventorySummary } from './services/inventory'
 import {
   buildReceiptBytes,
+  buildRefundBytes,
   buildTestBytes,
   getDrawerKickBytes,
   listPrinters,
@@ -16,8 +17,10 @@ import {
 } from './services/printer'
 import { saveProductImage, deleteProductImage } from './services/productImages'
 import productImageMap from './database/product-images.json'
-import type { PrintableReceipt } from '../shared/types'
+import { getSaleForRefund, createRefund } from './services/refunds'
+import type { PrintableReceipt, PrintableRefund, CreateRefundInput } from '../shared/types'
 import { IPC_CHANNELS } from '../shared/constants'
+import { barcodeCandidates } from '../shared/barcode'
 
 const PRODUCT_IMAGES = productImageMap as Record<string, string>
 
@@ -97,10 +100,16 @@ export async function registerIpcHandlers(): Promise<void> {
     return getCurrentUser()
   })
 
-  // Products
+  // Products — try the scanned code and its UPC-A/EAN-13 leading-zero
+  // equivalents, so a product saved with 12 digits still matches a scanner that
+  // transmits 13 (and vice versa).
   ipcMain.handle(IPC_CHANNELS.PRODUCT_GET_BY_BARCODE, async (_e, barcode: string) => {
     const db = getDb()
-    return db.queryOne('SELECT * FROM products WHERE barcode = ? AND active = 1', [barcode])
+    for (const candidate of barcodeCandidates(barcode)) {
+      const product = await db.queryOne('SELECT * FROM products WHERE barcode = ? AND active = 1', [candidate])
+      if (product) return product
+    }
+    return null
   })
 
   // Look up a product by its scale PLU (for scanned label-printing-scale barcodes).
@@ -286,6 +295,32 @@ export async function registerIpcHandlers(): Promise<void> {
   ipcMain.handle(IPC_CHANNELS.USERS_RENAME, async (_e, userId: string, displayName: string) => {
     requireAdmin()
     return adminRenameUser(userId, displayName)
+  })
+
+  // Refunds — admin-only. The refund is attributed to the signed-in admin in
+  // the main process (never trusted from the renderer).
+  ipcMain.handle(IPC_CHANNELS.SALE_GET_FOR_REFUND, async (_e, receiptNumber: string) => {
+    requireAdmin()
+    return getSaleForRefund(receiptNumber)
+  })
+  ipcMain.handle(IPC_CHANNELS.REFUND_CREATE, async (_e, input: CreateRefundInput) => {
+    requireAdmin()
+    return createRefund(input, getCurrentUser()!.id)
+  })
+  ipcMain.handle(IPC_CHANNELS.HW_PRINT_REFUND, async (_e, refund: PrintableRefund) => {
+    const saved = await getSettingValue('printer_name', '')
+    const printer = await resolvePrinter(saved)
+    if (!printer) {
+      console.error('[printer] No printer available to print refund slip')
+      return false
+    }
+    try {
+      await sendRaw(printer.name, buildRefundBytes(refund, await getReceiptLineWidth()))
+      return true
+    } catch (err) {
+      console.error('[printer] Failed to print refund slip:', err)
+      return false
+    }
   })
 
   // Inventory — adjust is admin-only; reads are open to any signed-in user.

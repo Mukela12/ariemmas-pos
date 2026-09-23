@@ -73,8 +73,12 @@ export function POS() {
     if (product) {
       requestAddProduct(product)
       setSearchQuery('')
+    } else {
+      // Show the digits so staff can compare them with the label — a mismatch
+      // means the product was saved with a mistyped barcode in Products.
+      showToast(`No product with barcode ${barcode} — check it in Products`, 'err')
     }
-  }, [requestAddProduct, tryScaleLabel])
+  }, [requestAddProduct, tryScaleLabel, showToast])
 
   useScanner({ onScan: handleBarcodeScan, enabled: !showPayment && !searchActive })
 

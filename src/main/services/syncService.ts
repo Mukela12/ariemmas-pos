@@ -188,7 +188,8 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
           WHEN 'setting' THEN 4
           WHEN 'shift' THEN 5
           WHEN 'sale' THEN 6
-          ELSE 7
+          WHEN 'refund' THEN 7
+          ELSE 8
         END, id`,
       [MAX_ATTEMPTS]
     )
@@ -278,6 +279,9 @@ function getSyncEndpoint(
   switch (entityType) {
     case 'sale':
       if (operation === 'insert') return { path: '/api/sync/sales', method: 'POST' }
+      break
+    case 'refund':
+      if (operation === 'insert') return { path: '/api/sync/refunds', method: 'POST' }
       break
     case 'product':
       if (operation === 'insert') return { path: '/api/sync/products', method: 'POST' }

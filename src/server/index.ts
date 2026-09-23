@@ -9,6 +9,7 @@ import { Resend } from 'resend'
 import { PostgresAdapter } from '../main/database/postgresAdapter'
 import { runMigrations } from '../main/database/migrations'
 import type { DbAdapter } from '../main/database/adapter'
+import { barcodeCandidates } from '../shared/barcode'
 
 const app = express()
 app.use(cors())
@@ -517,9 +518,14 @@ app.get('/api/products/search', async (req, res) => {
   res.json(products)
 })
 
+// Try the scanned code and its UPC-A/EAN-13 leading-zero equivalents, so a
+// product saved with 12 digits still matches a scanner that transmits 13.
 app.get('/api/products/barcode/:barcode', async (req, res) => {
-  const product = await db.queryOne('SELECT * FROM products WHERE barcode = $1 AND active = 1', [req.params.barcode])
-  res.json(product)
+  for (const candidate of barcodeCandidates(req.params.barcode)) {
+    const product = await db.queryOne('SELECT * FROM products WHERE barcode = $1 AND active = 1', [candidate])
+    if (product) return res.json(product)
+  }
+  res.json(null)
 })
 
 // Look up a product by its scale PLU (scanned label-printing-scale barcode).
@@ -720,6 +726,12 @@ app.get('/api/sales/daily', async (req, res) => {
   const totalSales = Number(summary?.total_sales) || 0
   const totalRevenue = Number(summary?.total_revenue) || 0
 
+  // Refunds paid out that day (synced up from the tills).
+  const refundSummary = await db.queryOne<any>(
+    `SELECT COUNT(*) as cnt, COALESCE(SUM(total),0) as total FROM refunds WHERE created_at::date = $1`,
+    [date]
+  ).catch(() => null)
+
   // Per-cashier breakdown — prefer the human name typed at shift open.
   const byCashier = await db.query<any>(`
     SELECT s.user_id, u.username, u.display_name,
@@ -759,6 +771,9 @@ app.get('/api/sales/daily', async (req, res) => {
     items_sold: Number(itemsRow?.items_sold) || 0,
     cash_sales: Number(summary?.cash_sales) || 0,
     mobile_sales: Number(summary?.mobile_sales) || 0,
+    refund_count: Number(refundSummary?.cnt) || 0,
+    refund_total: Number(refundSummary?.total) || 0,
+    net_revenue: totalRevenue - (Number(refundSummary?.total) || 0),
     average_sale: totalSales > 0 ? totalRevenue / totalSales : 0,
     by_cashier: byCashier.map((r: any) => ({
       user_id: r.user_id,
@@ -949,6 +964,52 @@ app.put('/api/settings/:key', async (req, res) => {
 
 // --- Sync endpoints (desktop → cloud) ---
 // All sync endpoints wrapped in try-catch to return proper JSON errors
+
+// Sync a refund (idempotent by refund id). Stock is incremented ONLY when this
+// call actually inserts the refund row — a re-sent refund (client retry racing
+// a slow first request) must not restock twice, so the insert uses
+// ON CONFLICT DO NOTHING RETURNING and the restock is gated on that result.
+app.post('/api/sync/refunds', async (req, res) => {
+  try {
+    const { refund, items } = req.body || {}
+    if (!refund?.id) return res.status(400).json({ error: 'Missing refund data' })
+
+    await db.run(
+      `INSERT INTO refunds (id, sale_id, refund_number, user_id, shift_id, reason, total, vat_total, restocked, terminal_id, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,COALESCE($11::timestamptz, NOW()))
+       ON CONFLICT (id) DO NOTHING`,
+      [refund.id, refund.sale_id, refund.refund_number, refund.user_id || null, refund.shift_id || null,
+       refund.reason || null, refund.total, refund.vat_total || 0, refund.restocked ? 1 : 0,
+       refund.terminal_id || null, refund.created_at || null]
+    )
+
+    // Always walk the items (a retry after a partial first attempt must fill in
+    // the missing ones); restock only when THIS call inserted the item row.
+    for (const item of items || []) {
+      const itemInserted = await db.queryOne<{ id: string }>(
+        `INSERT INTO refund_items (id, refund_id, sale_item_id, product_id, product_name, quantity, unit_price, vat_amount, line_total)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING RETURNING id`,
+        [item.id, refund.id, item.sale_item_id || null, item.product_id || null, item.product_name,
+         item.quantity, item.unit_price, item.vat_amount || 0, item.line_total]
+      )
+      if (itemInserted && refund.restocked && item.product_id) {
+        await db.run('UPDATE products SET stock_quantity = stock_quantity + $1 WHERE id = $2',
+          [item.quantity, item.product_id])
+        const af = await db.queryOne<any>('SELECT stock_quantity FROM products WHERE id = $1', [item.product_id])
+        await db.run(
+          'INSERT INTO stock_movements (id, product_id, type, quantity_change, balance_after, reason, user_id, terminal_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+          [uuid(), item.product_id, 'refund', item.quantity, Number(af?.stock_quantity ?? 0),
+           `Refund ${refund.refund_number || ''}`.trim(), refund.user_id || null, refund.terminal_id || null]
+        )
+      }
+    }
+
+    res.json({ status: 'synced' })
+  } catch (err: any) {
+    console.error('[Sync] Refunds error:', err.message)
+    res.status(500).json({ error: err.message })
+  }
+})
 
 // Sync a complete sale (idempotent — skips if sale ID already exists)
 app.post('/api/sync/sales', async (req, res) => {

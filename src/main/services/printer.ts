@@ -4,7 +4,7 @@ import { randomBytes } from 'crypto'
 import { writeFile, unlink } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import type { PrintableReceipt } from '../../shared/types'
+import type { PrintableReceipt, PrintableRefund } from '../../shared/types'
 import { formatMonguDateTime } from '../../shared/datetime'
 
 // Thermal print width in characters (Font A): 80mm paper fits 48, 58mm fits 32.
@@ -108,6 +108,40 @@ export function buildReceiptBytes(r: PrintableReceipt, lineWidth = DEFAULT_LINE_
   parts.push(line(`Items sold: ${itemCount}`))
   parts.push(line(), line(), FEED_AND_CUT)
 
+  return Buffer.concat(parts)
+}
+
+// Refund slip: mirrors the sale receipt layout so it prints on the same paper,
+// with a REFUND banner, the original receipt number, and a signature line the
+// customer signs — the slip stays in the drawer to explain the missing cash.
+export function buildRefundBytes(r: PrintableRefund, lineWidth = DEFAULT_LINE_WIDTH): Buffer {
+  const { lr, divider } = textHelpers(lineWidth)
+  const parts: Buffer[] = [INIT]
+
+  parts.push(ALIGN_CENTER, BOLD_ON, SIZE_DOUBLE, line(r.shopName), SIZE_NORMAL, BOLD_OFF)
+  if (r.shopAddress) parts.push(line(r.shopAddress))
+  if (r.shopPhone) parts.push(line(r.shopPhone))
+  if (r.shopTpin) parts.push(line(`TPIN: ${r.shopTpin}`))
+  parts.push(BOLD_ON, SIZE_DOUBLE, line('REFUND'), SIZE_NORMAL, BOLD_OFF)
+  parts.push(ALIGN_LEFT, divider())
+
+  parts.push(lr('Refund:', r.refundNumber))
+  parts.push(lr('Original sale:', r.originalReceipt))
+  parts.push(lr('Processed by:', r.processedBy))
+  parts.push(lr('Printed:', formatMonguDateTime(r.printedAt)))
+  if (r.reason) parts.push(line(`Reason: ${r.reason}`))
+  parts.push(divider())
+
+  for (const item of r.items) {
+    parts.push(line(item.name))
+    parts.push(lr(`  ${item.quantity} x ${money(item.unit_price)}`, money(item.total)))
+  }
+  parts.push(divider())
+  parts.push(BOLD_ON, SIZE_DOUBLE, lr('REFUNDED', money(r.total)), SIZE_NORMAL, BOLD_OFF)
+  parts.push(divider())
+
+  parts.push(line(), line('Customer signature:'), line(), line('_'.repeat(Math.min(24, lineWidth))))
+  parts.push(line(), line(), FEED_AND_CUT)
   return Buffer.concat(parts)
 }
 

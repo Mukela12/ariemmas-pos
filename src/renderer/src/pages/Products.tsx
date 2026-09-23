@@ -125,9 +125,30 @@ export function Products() {
     loadSummary()
   }, [page])
 
-  // Auto-refresh when the background sync pulls catalog changes from the cloud.
+  // Search the whole catalog, not just the 50 rows on this page — staff used to
+  // search a product that lived on another page, see "No products found", and
+  // re-add it, which is how the catalog filled up with duplicates.
+  const [searchResults, setSearchResults] = useState<Product[] | null>(null)
   useEffect(() => {
-    const off = window.api.onCatalogUpdated?.(() => { loadProducts(); loadCategories(); loadSummary() })
+    const q = search.trim()
+    if (!q) { setSearchResults(null); return }
+    let cancelled = false
+    const timer = setTimeout(() => {
+      window.api.searchProducts(q)
+        .then((r) => { if (!cancelled) setSearchResults(r) })
+        .catch(() => { if (!cancelled) setSearchResults(null) })
+    }, 250)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [search])
+
+  // Auto-refresh when the background sync pulls catalog changes from the cloud.
+  // The handler goes through a ref so it always sees the CURRENT page — the
+  // subscription is created once, and capturing loadProducts directly would
+  // freeze it on page 1 and silently reset the table mid-browse.
+  const reloadRef = useRef<() => void>(() => {})
+  reloadRef.current = () => { loadProducts(); loadCategories(); loadSummary() }
+  useEffect(() => {
+    const off = window.api.onCatalogUpdated?.(() => reloadRef.current())
     return off
   }, [])
 
@@ -256,14 +277,12 @@ export function Products() {
     loadProducts()
   }
 
-  const filteredProducts = products.filter((p) => {
-    const matchesSearch =
-      !search ||
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      (p.barcode && p.barcode.includes(search))
+  // While a search is active, the rows come from the whole-catalog search;
+  // otherwise from the current page. Category/low-stock filters apply to both.
+  const filteredProducts = (searchResults ?? products).filter((p) => {
     const matchesCategory = selectedCategory === 'all' || p.category_id === selectedCategory
     const matchesLow = !lowOnly || Number(p.stock_quantity) <= Number(p.min_stock_level)
-    return matchesSearch && matchesCategory && matchesLow
+    return matchesCategory && matchesLow
   })
 
   const totalPages = Math.ceil(total / LIMIT)
@@ -471,8 +490,8 @@ export function Products() {
         )}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
+      {/* Pagination — hidden while a search shows whole-catalog results */}
+      {totalPages > 1 && searchResults === null && (
         <div className="flex items-center justify-between px-6 py-3 border-t border-[#E4E4E7]">
           <p className="text-xs text-[#71717A]">
             Showing {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)} of {total}

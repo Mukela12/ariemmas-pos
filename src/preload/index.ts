@@ -35,6 +35,14 @@ const api = {
   exportDailySales: (date: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SALE_EXPORT_DAILY, date),
 
+  // Refunds (admin-only, desktop only)
+  getSaleForRefund: (receiptNumber: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SALE_GET_FOR_REFUND, receiptNumber),
+  createRefund: (input: any) =>
+    ipcRenderer.invoke(IPC_CHANNELS.REFUND_CREATE, input),
+  printRefund: (refund: any) =>
+    ipcRenderer.invoke(IPC_CHANNELS.HW_PRINT_REFUND, refund),
+
   // Categories
   getCategories: () =>
     ipcRenderer.invoke(IPC_CHANNELS.CATEGORY_GET_ALL),

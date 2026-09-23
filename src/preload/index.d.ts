@@ -1,5 +1,5 @@
 import type { ElectronAPI } from '@electron-toolkit/preload'
-import type { Product, UserPublic, Sale, Shift, Category, CompleteSaleInput, PrintableReceipt, ManagedUser, StockMovement, InventorySummary } from '../shared/types'
+import type { Product, UserPublic, Sale, Shift, Category, CompleteSaleInput, PrintableReceipt, ManagedUser, StockMovement, InventorySummary, SaleForRefund, CreateRefundInput, Refund, PrintableRefund } from '../shared/types'
 
 interface PosAPI {
   login(username: string, pin: string): Promise<UserPublic | null>
@@ -17,6 +17,11 @@ interface PosAPI {
   completeSale(input: CompleteSaleInput): Promise<Sale>
   getDailySales(date: string): Promise<any>
   exportDailySales(date: string): Promise<string | null>
+
+  // Refunds — admin-only, desktop only (absent on the web build).
+  getSaleForRefund?(receiptNumber: string): Promise<SaleForRefund | null>
+  createRefund?(input: CreateRefundInput): Promise<Refund>
+  printRefund?(refund: PrintableRefund): Promise<boolean>
 
   getCategories(): Promise<Category[]>
 

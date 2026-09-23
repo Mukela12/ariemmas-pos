@@ -7,7 +7,10 @@ interface UseScannerOptions {
   maxDelay?: number
 }
 
-export function useScanner({ onScan, enabled = true, minLength = 4, maxDelay = 60 }: UseScannerOptions): void {
+// maxDelay: max ms between keystrokes to still count as one scan. 100ms keeps
+// slower/budget scanners intact (a hiccup past 60ms used to split the code in
+// two and the scan silently failed) while staying far below human typing speed.
+export function useScanner({ onScan, enabled = true, minLength = 4, maxDelay = 100 }: UseScannerOptions): void {
   const bufferRef = useRef('')
   const lastKeyRef = useRef(0)
   const onScanRef = useRef(onScan)

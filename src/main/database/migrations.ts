@@ -472,6 +472,52 @@ export const MIGRATIONS: Migration[] = [
     name: '012_requeue_orphaned_sales',
     getSql: () =>
       `UPDATE _sync_queue SET status = 'pending', attempts = 0 WHERE entity_type IN ('sale', 'shift') AND status = 'synced';`
+  },
+  {
+    // Refunds. A refund references the original sale and its items; the sale row
+    // itself stays 'completed' (the money was genuinely taken) and reports
+    // subtract refunds. `restocked` records whether the goods went back on the
+    // shelf (stock += quantity at refund time).
+    name: '013_refunds',
+    getSql: (engine) => {
+      const num = engine === 'mssql' ? 'DECIMAL(12,2)' : engine === 'postgres' ? 'NUMERIC(12,2)' : 'REAL'
+      const qty = engine === 'mssql' ? 'DECIMAL(12,3)' : engine === 'postgres' ? 'NUMERIC(12,3)' : 'REAL'
+      const txt = engine === 'mssql' ? 'NVARCHAR(255)' : 'TEXT'
+      const pk = engine === 'mssql' ? 'NVARCHAR(50)' : 'TEXT'
+      const created = engine === 'sqlite' ? "TEXT DEFAULT (datetime('now'))"
+        : engine === 'mssql' ? 'DATETIME2 DEFAULT GETDATE()'
+        : 'TIMESTAMPTZ DEFAULT NOW()'
+      const refunds = `(
+        id ${pk} PRIMARY KEY,
+        sale_id ${pk} NOT NULL,
+        refund_number ${txt} NOT NULL,
+        user_id ${pk},
+        shift_id ${pk},
+        reason ${txt},
+        total ${num} NOT NULL,
+        vat_total ${num} NOT NULL DEFAULT 0,
+        restocked INTEGER NOT NULL DEFAULT 1,
+        terminal_id ${txt},
+        created_at ${created}
+      )`
+      const items = `(
+        id ${pk} PRIMARY KEY,
+        refund_id ${pk} NOT NULL,
+        sale_item_id ${pk},
+        product_id ${pk},
+        product_name ${txt},
+        quantity ${qty} NOT NULL,
+        unit_price ${num} NOT NULL,
+        vat_amount ${num} NOT NULL DEFAULT 0,
+        line_total ${num} NOT NULL
+      )`
+      if (engine === 'mssql') {
+        return `IF OBJECT_ID('refunds','U') IS NULL CREATE TABLE refunds ${refunds};
+IF OBJECT_ID('refund_items','U') IS NULL CREATE TABLE refund_items ${items};`
+      }
+      return `CREATE TABLE IF NOT EXISTS refunds ${refunds};
+CREATE TABLE IF NOT EXISTS refund_items ${items};`
+    }
   }
 ]
 

@@ -178,10 +178,35 @@ export async function getDailySales(date: string) {
     ORDER BY s.created_at DESC
   `, [date])
 
+  // Refunds paid out that day (regardless of when the original sale happened).
+  const refundDateExpr = dateOf('r.created_at', db.engine)
+  const refundSummary = await db.queryOne<any>(`
+    SELECT COUNT(*) as cnt, COALESCE(SUM(r.total), 0) as total
+    FROM refunds r WHERE ${refundDateExpr} = ?
+  `, [date])
+  const refundsList = await db.query<any>(`
+    SELECT r.*, s.receipt_number as sale_receipt
+    FROM refunds r LEFT JOIN sales s ON s.id = r.sale_id
+    WHERE ${refundDateExpr} = ?
+    ORDER BY r.created_at DESC
+  `, [date])
+
   const totalSales = Number(summary?.total_sales) || 0
   const totalRevenue = Number(summary?.total_revenue) || 0
+  const refundTotal = Number(refundSummary?.total) || 0
 
   return {
+    refund_count: Number(refundSummary?.cnt) || 0,
+    refund_total: refundTotal,
+    net_revenue: totalRevenue - refundTotal,
+    refunds: refundsList.map((r: any) => ({
+      id: r.id,
+      refund_number: r.refund_number,
+      sale_receipt: r.sale_receipt,
+      total: Number(r.total) || 0,
+      reason: r.reason,
+      created_at: r.created_at
+    })),
     total_sales: totalSales,
     total_revenue: totalRevenue,
     total_vat: Number(summary?.total_vat) || 0,

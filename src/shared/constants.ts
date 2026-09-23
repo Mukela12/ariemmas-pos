@@ -47,6 +47,11 @@ export const IPC_CHANNELS = {
   SALE_GET_DAILY: 'db:sale:getDaily',
   SALE_EXPORT_DAILY: 'db:sale:exportDaily',
 
+  // Refunds (admin-only)
+  SALE_GET_FOR_REFUND: 'db:sale:getForRefund',
+  REFUND_CREATE: 'db:refund:create',
+  HW_PRINT_REFUND: 'hw:printRefund',
+
   // Categories
   CATEGORY_GET_ALL: 'db:category:getAll',
 

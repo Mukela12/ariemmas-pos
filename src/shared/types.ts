@@ -133,11 +133,71 @@ export interface AppSettings {
   cash_alert_email: string
 }
 
+// A processed return. Money goes back to the customer; the original sale row
+// stays 'completed' (the money WAS taken) and reports subtract refunds instead.
+export interface Refund {
+  id: string
+  sale_id: string
+  refund_number: string
+  user_id: string | null
+  shift_id: string | null
+  reason: string | null
+  total: number
+  vat_total: number
+  restocked: number
+  terminal_id: string | null
+  created_at: string
+}
+
+export interface RefundItem {
+  id: string
+  refund_id: string
+  sale_item_id: string | null
+  product_id: string | null
+  product_name: string
+  quantity: number
+  unit_price: number
+  vat_amount: number
+  line_total: number
+}
+
+// A sale item plus how much of it has already been refunded.
+export interface RefundableSaleItem extends SaleItem {
+  refunded_quantity: number
+}
+
+export interface SaleForRefund {
+  sale: Sale
+  items: RefundableSaleItem[]
+  refunds: Refund[]
+}
+
+export interface CreateRefundInput {
+  sale_id: string
+  items: { sale_item_id: string; quantity: number }[]
+  reason: string
+  restock: boolean
+}
+
+export interface PrintableRefund {
+  refundNumber: string
+  originalReceipt: string
+  shopName: string
+  shopAddress: string
+  shopPhone: string
+  shopTpin: string
+  items: ReceiptLineItem[]
+  total: number
+  reason: string | null
+  processedBy: string
+  printedAt: string
+}
+
 // One entry in a product's stock history (inventory audit trail).
 export interface StockMovement {
   id: string
   product_id: string
-  type: 'sale' | 'restock' | 'adjustment' | 'correction'
+  type: 'sale' | 'restock' | 'adjustment' | 'correction' | 'refund'
   quantity_change: number
   balance_after: number
   reason: string | null
