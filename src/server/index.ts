@@ -835,6 +835,78 @@ app.post('/api/sales', async (req, res) => {
   res.json(sale)
 })
 
+// Range summary for the web admin: revenue/sales/refunds between two dates
+// (inclusive), a per-day breakdown for bars, and how long sales tracking has
+// been running (first sale ever + lifetime totals).
+app.get('/api/sales/range', async (req, res) => {
+  try {
+    const from = String(req.query.from || '')
+    const to = String(req.query.to || '')
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+      return res.status(400).json({ error: 'from and to must be YYYY-MM-DD' })
+    }
+
+    const summary = await db.queryOne<any>(`
+      SELECT COUNT(*) as total_sales, COALESCE(SUM(total),0) as total_revenue, COALESCE(SUM(vat_total),0) as total_vat,
+        COALESCE(SUM(CASE WHEN payment_method='cash' THEN total ELSE 0 END),0) as cash_sales,
+        COALESCE(SUM(CASE WHEN payment_method='mobile_money' THEN total ELSE 0 END),0) as mobile_sales
+      FROM sales WHERE created_at::date >= $1::date AND created_at::date <= $2::date AND status = 'completed'
+    `, [from, to])
+
+    const itemsRow = await db.queryOne<any>(`
+      SELECT COALESCE(SUM(si.quantity),0) as items_sold FROM sale_items si JOIN sales s ON si.sale_id = s.id
+      WHERE s.created_at::date >= $1::date AND s.created_at::date <= $2::date AND s.status = 'completed'
+    `, [from, to])
+
+    const refundRow = await db.queryOne<any>(`
+      SELECT COUNT(*) as cnt, COALESCE(SUM(total),0) as total FROM refunds
+      WHERE created_at::date >= $1::date AND created_at::date <= $2::date
+    `, [from, to]).catch(() => null)
+
+    const daily = await db.query<any>(`
+      SELECT created_at::date as day, COUNT(*) as sales_count, COALESCE(SUM(total),0) as revenue
+      FROM sales WHERE created_at::date >= $1::date AND created_at::date <= $2::date AND status = 'completed'
+      GROUP BY created_at::date ORDER BY day
+    `, [from, to])
+
+    const tracking = await db.queryOne<any>(`
+      SELECT MIN(created_at)::date as first_sale_date, COUNT(*) as lifetime_sales,
+        COALESCE(SUM(total),0) as lifetime_revenue
+      FROM sales WHERE status = 'completed'
+    `)
+
+    const totalSales = Number(summary?.total_sales) || 0
+    const totalRevenue = Number(summary?.total_revenue) || 0
+    const refundTotal = Number(refundRow?.total) || 0
+    res.json({
+      from, to,
+      total_sales: totalSales,
+      total_revenue: totalRevenue,
+      total_vat: Number(summary?.total_vat) || 0,
+      items_sold: Number(itemsRow?.items_sold) || 0,
+      cash_sales: Number(summary?.cash_sales) || 0,
+      mobile_sales: Number(summary?.mobile_sales) || 0,
+      refund_count: Number(refundRow?.cnt) || 0,
+      refund_total: refundTotal,
+      net_revenue: totalRevenue - refundTotal,
+      average_sale: totalSales > 0 ? totalRevenue / totalSales : 0,
+      daily: daily.map((d: any) => ({
+        date: String(d.day).slice(0, 10),
+        sales_count: Number(d.sales_count) || 0,
+        revenue: Number(d.revenue) || 0
+      })),
+      tracking: {
+        first_sale_date: tracking?.first_sale_date ? String(tracking.first_sale_date).slice(0, 10) : null,
+        lifetime_sales: Number(tracking?.lifetime_sales) || 0,
+        lifetime_revenue: Number(tracking?.lifetime_revenue) || 0
+      }
+    })
+  } catch (err: any) {
+    console.error('[Reports] range error:', err.message)
+    res.status(500).json({ error: 'Could not load the range report.' })
+  }
+})
+
 app.get('/api/sales/daily', async (req, res) => {
   const date = req.query.date as string
   const dateExpr = "created_at::date"

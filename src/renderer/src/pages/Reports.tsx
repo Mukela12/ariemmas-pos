@@ -84,6 +84,34 @@ export function Reports() {
   // Refunds are processed at the till (desktop build only).
   const canRefund = typeof window.api.createRefund === 'function'
 
+  // Interval reports (web admin). Feature-detected: the desktop build keeps
+  // the single-day view until its next release.
+  const canRange = typeof window.api.getRangeSales === 'function'
+  const [preset, setPreset] = useState<'day' | '7d' | '30d' | 'month' | 'all'>('day')
+  const [rangeData, setRangeData] = useState<any | null>(null)
+  const [rangeLoading, setRangeLoading] = useState(false)
+
+  useEffect(() => {
+    if (preset === 'day' || !canRange) { setRangeData(null); return }
+    const today = new Date().toISOString().split('T')[0]
+    let from = today
+    if (preset === '7d') from = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
+    if (preset === '30d') from = new Date(Date.now() - 29 * 86400000).toISOString().split('T')[0]
+    if (preset === 'month') from = today.slice(0, 8) + '01'
+    if (preset === 'all') from = '2020-01-01'
+    let cancelled = false
+    setRangeLoading(true)
+    window.api.getRangeSales!(from, today)
+      .then((d) => { if (!cancelled) setRangeData(d) })
+      .catch(() => { if (!cancelled) setRangeData(null) })
+      .finally(() => { if (!cancelled) setRangeLoading(false) })
+    return () => { cancelled = true }
+  }, [preset, canRange])
+
+  const trackingDays = rangeData?.tracking?.first_sale_date
+    ? Math.max(1, Math.round((Date.now() - new Date(rangeData.tracking.first_sale_date + 'T00:00:00').getTime()) / 86400000) + 1)
+    : null
+
   useEffect(() => {
     loadReport()
   }, [selectedDate])
@@ -129,6 +157,23 @@ export function Reports() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {canRange && (
+            <div className="flex items-center gap-1 mr-2">
+              {([['day', 'Day'], ['7d', '7 days'], ['30d', '30 days'], ['month', 'This month'], ['all', 'All time']] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setPreset(key)}
+                  className={`h-10 px-3 text-[13px] font-medium rounded-[2px] border ${
+                    preset === key
+                      ? 'bg-[#18181B] text-white border-[#18181B]'
+                      : 'border-[#E4E4E7] text-[#52525B] hover:border-[#18181B] bg-white'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
           <Calendar size={16} className="text-[#A1A1AA]" />
           <input
             type="date"
@@ -149,7 +194,85 @@ export function Reports() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto p-6">
-        {isLoading ? (
+        {preset !== 'day' && canRange ? (
+          rangeLoading || !rangeData ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="w-8 h-8 border-2 border-[#E4E4E7] border-t-[#18181B] rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Range stats */}
+              <div className="grid grid-cols-4 gap-4">
+                {[
+                  { label: 'Revenue', value: formatZMW(rangeData.total_revenue) },
+                  { label: 'Sales', value: String(rangeData.total_sales) },
+                  { label: 'Items Sold', value: String(Math.round(rangeData.items_sold)) },
+                  { label: 'Net (after refunds)', value: formatZMW(rangeData.net_revenue) }
+                ].map((s) => (
+                  <div key={s.label} className="bg-white border border-[#E4E4E7] rounded-[2px] p-5">
+                    <p className="text-2xl font-bold text-[#18181B] tabular-nums">{s.value}</p>
+                    <p className="text-[11px] text-[#71717A] mt-1 uppercase tracking-[0.06em]">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tracking since */}
+              {rangeData.tracking?.first_sale_date && (
+                <div className="bg-white border border-[#E4E4E7] rounded-[2px] px-5 py-4 flex items-center justify-between">
+                  <p className="text-sm text-[#52525B]">
+                    Sales tracking since{' '}
+                    <span className="font-semibold text-[#18181B]">
+                      {new Date(rangeData.tracking.first_sale_date + 'T12:00:00').toLocaleDateString('en-ZM', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </span>
+                    {trackingDays && <span> · {trackingDays} days of data</span>}
+                  </p>
+                  <p className="text-sm text-[#52525B]">
+                    Lifetime: <span className="font-semibold text-[#18181B] tabular-nums">{rangeData.tracking.lifetime_sales} sales · {formatZMW(rangeData.tracking.lifetime_revenue)}</span>
+                  </p>
+                </div>
+              )}
+
+              {/* Daily breakdown bars */}
+              {rangeData.daily?.length > 0 && (
+                <div className="bg-white border border-[#E4E4E7] rounded-[2px] overflow-hidden">
+                  <div className="flex items-center gap-2 px-5 py-3 border-b border-[#E4E4E7]">
+                    <BarChart3 size={16} className="text-[#71717A]" />
+                    <h3 className="text-sm font-semibold text-[#18181B]">Revenue by day</h3>
+                  </div>
+                  <div className="max-h-[420px] overflow-y-auto p-4 space-y-1.5">
+                    {(() => {
+                      const max = Math.max(...rangeData.daily.map((d: any) => d.revenue), 1)
+                      return rangeData.daily.map((d: any) => (
+                        <div key={d.date} className="grid grid-cols-[110px_1fr_70px_120px] items-center gap-3 text-[13px]">
+                          <span className="text-[#52525B] tabular-nums">
+                            {new Date(d.date + 'T12:00:00').toLocaleDateString('en-ZM', { day: '2-digit', month: 'short' })}
+                          </span>
+                          <div className="h-4 bg-[#F4F4F5] rounded-[2px] overflow-hidden">
+                            <div className="h-full bg-[#0D9488]" style={{ width: `${(d.revenue / max) * 100}%` }} />
+                          </div>
+                          <span className="text-right text-[#71717A] tabular-nums">{d.sales_count} sales</span>
+                          <span className="text-right font-semibold text-[#18181B] tabular-nums">{formatZMW(d.revenue)}</span>
+                        </div>
+                      ))
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {/* Payment split for the range */}
+              <div className="bg-white border border-[#E4E4E7] rounded-[2px] p-5">
+                <h3 className="text-sm font-semibold text-[#18181B] mb-3">Payment Methods</h3>
+                <div className="flex items-center gap-8 text-sm text-[#52525B]">
+                  <span>Cash <span className="font-semibold text-[#18181B] tabular-nums">{formatZMW(rangeData.cash_sales)}</span></span>
+                  <span>Mobile Money <span className="font-semibold text-[#18181B] tabular-nums">{formatZMW(rangeData.mobile_sales)}</span></span>
+                  {rangeData.refund_total > 0 && (
+                    <span>Refunds <span className="font-semibold text-[#B45309] tabular-nums">−{formatZMW(rangeData.refund_total)}</span></span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        ) : isLoading ? (
           <div className="flex items-center justify-center h-64">
             <div className="w-8 h-8 border-2 border-[#E4E4E7] border-t-[#18181B] rounded-full animate-spin" />
           </div>

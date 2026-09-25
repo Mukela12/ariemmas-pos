@@ -58,6 +58,10 @@ export const webApi = {
     return json<any>('/api/admin/users/rename', { method: 'POST', body: JSON.stringify({ ...adminCreds, targetId: userId, displayName }) })
   },
 
+  // Range reports (web only): revenue/sales between two dates + tracking info.
+  getRangeSales: async (from: string, to: string) =>
+    json<any>(`/api/sales/range?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
+
   // Refunds — admin/manager only; the server re-verifies the PIN on every call.
   // No printRefund on web: the signed slip is a till-printer thing.
   getSaleForRefund: async (receiptNumber: string) => {

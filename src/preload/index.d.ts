@@ -17,6 +17,9 @@ interface PosAPI {
   completeSale(input: CompleteSaleInput): Promise<Sale>
   getDailySales(date: string): Promise<any>
   exportDailySales(date: string): Promise<string | null>
+  // Range reports — web build only for now; the desktop Reports page
+  // feature-detects this and falls back to single-day view.
+  getRangeSales?(from: string, to: string): Promise<any>
 
   // Refunds — admin-only, desktop only (absent on the web build).
   getSaleForRefund?(receiptNumber: string): Promise<SaleForRefund | null>
