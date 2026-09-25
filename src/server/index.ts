@@ -864,13 +864,13 @@ app.get('/api/sales/range', async (req, res) => {
     `, [from, to]).catch(() => null)
 
     const daily = await db.query<any>(`
-      SELECT created_at::date as day, COUNT(*) as sales_count, COALESCE(SUM(total),0) as revenue
+      SELECT created_at::date::text as day, COUNT(*) as sales_count, COALESCE(SUM(total),0) as revenue
       FROM sales WHERE created_at::date >= $1::date AND created_at::date <= $2::date AND status = 'completed'
       GROUP BY created_at::date ORDER BY day
     `, [from, to])
 
     const tracking = await db.queryOne<any>(`
-      SELECT MIN(created_at)::date as first_sale_date, COUNT(*) as lifetime_sales,
+      SELECT MIN(created_at)::date::text as first_sale_date, COUNT(*) as lifetime_sales,
         COALESCE(SUM(total),0) as lifetime_revenue
       FROM sales WHERE status = 'completed'
     `)
