@@ -518,6 +518,22 @@ IF OBJECT_ID('refund_items','U') IS NULL CREATE TABLE refund_items ${items};`
       return `CREATE TABLE IF NOT EXISTS refunds ${refunds};
 CREATE TABLE IF NOT EXISTS refund_items ${items};`
     }
+  },
+  {
+    // One-time cleanup: 23 dev-test sales from March 2026 (rung during
+    // development, before the shop went live) were synced to the cloud and
+    // inflate the all-time reports and "tracking since" date. Mark them voided
+    // so every report and export (they all filter status='completed') excludes
+    // them. Rows are kept for audit; nothing is deleted.
+    name: '014_archive_march_test_sales',
+    getSql: (engine) => {
+      const where = engine === 'mssql'
+        ? `CONVERT(date, created_at) IN ('2026-03-15','2026-03-23')`
+        : engine === 'postgres'
+          ? `created_at::date IN ('2026-03-15','2026-03-23')`
+          : `date(created_at) IN ('2026-03-15','2026-03-23')`
+      return `UPDATE sales SET status = 'voided', void_reason = 'dev test data (pre-launch)' WHERE ${where} AND status = 'completed';`
+    }
   }
 ]
 
