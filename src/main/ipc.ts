@@ -22,6 +22,12 @@ import type { PrintableReceipt, PrintableRefund, CreateRefundInput } from '../sh
 import { IPC_CHANNELS } from '../shared/constants'
 import { barcodeCandidates } from '../shared/barcode'
 
+// 0 is a real rate (zero-rated goods); only a missing or invalid value falls back to 16%.
+const vatRateOf = (v: unknown): number => {
+  const n = Number(v)
+  return v !== null && v !== undefined && v !== '' && Number.isFinite(n) ? n : 0.16
+}
+
 const PRODUCT_IMAGES = productImageMap as Record<string, string>
 
 async function getSettingValue(key: string, fallback: string): Promise<string> {
@@ -147,7 +153,7 @@ export async function registerIpcHandlers(): Promise<void> {
     await db.run(`
       INSERT INTO products (id, barcode, name, category_id, price, cost_price, vat_rate, stock_quantity, min_stock_level, unit, is_weighted, scale_plu, image_filename, image_url)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [id, product.barcode, product.name, product.category_id, product.price, product.cost_price || 0, product.vat_rate || 0.16, product.stock_quantity || 0, product.min_stock_level || 5, product.unit || 'each', product.is_weighted ? 1 : 0, product.scale_plu || null, product.image_filename || null, product.image_url || null])
+    `, [id, product.barcode, product.name, product.category_id, product.price, product.cost_price || 0, vatRateOf(product.vat_rate), product.stock_quantity || 0, product.min_stock_level || 5, product.unit || 'each', product.is_weighted ? 1 : 0, product.scale_plu || null, product.image_filename || null, product.image_url || null])
     const created = await db.queryOne('SELECT * FROM products WHERE id = ?', [id])
     queueSync('insert', 'product', id, created!).catch(() => {})
     return created
@@ -169,7 +175,7 @@ export async function registerIpcHandlers(): Promise<void> {
         scale_plu = ?, image_filename = ?, image_url = ?, updated_at = ${nowExpr}
       WHERE id = ?
     `, [product.barcode, product.name, product.category_id, product.price, product.cost_price || 0,
-      product.vat_rate || 0.16, product.stock_quantity || 0, product.min_stock_level || 5,
+      vatRateOf(product.vat_rate), product.stock_quantity || 0, product.min_stock_level || 5,
       product.unit || 'each', product.is_weighted ? 1 : 0, product.scale_plu || null,
       product.image_filename || null, product.image_url || null, product.id])
     const updated = await db.queryOne('SELECT * FROM products WHERE id = ?', [product.id])
