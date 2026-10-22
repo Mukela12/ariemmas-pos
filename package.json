@@ -7,9 +7,9 @@
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
-    "dev": "node api.js && electron-vite dev",
-    "build": "node api.js && electron-vite build",
-    "start": "node api.js && electron-vite preview",
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
     "postinstall": "node scripts/postinstall.js",
     "build:win": "electron-vite build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
