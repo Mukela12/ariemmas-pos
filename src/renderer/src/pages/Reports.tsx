@@ -123,11 +123,19 @@ export function Reports() {
     setIsLoading(false)
   }
 
+  // Headline revenue is net of refunds — the owner wants the big number to be
+  // the money actually kept. Gross still shows in the Tax Summary below.
+  const dayRefunds = data?.refund_total || 0
   const stats = [
-    { label: 'Total Revenue', value: data ? formatZMW(data.total_revenue) : 'K 0.00', icon: DollarSign },
-    { label: 'Total Sales', value: data ? String(data.total_sales) : '0', icon: ShoppingBag },
-    { label: 'Items Sold', value: data ? String(data.items_sold) : '0', icon: TrendingUp },
-    { label: 'Average Sale', value: data ? formatZMW(data.average_sale) : 'K 0.00', icon: BarChart3 }
+    {
+      label: 'Total Revenue',
+      value: data ? formatZMW((data.total_revenue || 0) - dayRefunds) : 'K 0.00',
+      icon: DollarSign,
+      note: dayRefunds > 0 ? `after −${formatZMW(dayRefunds)} refunds` : null
+    },
+    { label: 'Total Sales', value: data ? String(data.total_sales) : '0', icon: ShoppingBag, note: null },
+    { label: 'Items Sold', value: data ? String(data.items_sold) : '0', icon: TrendingUp, note: null },
+    { label: 'Average Sale', value: data ? formatZMW(data.average_sale) : 'K 0.00', icon: BarChart3, note: null }
   ]
 
   async function handleExport() {
@@ -204,14 +212,26 @@ export function Reports() {
               {/* Range stats */}
               <div className="grid grid-cols-4 gap-4">
                 {[
-                  { label: 'Revenue', value: formatZMW(rangeData.total_revenue) },
-                  { label: 'Sales', value: String(rangeData.total_sales) },
-                  { label: 'Items Sold', value: String(Math.round(rangeData.items_sold)) },
-                  { label: 'Net (after refunds)', value: formatZMW(rangeData.net_revenue) }
+                  // Headline revenue is net of refunds, per the owner's ask.
+                  {
+                    label: 'Revenue',
+                    value: formatZMW(rangeData.net_revenue),
+                    note: rangeData.refund_total > 0 ? `after −${formatZMW(rangeData.refund_total)} refunds` : null,
+                    amber: false
+                  },
+                  { label: 'Sales', value: String(rangeData.total_sales), note: null, amber: false },
+                  { label: 'Items Sold', value: String(Math.round(rangeData.items_sold)), note: null, amber: false },
+                  {
+                    label: 'Refunds',
+                    value: rangeData.refund_total > 0 ? `−${formatZMW(rangeData.refund_total)}` : formatZMW(0),
+                    note: rangeData.refund_count > 0 ? `${rangeData.refund_count} refund${rangeData.refund_count === 1 ? '' : 's'}` : null,
+                    amber: rangeData.refund_total > 0
+                  }
                 ].map((s) => (
                   <div key={s.label} className="bg-white border border-[#E4E4E7] rounded-[2px] p-5">
-                    <p className="text-2xl font-bold text-[#18181B] tabular-nums">{s.value}</p>
+                    <p className={`text-2xl font-bold tabular-nums ${s.amber ? 'text-[#B45309]' : 'text-[#18181B]'}`}>{s.value}</p>
                     <p className="text-[11px] text-[#71717A] mt-1 uppercase tracking-[0.06em]">{s.label}</p>
+                    {s.note && <p className="text-[11px] text-[#B45309] mt-0.5">{s.note}</p>}
                   </div>
                 ))}
               </div>
@@ -292,6 +312,7 @@ export function Reports() {
                   </div>
                   <p className="text-2xl font-bold text-[#18181B] tabular-nums">{stat.value}</p>
                   <p className="text-[11px] text-[#71717A] mt-1 uppercase tracking-[0.06em]">{stat.label}</p>
+                  {stat.note && <p className="text-[11px] text-[#B45309] mt-0.5">{stat.note}</p>}
                 </div>
               ))}
             </div>

@@ -1034,6 +1034,15 @@ app.get('/api/sales/export', async (req, res) => {
     ORDER BY s.created_at ASC, si.product_name ASC
   `, [date])
 
+  // Refunds paid out that day — deducted from the headline revenue below.
+  const refunds = await db.query<any>(`
+    SELECT r.refund_number, r.created_at, r.reason, r.total, s.receipt_number AS sale_receipt
+    FROM refunds r
+    LEFT JOIN sales s ON s.id = r.sale_id
+    WHERE r.created_at::date = $1
+    ORDER BY r.created_at ASC
+  `, [date]).catch(() => [] as any[])
+
   const dateFormatted = dayjs(date).format('DD-MMM-YYYY')
   const wb = new ExcelJS.Workbook()
   wb.creator = 'Ariemmas POS'
@@ -1052,8 +1061,13 @@ app.get('/api/sales/export', async (req, res) => {
   const cashSales = sales.filter((r: any) => r.payment_method === 'cash').reduce((s: number, r: any) => s + Number(r.total), 0)
   const mobileSales = sales.filter((r: any) => r.payment_method === 'mobile_money').reduce((s: number, r: any) => s + Number(r.total), 0)
 
+  const refundTotal = refunds.reduce((s: number, r: any) => s + Number(r.total), 0)
+
   ws.addRow(['Total Transactions', sales.length])
-  ws.addRow(['Total Revenue', totalRevenue])
+  ws.addRow(['Gross Sales', totalRevenue])
+  ws.addRow(['Refunds', -refundTotal])
+  const netRow = ws.addRow(['Total Revenue (after refunds)', totalRevenue - refundTotal])
+  netRow.font = { bold: true }
   ws.addRow(['Total VAT', totalVat])
   ws.addRow(['Cash Sales', cashSales])
   ws.addRow(['Mobile Money Sales', mobileSales])
@@ -1111,6 +1125,39 @@ app.get('/api/sales/export', async (req, res) => {
   wsItems.getColumn(4).width = 8; wsItems.getColumn(5).width = 12; wsItems.getColumn(6).width = 12
   wsItems.getColumn(7).width = 12
   for (const col of [5, 6, 7]) wsItems.getColumn(col).numFmt = '#,##0.00'
+
+  // Refunds sheet — only when money was returned that day.
+  if (refunds.length > 0) {
+    const wsRef = wb.addWorksheet('Refunds')
+    wsRef.mergeCells('A1:E1')
+    const refTitle = wsRef.getCell('A1')
+    refTitle.value = `Ariemmas — Refunds (${dateFormatted})`
+    refTitle.font = { size: 14, bold: true }
+    wsRef.addRow([])
+
+    const refHeaderRow = wsRef.addRow(['Refund #', 'Time', 'Original Receipt', 'Reason', 'Amount'])
+    refHeaderRow.eachCell((cell) => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB45309' } }
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+      cell.border = { bottom: { style: 'thin' } }
+    })
+
+    for (const r of refunds) {
+      wsRef.addRow([
+        r.refund_number,
+        dayjs(r.created_at).format('HH:mm:ss'),
+        r.sale_receipt || '',
+        r.reason || '',
+        -Number(r.total)
+      ])
+    }
+    const refTotalRow = wsRef.addRow(['', '', '', 'Total Refunded', -refundTotal])
+    refTotalRow.font = { bold: true }
+
+    wsRef.getColumn(1).width = 20; wsRef.getColumn(2).width = 10; wsRef.getColumn(3).width = 18
+    wsRef.getColumn(4).width = 28; wsRef.getColumn(5).width = 12
+    wsRef.getColumn(5).numFmt = '#,##0.00'
+  }
 
   const fileName = `Ariemmas_Sales_${date}.xlsx`
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
